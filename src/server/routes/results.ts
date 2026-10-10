@@ -2,9 +2,17 @@ import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 
 import type { DiagnosisResult, ParticipationTimings } from "@/shared/types";
+import type { MapEdge, MapNode } from "@/shared/types";
 import { db } from "@/server/db/client";
 import { experiments, participations, users } from "@/server/db/schema";
 import { authMiddleware, requireRole, type AppEnv } from "./middleware";
+
+function asNodes(value: unknown): MapNode[] {
+	return (value as MapNode[]) ?? [];
+}
+function asEdges(value: unknown): MapEdge[] {
+	return (value as MapEdge[]) ?? [];
+}
 
 export const resultRoutes = new Hono<AppEnv>();
 resultRoutes.use("*", authMiddleware, requireRole("peneliti"));
@@ -113,6 +121,33 @@ resultRoutes.get("/", async (c) => {
 	const experimentId = c.req.query("experimentId");
 	if (!experimentId) return c.json({ error: "experimentId wajib diisi" }, 400);
 	return c.json(await collectResults(experimentId));
+});
+
+/** Detail satu partisipan: peta siswa + rincian diagnosis (untuk dialog peneliti). */
+resultRoutes.get("/:participationId", async (c) => {
+	const rows = await db
+		.select({ participation: participations })
+		.from(participations)
+		.innerJoin(users, eq(participations.userId, users.id))
+		.where(eq(participations.id, c.req.param("participationId") ?? ""))
+		.limit(1);
+	const participation = rows[0]?.participation;
+	if (!participation) return c.json({ error: "Partisipasi tidak ditemukan" }, 404);
+
+	const diagnosis = participation.diagnosis as DiagnosisResult | null;
+	return c.json({
+		participationId: participation.id,
+		segmentModel: participation.segmentModel,
+		phase: participation.phase,
+		pretestScore: participation.pretestScore,
+		posttestScore: participation.posttestScore,
+		mapScore: participation.mapScore,
+		diagnosis,
+		learnerMap:
+			participation.learnerNodes != null
+				? { nodes: asNodes(participation.learnerNodes), edges: asEdges(participation.learnerEdges) }
+				: null,
+	});
 });
 
 resultRoutes.get("/export", async (c) => {

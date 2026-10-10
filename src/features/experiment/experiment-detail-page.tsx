@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { ArrowLeft, Download } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import type { SegmentModel } from "@/shared/types";
 import { api } from "@/lib/api";
 import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Spinner } from "@/components/ui";
+import { DiagnosisDetailDialog } from "./diagnosis-detail-dialog";
 
 interface ResultRow {
 	participationId: string;
@@ -100,6 +101,7 @@ export function ExperimentDetailPage() {
 
 	const rows = results.data ?? [];
 	const hasData = rows.length > 0;
+	const [detailTarget, setDetailTarget] = useState<{ id: string; name: string } | null>(null);
 	const sorted = useMemo(
 		() =>
 			[...rows].sort((a, b) => (a.segmentModel === b.segmentModel ? a.studentName.localeCompare(b.studentName) : a.segmentModel === "paragraph" ? -1 : 1)),
@@ -154,6 +156,7 @@ export function ExperimentDetailPage() {
 										</th>
 										<th className="px-4 py-2">Waktu Build</th>
 										<th className="px-4 py-2">Waktu Total</th>
+										<th className="px-4 py-2"></th>
 									</tr>
 								</thead>
 								<tbody>
@@ -174,6 +177,11 @@ export function ExperimentDetailPage() {
 											</td>
 											<td className="px-4 py-2">{duration(row.buildDurationMs)}</td>
 											<td className="px-4 py-2">{duration(row.totalDurationMs)}</td>
+											<td className="px-4 py-2 text-right">
+												<Button variant="outline" onClick={() => setDetailTarget({ id: row.participationId, name: row.studentName })}>
+													Detail
+												</Button>
+											</td>
 										</tr>
 									))}
 								</tbody>
@@ -187,6 +195,14 @@ export function ExperimentDetailPage() {
 					description="Bagikan akun siswa kepada partisipan. Data pretest, posttest, map score, waktu, dan kuesioner akan muncul di sini."
 				/>
 			)}
+
+			{detailTarget ? (
+				<DiagnosisDetailDialog
+					participationId={detailTarget.id}
+					studentName={detailTarget.name}
+					onClose={() => setDetailTarget(null)}
+				/>
+			) : null}
 		</div>
 	);
 }

@@ -4,7 +4,11 @@ import {
 	addEdge,
 	Background,
 	Controls,
+	Handle,
+	Position,
 	ReactFlow,
+	ReactFlowProvider,
+	useReactFlow,
 	useEdgesState,
 	useNodesState,
 	type Connection,
@@ -13,7 +17,7 @@ import {
 	type NodeProps,
 	type NodeTypes,
 } from "@xyflow/react";
-import { ArrowLeft, Save, Wand2 } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Save, Trash2, Wand2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { MapEdge, MapNode, Segment } from "@/shared/types";
@@ -52,19 +56,22 @@ function MapNodeCard({ data, selected }: NodeProps<FlowNode<EditorNodeData>>) {
 					: "border-amber-300 bg-amber-50 text-amber-900 italic"
 			} ${selected ? "ring-2 ring-blue-500" : ""}`}
 		>
+			<Handle type="target" position={Position.Top} className="!size-2.5 !border-2 !border-white !bg-slate-400" />
 			{nodeData.highlight ? <span className="absolute -top-2 -left-2 size-3 rounded-full bg-green-500" /> : null}
 			<div className="relative font-medium">{nodeData.label}</div>
 			{nodeData.nodeType === "concept" ? (
 				<div className="mt-0.5 text-[10px] text-slate-500">Paragraf {nodeData.paragraph ?? "?"}</div>
 			) : null}
+			<Handle type="source" position={Position.Bottom} className="!size-2.5 !border-2 !border-white !bg-slate-400" />
 		</div>
 	);
 }
 
 const nodeTypes: NodeTypes = { mapNode: MapNodeCard };
 
-export function GoalMapEditorPage() {
+function GoalMapEditorInner() {
 	const { id } = useParams({ from: "/layout/goal-map/$id" });
+	const { fitView } = useReactFlow();
 	const queryClient = useQueryClient();
 
 	const goalMap = useQuery({ queryKey: ["goal-map", id], queryFn: () => api.get<GoalMap>(`/goal-maps/${id}`) });
@@ -74,6 +81,7 @@ export function GoalMapEditorPage() {
 	const [mapNodes, setMapNodes, onNodesChangeBase] = useNodesState<FlowNode<EditorNodeData>>([]);
 	const [mapEdges, setMapEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
 	const [materialId, setMaterialId] = useState<string | null>(null);
 	const [segmentPreview, setSegmentPreview] = useState<{ model: string; segments: Segment[] } | null>(null);
 
@@ -131,6 +139,40 @@ export function GoalMapEditorPage() {
 			},
 		]);
 		setSelectedId(nodeId);
+		setSelectedEdgeId(null);
+	}
+
+	/** Hapus simpul terpilih beserta semua relasi yang menempel padanya. */
+	function deleteSelectedNode() {
+		if (!selectedId) return;
+		setMapNodes((current) => current.filter((node) => node.id !== selectedId));
+		setMapEdges((current) => current.filter((edge) => edge.source !== selectedId && edge.target !== selectedId));
+		setSelectedId(null);
+	}
+
+	/** Hapus relasi (sisi) yang dipilih di kanvas. */
+	function deleteSelectedEdge() {
+		if (!selectedEdgeId) return;
+		setMapEdges((current) => current.filter((edge) => edge.id !== selectedEdgeId));
+		setSelectedEdgeId(null);
+	}
+
+	/** Tata ulang posisi simpul otomatis (kiri→kanan) dengan dagre. */
+	async function autoLayout() {
+		const dagre = (await import("dagre")).default;
+		const graph = new dagre.graphlib.Graph();
+		graph.setDefaultEdgeLabel(() => ({}));
+		graph.setGraph({ rankdir: "LR", nodesep: 50, ranksep: 80 });
+		for (const node of mapNodes) graph.setNode(node.id, { width: 160, height: 56 });
+		for (const edge of mapEdges) graph.setEdge(edge.source, edge.target);
+		dagre.layout(graph);
+		setMapNodes((current) =>
+			current.map((node) => {
+				const position = graph.node(node.id);
+				return { ...node, position: { x: position.x - 80, y: position.y - 28 } };
+			}),
+		);
+		window.setTimeout(() => fitView({ padding: 0.15, duration: 300 }), 60);
 	}
 
 	function updateSelected(patch: Partial<EditorNodeData>) {
@@ -187,6 +229,10 @@ export function GoalMapEditorPage() {
 				</a>
 				<Input value={title} onChange={(e) => setTitle(e.target.value)} className="max-w-md font-semibold" />
 				<div className="ml-auto flex items-center gap-2">
+					<Button variant="outline" onClick={() => void autoLayout()} title="Tata ulang posisi simpul otomatis">
+						<LayoutGrid className="size-4" />
+						Auto Layout
+					</Button>
 					<Button variant="outline" onClick={() => preview.mutate("paragraph")} disabled={preview.isPending}>
 						<Wand2 className="size-4" />
 						Pratinjau Segmen Paragraf
@@ -212,8 +258,19 @@ export function GoalMapEditorPage() {
 							onNodesChange={onNodesChangeBase}
 							onEdgesChange={onEdgesChange}
 							onConnect={handleConnect}
-							onNodeClick={(_, node) => setSelectedId(node.id)}
-							onPaneClick={() => setSelectedId(null)}
+							onNodeClick={(_, node) => {
+								setSelectedId(node.id);
+								setSelectedEdgeId(null);
+							}}
+							onEdgeClick={(_, edge) => {
+								setSelectedEdgeId(edge.id);
+								setSelectedId(null);
+							}}
+							onPaneClick={() => {
+								setSelectedId(null);
+								setSelectedEdgeId(null);
+							}}
+							deleteKeyCode={["Backspace", "Delete"]}
 							nodeTypes={nodeTypes}
 							fitView
 						>
@@ -260,9 +317,21 @@ export function GoalMapEditorPage() {
 											/>
 										</Field>
 									) : null}
+									<Button variant="danger" className="w-full" onClick={deleteSelectedNode}>
+										<Trash2 className="size-4" />
+										Hapus Simpul
+									</Button>
+								</>
+							) : selectedEdgeId ? (
+								<>
+									<p className="text-sm text-slate-600">Relasi terpilih. Klik kanvas untuk membatalkan.</p>
+									<Button variant="danger" className="w-full" onClick={deleteSelectedEdge}>
+										<Trash2 className="size-4" />
+										Hapus Relasi
+									</Button>
 								</>
 							) : (
-								<p className="text-sm text-slate-500">Klik simpul di kanvas untuk mengedit.</p>
+								<p className="text-sm text-slate-500">Klik simpul atau relasi di kanvas untuk mengedit / menghapus.</p>
 							)}
 						</CardBody>
 					</Card>
@@ -328,5 +397,13 @@ export function GoalMapEditorPage() {
 				</Card>
 			) : null}
 		</div>
+	);
+}
+
+export function GoalMapEditorPage() {
+	return (
+		<ReactFlowProvider>
+			<GoalMapEditorInner />
+		</ReactFlowProvider>
 	);
 }

@@ -11,6 +11,21 @@ Platform eksperimen **Kit-Build Concept Map** untuk penelitian skripsi: **memban
 
 Landasan teori: **Segmenting Principle (Mayer)** yang dioperasikan pada peta konsep menurut **Schneider et al. (2021)** — segmentasi yang bermakna dan koheren dapat mengurangi beban kognitif dan meningkatkan hasil belajar.
 
+## Features
+
+LearnMap mengimplementasikan ulang alur kerja KitBuild dengan tooling modern, disesuaikan untuk fokus penelitian segmentasi:
+
+| Feature | Description |
+| --- | --- |
+| **Concept Map Editor** | Editor visual goal map: tambah/hapus/edit konsep & link (klik simpul → panel Hapus), sambungkan relasi dengan drag dari handle simpul, klik relasi untuk menghapusnya, tombol **Auto Layout** (dagre, kiri→kanan), penandaan nomor paragraf per konsep, serta pratinjau hasil kedua model segmentasi sebelum dipakai. |
+| **Automatic Kit Generation** | Goal map dibongkar otomatis menjadi kit siswa dan dibagi per segmen sesuai model kelompok (Paragraf / Depth Topik); kit disajikan bertahap lewat tombol "Kit berikutnya". |
+| **Map Diagnosis** | Perbandingan otomatis Learner Map vs Goal Map berbasis proposisi konsep–link–konsep (cocok via label): benar / missing / excessive + Map Score. |
+| **Extended Assessments** | Pretest & posttest pilihan ganda (dinilai otomatis) serta kuesioner persepsi skala Likert 1–5 — semuanya di dalam aplikasi, tanpa Google Forms. |
+| **Assignment Management** | Batas waktu membangun peta per eksperimen (dengan hitung mundur & auto-submit), penetapan kelompok A/B otomatis yang seimbang, draf peta tersimpan otomatis, dan fase yang terkunci urut. |
+| **Research Dashboard** | Ringkasan per kelompok (rata-rata pretest/posttest/Map Score/waktu/gain), tabel per partisipan, dialog **detail diagnosis** berisi render peta siswa + daftar proposisi missing & excessive, dan ekspor CSV untuk analisis statistik. |
+
+Yang **sengaja tidak** diimplementasikan (batasan penelitian): Sub-Map Scoring (SMS) dan analisis urutan pengerjaan.
+
 ## Pengukuran (sesuai batasan penelitian)
 
 Yang diukur:

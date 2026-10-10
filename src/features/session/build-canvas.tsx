@@ -1,6 +1,8 @@
 import {
 	Background,
 	Controls,
+	Handle,
+	Position,
 	ReactFlow,
 	addEdge,
 	useEdgesState,
@@ -53,7 +55,9 @@ function KitCard({ data, selected }: NodeProps<FlowNode<EditorNodeData>>) {
 					: "border-amber-300 bg-amber-50 text-amber-900 italic"
 			} ${selected ? "ring-2 ring-blue-500" : ""}`}
 		>
+			<Handle type="target" position={Position.Top} className="!size-2.5 !border-2 !border-white !bg-slate-400" />
 			{nodeData.label}
+			<Handle type="source" position={Position.Bottom} className="!size-2.5 !border-2 !border-white !bg-slate-400" />
 		</div>
 	);
 }
@@ -266,6 +270,8 @@ export function BuildCanvas({
 						}}
 						onConnect={handleConnect}
 						isValidConnection={isValidConnection}
+						deleteKeyCode={["Backspace", "Delete"]}
+						edgesFocusable
 						nodeTypes={nodeTypes}
 						fitView
 					>
@@ -326,6 +332,9 @@ export function BuildCanvas({
 						<p>Tarik simpul untuk menata posisi. Tarik dari lingkaran tepi simpul untuk membuat relasi.</p>
 						<p>
 							Relasi yang benar: <span className="font-medium text-blue-700">Konsep → Link → Konsep</span>. Sambungan lain akan ditolak.
+						</p>
+						<p className="text-xs text-slate-500">
+							Hapus relasi: klik relasinya lalu tekan <kbd className="rounded border border-slate-300 px-1">Delete</kbd>.
 						</p>
 						{remainingMs != null && minutes != null && seconds != null ? (
 							<p className={`flex items-center gap-1.5 font-medium ${minutes < 2 ? "text-red-600" : "text-slate-700"}`}>
