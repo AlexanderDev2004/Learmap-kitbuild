@@ -1,6 +1,6 @@
 # LearnMap
 
-Platform eksperimen **Kit-Build Concept Map** untuk penelitian skripsi: **membandingkan dua model segmentasi peta konsep** — bukan memberikan rekomendasi.
+Platform eksperimen **Kit-Build Concept Map** untuk penelitian skripsi: **membandingkan dua model segmentasi peta konsep**
 
 ## Fokus Penelitian
 
