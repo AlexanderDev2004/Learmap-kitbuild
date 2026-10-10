@@ -8,6 +8,7 @@ import {
 	createRootRoute,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 
 import type { SessionUserLike } from "@/features/auth/types";
 import { LoginPage } from "@/features/auth/login-page";
@@ -51,11 +52,41 @@ function Protected({ role, children }: { role?: "peneliti" | "siswa"; children: 
 function Layout() {
 	return (
 		<Protected>
-			<AppShell>
-				<Outlet />
-			</AppShell>
+			<SessionGuard>
+				<AppShell>
+					<Outlet />
+				</AppShell>
+			</SessionGuard>
 		</Protected>
 	);
+}
+
+/**
+ * Sesi browser dibagikan semua tab (satu cookie), jadi login akun lain di tab
+ * lain membuat tab ini basi. sessionStorage bersifat per-tab: jika user yang
+ * tercatat di tab ini berbeda dari sesi aktif, sinkronkan tab ke sesi terbaru
+ * agar tidak menampilkan halaman peran yang salah.
+ */
+function SessionGuard({ children }: { children: ReactNode }) {
+	const { data: me, isPending } = useMe();
+
+	useEffect(() => {
+		if (isPending) return;
+		if (!me) {
+			sessionStorage.removeItem("learnmap_tab_user");
+			return;
+		}
+		const tabUserId = sessionStorage.getItem("learnmap_tab_user");
+		if (tabUserId === me.id) return;
+		sessionStorage.setItem("learnmap_tab_user", me.id);
+		if (tabUserId != null) {
+			// Tab ini tercatat untuk akun lain: muat ulang agar router memilih
+			// halaman sesuai peran sesi aktif.
+			window.location.replace("/");
+		}
+	}, [isPending, me]);
+
+	return children;
 }
 
 const rootRoute = createRootRoute({ component: () => <Outlet /> });

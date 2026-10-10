@@ -13,6 +13,7 @@ import type {
 import { LIKERT_SCALE } from "@/shared/types";
 import { splitParagraphs } from "@/server/lib/segmentation";
 import { api } from "@/lib/api";
+import { DiagnosisVisual } from "@/components/diagnosis-visual";
 import { Badge, Button, Card, CardBody, CardHeader, Spinner } from "@/components/ui";
 import { BuildCanvas } from "./build-canvas";
 
@@ -280,19 +281,30 @@ export function SessionWizardPage() {
 			) : null}
 
 			{data.phase === "posttest" ? (
-				<Card>
-					<CardHeader
-						title="Posttest"
-						description={`Map score peta Anda: ${((data.mapScore ?? 0) * 100).toFixed(0)}% (${data.diagnosis?.correct ?? 0} dari ${data.diagnosis?.totalGoalPropositions ?? 0} proposisi benar).`}
-					/>
-					<CardBody>
-						<QuizForm
-							questions={data.posttest}
-							onSubmit={(answers) => answerMutation.mutate({ endpoint: "posttest", answers })}
-							submitLabel="Kirim Posttest"
+				<>
+					<Card>
+						<CardHeader
+							title="Hasil Peta Konsep Anda"
+							description={`Map score: ${((data.mapScore ?? 0) * 100).toFixed(0)}% — ${data.diagnosis?.correct ?? 0} dari ${data.diagnosis?.totalGoalPropositions ?? 0} proposisi goal map terbentuk dengan benar.`}
 						/>
-					</CardBody>
-				</Card>
+						<CardBody>
+							<DiagnosisVisual diagnosis={data.diagnosis} learnerMap={data.learnerMap} mapHeight={280} />
+						</CardBody>
+					</Card>
+					<Card>
+						<CardHeader
+							title="Posttest"
+							description="Jawab semua soal sebelum melanjutkan."
+						/>
+						<CardBody>
+							<QuizForm
+								questions={data.posttest}
+								onSubmit={(answers) => answerMutation.mutate({ endpoint: "posttest", answers })}
+								submitLabel="Kirim Posttest"
+							/>
+						</CardBody>
+					</Card>
+				</>
 			) : null}
 
 			{data.phase === "questionnaire" ? (
@@ -309,10 +321,12 @@ export function SessionWizardPage() {
 
 			{data.phase === "completed" ? (
 				<Card>
-					<CardBody className="space-y-3 text-center">
-						<CheckCircle2 className="mx-auto size-10 text-green-600" />
-						<h2 className="text-lg font-semibold">Sesi selesai — terima kasih!</h2>
-						<div className="mx-auto grid max-w-md grid-cols-3 gap-4 pt-2">
+					<CardBody className="space-y-4 text-center">
+						<div>
+							<CheckCircle2 className="mx-auto size-10 text-green-600" />
+							<h2 className="mt-2 text-lg font-semibold">Sesi selesai — terima kasih!</h2>
+						</div>
+						<div className="mx-auto grid max-w-md grid-cols-3 gap-4">
 							<div>
 								<p className="text-xs text-slate-500">Pretest</p>
 								<p className="text-xl font-bold">{((data.pretestScore ?? 0) * 100).toFixed(0)}%</p>
@@ -325,6 +339,9 @@ export function SessionWizardPage() {
 								<p className="text-xs text-slate-500">Posttest</p>
 								<p className="text-xl font-bold">{((data.posttestScore ?? 0) * 100).toFixed(0)}%</p>
 							</div>
+						</div>
+						<div className="text-left">
+							<DiagnosisVisual diagnosis={data.diagnosis} learnerMap={data.learnerMap} mapHeight={280} />
 						</div>
 					</CardBody>
 				</Card>

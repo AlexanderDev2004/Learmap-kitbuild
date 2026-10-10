@@ -102,6 +102,8 @@ export interface DiagnosisResult {
 	totalGoalPropositions: number;
 	/** Proporsi proposisi benar terhadap total proposisi goal map (0..1). */
 	score: number;
+	/** Kunci proposisi benar, format "konsep|link|konsep" (label). */
+	correctLabels: string[];
 	missingLabels: string[];
 	excessiveLabels: string[];
 }

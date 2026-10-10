@@ -74,6 +74,7 @@ export function diagnoseMap(goal: MapGraph, learner: MapGraph): DiagnosisResult 
 		excessive: excessive.length,
 		totalGoalPropositions: total,
 		score: total === 0 ? 0 : correct.length / total,
+		correctLabels: correct,
 		missingLabels: missing,
 		excessiveLabels: excessive,
 	};
