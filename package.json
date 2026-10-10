@@ -1,0 +1,55 @@
+{
+	"name": "learnmap",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev:api": "tsx watch src/server/index.ts",
+		"dev:web": "vite",
+		"dev": "concurrently -k -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
+		"build": "vite build",
+		"preview": "vite preview",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "tsx src/server/db/migrate.ts",
+		"db:seed": "tsx --env-file=.env.local scripts/seed.ts",
+		"db:reset": "rm -f data/learnmap.db && pnpm db:migrate && pnpm db:seed"
+	},
+	"dependencies": {
+		"@hono/node-server": "^1.14.0",
+		"@libsql/client": "^0.15.0",
+		"@tanstack/react-query": "^5.62.0",
+		"@tanstack/react-router": "^1.99.0",
+		"@xyflow/react": "^12.4.0",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"drizzle-orm": "^0.44.0",
+		"hono": "^4.7.0",
+		"lucide-react": "^0.474.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"tailwind-merge": "^3.0.0",
+		"zod": "^3.24.0"
+	},
+	"devDependencies": {
+		"@tailwindcss/vite": "^4.0.0",
+		"@types/node": "^22.10.0",
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
+		"@vitejs/plugin-react": "^4.3.4",
+		"concurrently": "^9.1.0",
+		"drizzle-kit": "^0.30.0",
+		"playwright-core": "^1.64.0",
+		"tailwindcss": "^4.0.0",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.2",
+		"vite": "^6.0.0",
+		"vitest": "^3.0.0"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"esbuild"
+		]
+	}
+}
