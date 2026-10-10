@@ -21,7 +21,7 @@ Yang diukur:
 4. **Waktu Pengerjaan** — durasi tiap fase dicatat server (pretest, membaca materi, membangun peta, posttest, kuesioner).
 5. **Kuesioner** — persepsi siswa, skala Likert 1–5.
 
-Yang **tidak** digunakan (sengaja tidak diimplementasikan):
+Yang **tidak** digunakan:
 
 - Sub-Map Scoring (SMS)
 - Analisis urutan pengerjaan
