@@ -97,8 +97,15 @@ vp install
 cp .env.example .env
 # Edit .env with your credentials
 
+# Start the local LibSQL server (dev database) — the Workers runtime used by
+# `vp dev` cannot open `file:` SQLite URLs, so dev talks to sqld over HTTP:
+docker compose -f docker-compose.dev.yml up -d
+
 # Push database schema
 vpx drizzle-kit push
+
+# (Optional) load demo users, goal maps, kit, assignment, and forms
+pnpm run db:seed
 
 # Start development server
 vp dev

@@ -44,9 +44,9 @@ export const DEFAULT_USERS: readonly SeedUser[] = [
 		roles: ["teacher"],
 	},
 	{
-		email: "dicha@kitbuild.mail",
-		password: "dicha12345",
-		name: "Dicha",
+		email: "alex@kitbuild.mail",
+		password: "alex12345",
+		name: "Alex",
 		roles: ["teacher"],
 	},
 ];

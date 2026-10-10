@@ -53,10 +53,10 @@ const program = Effect.gen(function* () {
 	yield* Effect.log(
 		"--- Seed completed ---\n" +
 			"Demo credentials:\n" +
-			"  Admin: admin@kitbuild.mail / admin123\n" +
+			"  Admin: admin@kitbuild.mail / admin12345\n" +
 			"  Teacher: banni@kitbuild.mail / banni12345\n" +
 			"  Teacher: helmy@kitbuild.mail / helmy12345\n" +
-			"  Teacher: dicha@kitbuild.mail / dicha12345\n" +
+			"  Teacher: alex@kitbuild.mail / alex12345\n" +
 			"Created:\n" +
 			"  - Cohorts: 2A Marketing Management, 2B Marketing Management\n" +
 			"  - Kits: わたしのうち\n" +

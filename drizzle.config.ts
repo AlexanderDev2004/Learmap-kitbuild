@@ -11,6 +11,8 @@ export default defineConfig({
 		? { url: process.env.TURSO_DATABASE_URL as string }
 		: {
 				url: process.env.TURSO_DATABASE_URL as string,
-				authToken: process.env.TURSO_AUTH_TOKEN,
+				// Local sqld servers need no token; an empty env var must not
+				// be forwarded as an empty credential.
+				authToken: process.env.TURSO_AUTH_TOKEN || undefined,
 			},
 });
