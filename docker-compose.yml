@@ -1,0 +1,54 @@
+services:
+    migrate:
+        image: learnmap:local
+        build:
+            context: .
+            args:
+                VITE_APP_URL: ${VITE_APP_URL:-http://localhost:3000}
+                VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        command: bunx drizzle-kit migrate
+        environment: &app-env
+            # Local mode: SQLite file in the /app/data volume.
+            # Remote mode: set DATABASE_MODE=remote plus Turso credentials in .env.
+            DATABASE_MODE: ${DATABASE_MODE:-local}
+            TURSO_DATABASE_URL: ${TURSO_DATABASE_URL:-file:/app/data/learnmap.sqlite}
+            TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN:-}
+            BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in your .env file (32+ characters)}
+            BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+            SITE_URL: ${SITE_URL:-http://localhost:3000}
+        volumes:
+            - learnmap-data:/app/data
+        restart: "no"
+
+    app:
+        image: learnmap:local
+        build:
+            context: .
+            args:
+                VITE_APP_URL: ${VITE_APP_URL:-http://localhost:3000}
+                VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        ports:
+            - "${PORT:-3000}:3000"
+        environment:
+            <<: *app-env
+            PORT: 3000
+            MATERIAL_UPLOAD_DIR: ${MATERIAL_UPLOAD_DIR:-/app/data/uploads}
+        volumes:
+            - learnmap-data:/app/data
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+        restart: unless-stopped
+        healthcheck:
+            test:
+                - CMD
+                - bun
+                - -e
+                - 'fetch("http://127.0.0.1:3000/").then((r) => process.exit(r.status < 500 ? 0 : 1)).catch(() => process.exit(1))'
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 15s
+
+volumes:
+    learnmap-data:

@@ -1,6 +1,30 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+count.txt
+.env
 .env.local
-data/
-node_modules/
-dist/
-*.log
-.amp/
+.nitro
+.tanstack
+.output
+.vinxi
+todos.json
+.opencode
+kbfira_docs
+coverage
+
+# Local SQLite databases
+data/*.sqlite
+data/*.sqlite3
+*.db
+*.db-journal
+.wrangler
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/playwright/.auth/
+e2e/example.spec.ts

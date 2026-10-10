@@ -1,0 +1,62 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import type { LearnerAnalytics } from "@/features/analyzer/lib/analytics-service.shared";
+import { cn } from "@/lib/utils";
+
+interface LearnerListProps {
+	conceptMap?: LearnerAnalytics[];
+	summary?: LearnerAnalytics[];
+	isLoading: boolean;
+	selectedLearnerMapIds: Set<string>;
+	onToggleLearner: (learnerMapId: string) => void;
+}
+
+export function LearnerList({
+	conceptMap,
+	summary,
+	isLoading,
+	selectedLearnerMapIds,
+	onToggleLearner,
+}: LearnerListProps) {
+	const learners = conceptMap ?? summary ?? [];
+
+	if (isLoading) {
+		return <div className="px-3 py-6 text-center text-xs text-muted-foreground">Loading…</div>;
+	}
+
+	if (learners.length === 0) {
+		return (
+			<div className="px-3 py-6 text-center text-xs text-muted-foreground">
+				No learners found
+			</div>
+		);
+	}
+
+	return (
+		<>
+			{learners.map((learner) => (
+				<button
+					type="button"
+					key={learner.learnerMapId}
+					className={cn(
+						"flex w-full items-center justify-between px-3 py-2 border-b-[0.5px] last:border-b-0 text-left hover:bg-primary/50 cursor-pointer",
+					)}
+					onClick={() => onToggleLearner(learner.learnerMapId)}
+				>
+					<div className="flex items-center gap-2">
+						<Checkbox
+							checked={selectedLearnerMapIds.has(learner.learnerMapId)}
+							onClick={(e) => {
+								e.stopPropagation();
+								onToggleLearner(learner.learnerMapId);
+							}}
+						/>
+						<span className="text-sm">{learner.userName}</span>
+					</div>
+					<span className="text-xs font-semibold tabular-nums">
+						{learner.score !== null ? (learner.score * 100).toFixed(1) : "-"}
+					</span>
+				</button>
+			))}
+		</>
+	);
+}

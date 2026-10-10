@@ -1,0 +1,36 @@
+# Dependencies & build artifacts
+node_modules
+dist
+.tanstack
+.vite-hooks
+.wrangler
+coverage
+test-results
+playwright-report
+
+# Version control
+.git
+.jj
+.github
+
+# Secrets — never bake .env files into images
+.env
+.env.*
+!.env.example
+
+# Local data
+data
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Docs & test sources not needed in the image
+docs
+e2e
+playwright
+patches
+
+# Misc
+.DS_Store
+*.log

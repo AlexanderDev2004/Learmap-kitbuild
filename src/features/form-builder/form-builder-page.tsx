@@ -1,0 +1,539 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { toast } from "sonner";
+
+import type { FormMetadata } from "@/features/form/components/form-metadata-editor";
+import type {
+	CreateQuestionInput,
+	ReadingMaterialSection,
+	UpdateQuestionInput,
+} from "@/features/form/lib/form-service.shared";
+import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
+import { FormRpc } from "@/server/rpc/form";
+
+import { FormBuilderDialogs } from "./form-builder-dialogs";
+import { FormBuilderHeader } from "./form-builder-header";
+import { FormBuilderTabs } from "./form-builder-tabs";
+import { QuestionEditorDialog } from "./question-editor-dialog";
+import { type QuestionType, type EditorMode, defaultMetadata } from "./types";
+import type { QuestionOptions, QuestionWithOptions } from "./types";
+
+const STORAGE_KEY = "form-builder-draft";
+
+interface DraftData {
+	metadata: FormMetadata;
+	questions: QuestionWithOptions[];
+	readingMaterialSections: ReadingMaterialSection[];
+	lastSaved: string;
+}
+
+function generateDraftId(): string {
+	return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function isDraftId(id: string): boolean {
+	return id.startsWith("draft-");
+}
+
+export function FormBuilderPage() {
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const { formId } = useSearch({ from: "/dashboard/forms/builder" });
+	const isEditing = Boolean(formId);
+
+	const [metadata, setMetadata] = useState<FormMetadata>(defaultMetadata);
+	const [questions, setQuestions] = useState<QuestionWithOptions[]>([]);
+	const [readingMaterialSections, setReadingMaterialSections] = useState<
+		ReadingMaterialSection[]
+	>([]);
+	const [editorMode, setEditorMode] = useState<EditorMode>("edit");
+	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+	const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+	const [addDialogOpen, setAddDialogOpen] = useState(false);
+	const [addDialogType, setAddDialogType] = useState<QuestionType | null>(null);
+	const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+	const [showDraftDialog, setShowDraftDialog] = useState(false);
+
+	const { data: existingForm, isLoading: isLoadingForm } = useRpcQuery({
+		...FormRpc.getFormById(formId ?? ""),
+		enabled: isEditing,
+	});
+
+	useEffect(() => {
+		if (isEditing || isDraftLoaded) return;
+
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved) as DraftData;
+				const draftAge = Date.now() - new Date(parsed.lastSaved).getTime();
+				if (draftAge < 7 * 24 * 60 * 60 * 1000) {
+					setShowDraftDialog(true);
+				}
+			} catch {
+				localStorage.removeItem(STORAGE_KEY);
+			}
+		}
+		setIsDraftLoaded(true);
+	}, [isEditing, isDraftLoaded]);
+
+	useEffect(() => {
+		if (isEditing && existingForm) {
+			setMetadata({
+				title: existingForm.form.title ?? "",
+				description: existingForm.form.description,
+				type: existingForm.form.type as FormMetadata["type"],
+				audience: existingForm.form.audience as FormMetadata["audience"],
+				status: existingForm.form.status,
+			});
+			setQuestions([...(existingForm.questions ?? [])] as unknown as QuestionWithOptions[]);
+			setReadingMaterialSections(
+				[...(existingForm.form.readingMaterialSections ?? [])].map((section) => ({
+					...section,
+					title: section.title ?? undefined,
+				})),
+			);
+			setHasUnsavedChanges(false);
+		}
+	}, [isEditing, existingForm]);
+
+	useEffect(() => {
+		if (isEditing || !isDraftLoaded) return;
+
+		const draft: DraftData = {
+			metadata,
+			questions,
+			readingMaterialSections,
+			lastSaved: new Date().toISOString(),
+		};
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+	}, [metadata, questions, readingMaterialSections, isEditing, isDraftLoaded]);
+
+	const createFormMutation = useRpcMutation(FormRpc.createForm(), {
+		operation: "create form",
+		showSuccess: false,
+		onSuccess: async (result) => {
+			if (questions.length > 0) {
+				await Promise.all(
+					questions.map((q) =>
+						createQuestionMutation.mutateAsync({
+							formId: result.id,
+							type: q.type,
+							questionText: q.questionText,
+							options: q.options as CreateQuestionInput["options"],
+							required: q.required,
+						}),
+					),
+				);
+			}
+			localStorage.removeItem(STORAGE_KEY);
+			toast.success("Form created successfully");
+			void queryClient.invalidateQueries({ queryKey: FormRpc.forms() });
+			void navigate({
+				to: "/dashboard/forms/builder",
+				search: { formId: result.id },
+			});
+		},
+	});
+
+	const updateFormMutation = useRpcMutation(FormRpc.updateForm(), {
+		operation: "update form",
+		showSuccess: true,
+		successMessage: "Form saved successfully",
+		onSuccess: () => {
+			setHasUnsavedChanges(false);
+			void queryClient.invalidateQueries({ queryKey: FormRpc.forms() });
+		},
+	});
+
+	const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+	const updateMutationRef = useRef<((input: UpdateQuestionInput) => void) | null>(null);
+
+	const handleInlineQuestionChange = useCallback(
+		(
+			questionId: string,
+			{
+				questionText,
+				options,
+				required,
+			}: { questionText: string; options: QuestionOptions; required: boolean },
+		) => {
+			setQuestions((prev) =>
+				prev.map((q) =>
+					q.id === questionId ? { ...q, questionText, options, required } : q,
+				),
+			);
+			setHasUnsavedChanges(true);
+
+			// Debounce save for persisted questions
+			if (formId && !isDraftId(questionId)) {
+				if (debounceTimers.current[questionId]) {
+					clearTimeout(debounceTimers.current[questionId]);
+				}
+				debounceTimers.current[questionId] = setTimeout(() => {
+					updateMutationRef.current?.({
+						questionId,
+						questionText,
+						options: options as UpdateQuestionInput["options"],
+						required,
+					});
+				}, 800);
+			}
+		},
+		[formId],
+	);
+
+	const createQuestionMutation = useRpcMutation(FormRpc.createQuestion(), {
+		operation: "create question",
+		showSuccess: false,
+		onSuccess: () => {
+			if (formId) {
+				void queryClient.invalidateQueries({
+					queryKey: [...FormRpc.forms(), "byId", formId],
+				});
+			}
+		},
+	});
+
+	const updateQuestionMutation = useRpcMutation(FormRpc.updateQuestion(), {
+		operation: "update question",
+		showSuccess: true,
+		successMessage: "Question updated",
+		onSuccess: () => {
+			if (formId) {
+				void queryClient.invalidateQueries({
+					queryKey: [...FormRpc.forms(), "byId", formId],
+				});
+			}
+		},
+	});
+
+	updateMutationRef.current = (input: UpdateQuestionInput) =>
+		updateQuestionMutation.mutate(input);
+
+	const deleteQuestionMutation = useRpcMutation(FormRpc.deleteQuestion(), {
+		operation: "delete question",
+		showSuccess: true,
+		successMessage: "Question deleted",
+		onSuccess: () => {
+			if (formId) {
+				void queryClient.invalidateQueries({
+					queryKey: [...FormRpc.forms(), "byId", formId],
+				});
+			}
+		},
+	});
+
+	const reorderQuestionsMutation = useRpcMutation(FormRpc.reorderQuestions(), {
+		operation: "reorder questions",
+		onSuccess: () => {
+			if (formId) {
+				void queryClient.invalidateQueries({
+					queryKey: [...FormRpc.forms(), "byId", formId],
+				});
+			}
+		},
+	});
+
+	const publishFormMutation = useRpcMutation(FormRpc.publishForm(), {
+		operation: "publish form",
+		showSuccess: true,
+		successMessage: "Form published",
+		onSuccess: () => {
+			setMetadata((prev) => ({ ...prev, status: "published" }));
+			if (formId) {
+				void queryClient.invalidateQueries({
+					queryKey: [...FormRpc.forms(), "byId", formId],
+				});
+			}
+		},
+	});
+
+	const unpublishFormMutation = useRpcMutation(FormRpc.unpublishForm(), {
+		operation: "unpublish form",
+		showSuccess: true,
+		successMessage: "Form unpublished",
+		onSuccess: () => {
+			setMetadata((prev) => ({ ...prev, status: "draft" }));
+			if (formId) {
+				void queryClient.invalidateQueries({
+					queryKey: [...FormRpc.forms(), "byId", formId],
+				});
+			}
+		},
+	});
+
+	const handleMetadataChange = useCallback((newMetadata: FormMetadata) => {
+		setMetadata(newMetadata);
+		setHasUnsavedChanges(true);
+	}, []);
+
+	const handleReadingMaterialSectionsChange = useCallback(
+		(newSections: ReadingMaterialSection[]) => {
+			setReadingMaterialSections(newSections);
+			setHasUnsavedChanges(true);
+		},
+		[],
+	);
+
+	const handleSaveForm = async () => {
+		if (!metadata.title.trim()) {
+			toast.error("Form title is required");
+			return;
+		}
+
+		const normalizedReadingMaterialSections = readingMaterialSections
+			.slice()
+			.sort((a, b) => a.startQuestion - b.startQuestion || a.endQuestion - b.endQuestion)
+			.map((section) => ({
+				...section,
+				title: section.title?.trim() ? section.title.trim() : undefined,
+				content: section.content.trim(),
+			}));
+
+		const emptyContentSection = normalizedReadingMaterialSections.find(
+			(section) => section.content.length === 0,
+		);
+		if (emptyContentSection) {
+			toast.error("Reading material content cannot be empty");
+			return;
+		}
+
+		for (let i = 0; i < normalizedReadingMaterialSections.length; i++) {
+			const section = normalizedReadingMaterialSections[i];
+			if (section.startQuestion < 1) {
+				toast.error("Reading material range must start at question 1 or above");
+				return;
+			}
+			if (section.endQuestion < section.startQuestion) {
+				toast.error("Reading material range end must be greater than or equal to start");
+				return;
+			}
+			if (
+				i > 0 &&
+				normalizedReadingMaterialSections[i - 1].endQuestion >= section.startQuestion
+			) {
+				toast.error("Reading material ranges cannot overlap");
+				return;
+			}
+		}
+
+		if (isEditing && formId) {
+			await updateFormMutation.mutateAsync({
+				formId,
+				title: metadata.title,
+				description: metadata.description ?? undefined,
+				type: metadata.type,
+				audience: metadata.audience,
+				status: metadata.status,
+				readingMaterialSections: normalizedReadingMaterialSections,
+			});
+		} else {
+			await createFormMutation.mutateAsync({
+				title: metadata.title,
+				description: metadata.description ?? undefined,
+				type: metadata.type,
+				audience: metadata.audience,
+				readingMaterialSections: normalizedReadingMaterialSections,
+			});
+		}
+	};
+
+	const handleOpenAddDialog = (type: QuestionType) => {
+		setAddDialogOpen(true);
+		setAddDialogType(type);
+	};
+
+	const handleCloseAddDialog = () => {
+		setAddDialogOpen(false);
+		setAddDialogType(null);
+	};
+
+	const handleSaveQuestion = async (questionData: {
+		questionText: string;
+		options: QuestionOptions;
+		required: boolean;
+	}) => {
+		if (!addDialogType) return;
+
+		const newQuestion: QuestionWithOptions = {
+			id: generateDraftId(),
+			formId: formId ?? generateDraftId(),
+			type: addDialogType,
+			questionText: questionData.questionText,
+			options: questionData.options as QuestionOptions,
+			required: questionData.required,
+			orderIndex: questions.length,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+
+		if (formId && !isDraftId(formId)) {
+			const input: CreateQuestionInput = {
+				formId,
+				type: addDialogType,
+				questionText: questionData.questionText,
+				options: questionData.options as CreateQuestionInput["options"],
+				required: questionData.required,
+			};
+			await createQuestionMutation.mutateAsync(input);
+		} else {
+			setQuestions((prev) => [...prev, newQuestion]);
+		}
+
+		setHasUnsavedChanges(true);
+		handleCloseAddDialog();
+	};
+
+	const handleDeleteQuestion = async (questionId: string) => {
+		if (isDraftId(questionId)) {
+			setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+			setHasUnsavedChanges(true);
+		} else {
+			await deleteQuestionMutation.mutateAsync({ id: questionId });
+		}
+	};
+
+	const handleReorderQuestions = async (reorderedQuestions: QuestionWithOptions[]) => {
+		const updatedQuestions = reorderedQuestions.map((q, index) => ({
+			...q,
+			orderIndex: index,
+		}));
+		setQuestions(updatedQuestions);
+
+		if (formId && !isDraftId(formId)) {
+			await reorderQuestionsMutation.mutateAsync({
+				formId,
+				questionIds: updatedQuestions.map((q) => q.id),
+			});
+		} else {
+			setHasUnsavedChanges(true);
+		}
+	};
+
+	const handleBack = () => {
+		if (hasUnsavedChanges) {
+			setShowUnsavedDialog(true);
+		} else {
+			void navigate({ to: "/dashboard/forms" });
+		}
+	};
+
+	const handleLoadDraft = () => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved) as DraftData;
+				setMetadata(parsed.metadata);
+				setQuestions(parsed.questions);
+				setReadingMaterialSections(parsed.readingMaterialSections ?? []);
+				setHasUnsavedChanges(true);
+			} catch {
+				localStorage.removeItem(STORAGE_KEY);
+			}
+		}
+		setShowDraftDialog(false);
+	};
+
+	const handleDiscardDraft = () => {
+		localStorage.removeItem(STORAGE_KEY);
+		setShowDraftDialog(false);
+	};
+
+	const handleClearDraft = () => {
+		localStorage.removeItem(STORAGE_KEY);
+		setMetadata(defaultMetadata);
+		setQuestions([]);
+		setReadingMaterialSections([]);
+		setHasUnsavedChanges(false);
+		toast.success("Draft cleared");
+	};
+
+	const isPending = useMemo(
+		() =>
+			createFormMutation.isPending ||
+			updateFormMutation.isPending ||
+			createQuestionMutation.isPending ||
+			updateQuestionMutation.isPending ||
+			deleteQuestionMutation.isPending ||
+			publishFormMutation.isPending ||
+			unpublishFormMutation.isPending ||
+			isLoadingForm,
+		[
+			createFormMutation.isPending,
+			updateFormMutation.isPending,
+			createQuestionMutation.isPending,
+			updateQuestionMutation.isPending,
+			deleteQuestionMutation.isPending,
+			publishFormMutation.isPending,
+			unpublishFormMutation.isPending,
+			isLoadingForm,
+		],
+	);
+
+	if (isLoadingForm) {
+		return (
+			<div className="flex h-64 items-center justify-center">
+				<Loader2 className="size-8 animate-spin text-primary" />
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-6">
+			<FormBuilderHeader
+				isEditing={isEditing}
+				metadata={metadata}
+				hasUnsavedChanges={hasUnsavedChanges}
+				questionsCount={questions.length}
+				isPending={isPending}
+				createMutation={createFormMutation}
+				updateMutation={updateFormMutation}
+				publishMutation={publishFormMutation}
+				unpublishMutation={unpublishFormMutation}
+				onBack={handleBack}
+				onSave={handleSaveForm}
+				onPublish={() => formId && publishFormMutation.mutate({ formId })}
+				onUnpublish={() => formId && unpublishFormMutation.mutate({ formId })}
+				onClearDraft={handleClearDraft}
+			/>
+
+			<FormBuilderTabs
+				isEditing={isEditing}
+				formId={formId}
+				editorMode={editorMode}
+				metadata={metadata}
+				questions={questions}
+				readingMaterialSections={readingMaterialSections}
+				onReadingMaterialSectionsChange={handleReadingMaterialSectionsChange}
+				isPending={isPending}
+				onEditorModeChange={setEditorMode}
+				onMetadataChange={handleMetadataChange}
+				onQuestionChange={handleInlineQuestionChange}
+				onDeleteQuestion={handleDeleteQuestion}
+				onReorderQuestions={handleReorderQuestions}
+				onAddQuestion={handleOpenAddDialog}
+			/>
+
+			<QuestionEditorDialog
+				isOpen={addDialogOpen}
+				questionType={addDialogType}
+				editingQuestion={null}
+				onClose={handleCloseAddDialog}
+				onSave={handleSaveQuestion}
+				isPending={createQuestionMutation.isPending}
+			/>
+
+			<FormBuilderDialogs
+				showUnsavedDialog={showUnsavedDialog}
+				showDraftDialog={showDraftDialog}
+				onShowUnsavedDialogChange={setShowUnsavedDialog}
+				onShowDraftDialogChange={setShowDraftDialog}
+				onLoadDraft={handleLoadDraft}
+				onDiscardDraft={handleDiscardDraft}
+			/>
+		</div>
+	);
+}

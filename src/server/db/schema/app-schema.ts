@@ -1,0 +1,446 @@
+import { relations, sql } from "drizzle-orm";
+import { index, integer, real, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
+
+import { cohorts, user } from "./auth-schema";
+
+const timestamps = {
+	createdAt: integer("created_at", { mode: "timestamp_ms" })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.$onUpdate(() => new Date())
+		.notNull(),
+	deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+};
+
+export const texts = sqliteTable("texts", {
+	id: text("id").primaryKey(),
+	title: text("title").notNull(),
+	content: text("content", { length: 1_000_000 }).notNull(),
+	metadata: text("metadata", { mode: "json" }),
+	images: text("images", { mode: "json" }),
+	...timestamps,
+});
+
+export const topics = sqliteTable("topics", {
+	id: text("id").primaryKey(),
+	title: text("title").notNull(),
+	description: text("description"),
+	...timestamps,
+});
+
+export const goalMaps = sqliteTable(
+	"goal_maps",
+	{
+		id: text("id").primaryKey(),
+		teacherId: text("teacher_id").notNull(),
+		title: text("title").notNull(),
+		description: text("description"),
+		nodes: text("nodes", { mode: "json" }).notNull(),
+		edges: text("edges", { mode: "json" }).notNull(),
+		direction: text("direction", { enum: ["bi", "uni", "multi"] })
+			.notNull()
+			.default("bi"),
+		type: text("type", { enum: ["teacher", "scratch"] })
+			.notNull()
+			.default("teacher"),
+		textId: text("text_id").references(() => texts.id, { onDelete: "set null" }),
+		topicId: text("topic_id").references(() => topics.id),
+		...timestamps,
+	},
+	(table) => [
+		index("goal_maps_teacherId_idx").on(table.teacherId),
+		index("goal_maps_textId_idx").on(table.textId),
+		index("goal_maps_topicId_idx").on(table.topicId),
+	],
+);
+
+export const kits = sqliteTable(
+	"kits",
+	{
+		id: text("id").primaryKey(),
+		kitId: text("kit_id").notNull().unique(),
+		name: text("name").notNull(),
+		layout: text("layout", { enum: ["preset", "random"] })
+			.notNull()
+			.default("preset"),
+		options: text("options", { mode: "json" }),
+		enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+		goalMapId: text("goal_map_id")
+			.notNull()
+			.references(() => goalMaps.id, { onDelete: "cascade" }),
+		teacherId: text("teacher_id").notNull(),
+		textId: text("text_id").references(() => texts.id, { onDelete: "set null" }),
+		// Kit nodes (concepts + connectors from goal map)
+		nodes: text("nodes", { mode: "json" }).notNull().default("[]"),
+		// Kit edges - empty for students to build
+		edges: text("edges", { mode: "json" }).notNull().default("[]"),
+		...timestamps,
+	},
+	(table) => [
+		index("kits_goalMapId_idx").on(table.goalMapId),
+		index("kits_teacherId_idx").on(table.teacherId),
+		index("kits_textId_idx").on(table.textId),
+	],
+);
+
+// Assignment System
+export const assignments = sqliteTable(
+	"assignments",
+	{
+		id: text("id").primaryKey(),
+		goalMapId: text("goal_map_id")
+			.notNull()
+			.references(() => goalMaps.id, { onDelete: "cascade" }),
+		kitId: text("kit_id")
+			.notNull()
+			.references(() => kits.id, { onDelete: "cascade" }),
+		title: text("title").notNull(),
+		description: text("description"),
+		readingMaterial: text("reading_material", { length: 1_000_000 }),
+		timeLimitMinutes: integer("time_limit_minutes"),
+		startDate: integer("start_date", { mode: "timestamp_ms" }),
+		dueAt: integer("due_at", { mode: "timestamp_ms" }),
+		preTestFormId: text("pre_test_form_id").references(() => forms.id, {
+			onDelete: "set null",
+		}),
+		postTestFormId: text("post_test_form_id").references(() => forms.id, {
+			onDelete: "set null",
+		}),
+		delayedPostTestFormId: text("delayed_post_test_form_id").references(() => forms.id, {
+			onDelete: "set null",
+		}),
+		tamFormId: text("tam_form_id").references(() => forms.id, { onDelete: "set null" }),
+		delayedPostTestDelayDays: integer("delayed_post_test_delay_days").default(7),
+		createdBy: text("created_by").notNull(),
+		...timestamps,
+	},
+	(table) => [
+		index("assignments_goalMapId_idx").on(table.goalMapId),
+		index("assignments_kitId_idx").on(table.kitId),
+		index("assignments_createdBy_idx").on(table.createdBy),
+	],
+);
+
+// Assignment Targets - links assignments to cohorts or individual users
+export const assignmentTargets = sqliteTable(
+	"assignment_targets",
+	{
+		id: text("id").primaryKey(),
+		assignmentId: text("assignment_id")
+			.notNull()
+			.references(() => assignments.id, { onDelete: "cascade" }),
+		cohortId: text("cohort_id").references(() => cohorts.id, {
+			onDelete: "cascade",
+		}),
+		userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+		...timestamps,
+	},
+	(table) => [
+		index("assignment_targets_assignmentId_idx").on(table.assignmentId),
+		index("assignment_targets_cohortId_idx").on(table.cohortId),
+		index("assignment_targets_userId_idx").on(table.userId),
+	],
+);
+
+export const learnerMaps = sqliteTable(
+	"learner_maps",
+	{
+		id: text("id").primaryKey(),
+		assignmentId: text("assignment_id")
+			.notNull()
+			.references(() => assignments.id, { onDelete: "cascade" }),
+		goalMapId: text("goal_map_id")
+			.notNull()
+			.references(() => goalMaps.id, { onDelete: "cascade" }),
+		kitId: text("kit_id")
+			.notNull()
+			.references(() => kits.id, { onDelete: "cascade" }),
+		userId: text("user_id").notNull(),
+		nodes: text("nodes", { mode: "json" }),
+		edges: text("edges", { mode: "json" }),
+		controlText: text("control_text", { length: 100_000 }),
+		status: text("status", { enum: ["draft", "submitted", "graded"] })
+			.notNull()
+			.default("draft"),
+		attempt: integer("attempt").notNull().default(1),
+		submittedAt: integer("submitted_at", { mode: "timestamp_ms" }),
+		...timestamps,
+	},
+	(table) => [
+		index("learner_maps_assignmentId_idx").on(table.assignmentId),
+		index("learner_maps_goalMapId_idx").on(table.goalMapId),
+		index("learner_maps_kitId_idx").on(table.kitId),
+		index("learner_maps_userId_idx").on(table.userId),
+		unique("learner_maps_assignment_user_attempt_unique").on(
+			table.assignmentId,
+			table.userId,
+			table.attempt,
+		),
+	],
+);
+
+export const diagnoses = sqliteTable(
+	"diagnoses",
+	{
+		id: text("id").primaryKey(),
+		goalMapId: text("goal_map_id")
+			.notNull()
+			.references(() => goalMaps.id, { onDelete: "cascade" }),
+		learnerMapId: text("learner_map_id")
+			.notNull()
+			.references(() => learnerMaps.id, { onDelete: "cascade" }),
+		summary: text("summary"),
+		perLink: text("per_link", { mode: "json" }),
+		score: real("score"),
+		rubricVersion: text("rubric_version"),
+		...timestamps,
+	},
+	(table) => [
+		index("diagnoses_goalMapId_idx").on(table.goalMapId),
+		index("diagnoses_learnerMapId_idx").on(table.learnerMapId),
+	],
+);
+
+export const feedback = sqliteTable(
+	"feedback",
+	{
+		id: text("id").primaryKey(),
+		learnerMapId: text("learner_map_id")
+			.notNull()
+			.references(() => learnerMaps.id, { onDelete: "cascade" }),
+		goalMapId: text("goal_map_id")
+			.notNull()
+			.references(() => goalMaps.id, { onDelete: "cascade" }),
+		items: text("items", { mode: "json" }).notNull(),
+		visibility: text("visibility", { enum: ["private", "public"] })
+			.notNull()
+			.default("private"),
+		createdBy: text("created_by").notNull(),
+		...timestamps,
+	},
+	(table) => [
+		index("feedback_learnerMapId_idx").on(table.learnerMapId),
+		index("feedback_goalMapId_idx").on(table.goalMapId),
+	],
+);
+
+export const textsRelations = relations(texts, ({ many }) => ({
+	goalMaps: many(goalMaps),
+	kits: many(kits),
+}));
+
+export const topicsRelations = relations(topics, ({ many }) => ({
+	goalMaps: many(goalMaps),
+}));
+
+export const goalMapsRelations = relations(goalMaps, ({ one, many }) => ({
+	teacher: one(user, {
+		fields: [goalMaps.teacherId],
+		references: [user.id],
+	}),
+	text: one(texts, {
+		fields: [goalMaps.textId],
+		references: [texts.id],
+	}),
+	topic: one(topics, {
+		fields: [goalMaps.topicId],
+		references: [topics.id],
+	}),
+	kits: many(kits),
+	assignments: many(assignments),
+	learnerMaps: many(learnerMaps),
+	diagnoses: many(diagnoses),
+	feedback: many(feedback),
+}));
+
+export const kitsRelations = relations(kits, ({ one, many }) => ({
+	goalMap: one(goalMaps, {
+		fields: [kits.goalMapId],
+		references: [goalMaps.id],
+	}),
+	teacher: one(user, {
+		fields: [kits.teacherId],
+		references: [user.id],
+	}),
+	text: one(texts, {
+		fields: [kits.textId],
+		references: [texts.id],
+	}),
+	assignments: many(assignments),
+	learnerMaps: many(learnerMaps),
+}));
+
+export const assignmentsRelations = relations(assignments, ({ one, many }) => ({
+	goalMap: one(goalMaps, {
+		fields: [assignments.goalMapId],
+		references: [goalMaps.id],
+	}),
+	kit: one(kits, {
+		fields: [assignments.kitId],
+		references: [kits.id],
+	}),
+	creator: one(user, {
+		fields: [assignments.createdBy],
+		references: [user.id],
+	}),
+	targets: many(assignmentTargets),
+	learnerMaps: many(learnerMaps),
+}));
+
+export const assignmentTargetsRelations = relations(assignmentTargets, ({ one }) => ({
+	assignment: one(assignments, {
+		fields: [assignmentTargets.assignmentId],
+		references: [assignments.id],
+	}),
+	cohort: one(cohorts, {
+		fields: [assignmentTargets.cohortId],
+		references: [cohorts.id],
+	}),
+	user: one(user, {
+		fields: [assignmentTargets.userId],
+		references: [user.id],
+	}),
+}));
+
+export const learnerMapsRelations = relations(learnerMaps, ({ one, many }) => ({
+	assignment: one(assignments, {
+		fields: [learnerMaps.assignmentId],
+		references: [assignments.id],
+	}),
+	goalMap: one(goalMaps, {
+		fields: [learnerMaps.goalMapId],
+		references: [goalMaps.id],
+	}),
+	kit: one(kits, {
+		fields: [learnerMaps.kitId],
+		references: [kits.id],
+	}),
+	user: one(user, {
+		fields: [learnerMaps.userId],
+		references: [user.id],
+	}),
+	diagnoses: many(diagnoses),
+	feedback: many(feedback),
+}));
+
+export const diagnosesRelations = relations(diagnoses, ({ one }) => ({
+	goalMap: one(goalMaps, {
+		fields: [diagnoses.goalMapId],
+		references: [goalMaps.id],
+	}),
+	learnerMap: one(learnerMaps, {
+		fields: [diagnoses.learnerMapId],
+		references: [learnerMaps.id],
+	}),
+}));
+
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+	learnerMap: one(learnerMaps, {
+		fields: [feedback.learnerMapId],
+		references: [learnerMaps.id],
+	}),
+	goalMap: one(goalMaps, {
+		fields: [feedback.goalMapId],
+		references: [goalMaps.id],
+	}),
+}));
+
+export const forms = sqliteTable(
+	"forms",
+	{
+		id: text("id").primaryKey(),
+		title: text("title").notNull(),
+		description: text("description"),
+		type: text("type", {
+			enum: ["pre_test", "post_test", "delayed_test", "registration", "tam", "questionnaire"],
+		})
+			.notNull()
+			.default("registration"),
+		audience: text("audience", { enum: ["all", "experiment", "control"] })
+			.notNull()
+			.default("all"),
+		status: text("status", { enum: ["draft", "published"] })
+			.notNull()
+			.default("draft"),
+		readingMaterialSections: text("reading_material_sections", { mode: "json" }),
+		unlockConditions: text("unlock_conditions"),
+		createdBy: text("created_by").notNull(),
+		...timestamps,
+	},
+	(table) => [index("forms_createdBy_idx").on(table.createdBy)],
+);
+
+export const questions = sqliteTable(
+	"questions",
+	{
+		id: text("id").primaryKey(),
+		formId: text("form_id")
+			.notNull()
+			.references(() => forms.id, { onDelete: "cascade" }),
+		type: text("type", { enum: ["mcq", "likert", "text"] }).notNull(),
+		questionText: text("question_text").notNull(),
+		options: text("options", { mode: "json" }),
+		orderIndex: integer("order_index").notNull(),
+		required: integer("required", { mode: "boolean" }).notNull().default(true),
+		...timestamps,
+	},
+	(table) => [index("questions_formId_idx").on(table.formId)],
+);
+
+export const formResponses = sqliteTable(
+	"form_responses",
+	{
+		id: text("id").primaryKey(),
+		formId: text("form_id")
+			.notNull()
+			.references(() => forms.id, { onDelete: "cascade" }),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		answers: text("answers", { mode: "json" }).notNull(),
+		submittedAt: integer("submitted_at", { mode: "timestamp_ms" }),
+		timeSpentSeconds: integer("time_spent_seconds"),
+		...timestamps,
+	},
+	(table) => [
+		index("form_responses_formId_idx").on(table.formId),
+		index("form_responses_userId_idx").on(table.userId),
+		unique("form_responses_form_user_unique").on(table.formId, table.userId),
+	],
+);
+
+export const formProgress = sqliteTable(
+	"form_progress",
+	{
+		id: text("id").primaryKey(),
+		formId: text("form_id")
+			.notNull()
+			.references(() => forms.id, { onDelete: "cascade" }),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		status: text("status", { enum: ["locked", "available", "completed"] })
+			.notNull()
+			.default("locked"),
+		unlockedAt: integer("unlocked_at", { mode: "timestamp_ms" }),
+		completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+		...timestamps,
+	},
+	(table) => [
+		index("form_progress_formId_idx").on(table.formId),
+		index("form_progress_userId_idx").on(table.userId),
+	],
+);
+
+export const formProgressRelations = relations(formProgress, ({ one }) => ({
+	form: one(forms, {
+		fields: [formProgress.formId],
+		references: [forms.id],
+	}),
+	user: one(user, {
+		fields: [formProgress.userId],
+		references: [user.id],
+	}),
+}));

@@ -1,0 +1,101 @@
+import { useMemo } from "react";
+
+import { ErrorCard } from "@/components/ui/error-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRpcQuery } from "@/hooks/use-rpc-query";
+import { cn } from "@/lib/utils";
+import { AnalyticsRpc } from "@/server/rpc/analytics";
+
+import type { AssignmentAnalytics } from "../lib/analytics-service.shared";
+import { CanvasContent } from "./canvas-content";
+
+interface VisibilityState {
+	showGoalMap: boolean;
+	showLearnerMap: boolean;
+	showCorrectEdges: boolean;
+	showMissingEdges: boolean;
+	showExcessiveEdges: boolean;
+	showNeutralEdges: boolean;
+	consolidatedView: boolean;
+	showNamesOnHover: boolean;
+}
+
+interface AnalyticsCanvasWrapperProps {
+	selectedAssignmentId: string | null;
+	selectedLearnerMapIds: Set<string>;
+	analyticsData: AssignmentAnalytics | null;
+	visibility: VisibilityState;
+	allowNodeDragging?: boolean;
+	className?: string;
+}
+
+function CanvasSkeleton() {
+	return (
+		<div className="flex-1 h-full flex items-center justify-center">
+			<div className="flex flex-col items-center gap-4">
+				<Skeleton className="h-32 w-48 rounded-lg" />
+				<Skeleton className="h-4 w-32" />
+			</div>
+		</div>
+	);
+}
+
+export function AnalyticsCanvasWrapper({
+	selectedAssignmentId,
+	selectedLearnerMapIds,
+	analyticsData,
+	visibility,
+	allowNodeDragging = false,
+	className,
+}: AnalyticsCanvasWrapperProps) {
+	const learnerMapIds = useMemo(
+		() => Array.from(selectedLearnerMapIds).sort(),
+		[selectedLearnerMapIds],
+	);
+
+	const {
+		data: multipleLearnerMapDetails,
+		isLoading: multipleLearnerMapsLoading,
+		isRefetching: isRefetchingMultipleLearnerMaps,
+		rpcError: multipleLearnerMapsError,
+		refetch: refetchMultipleLearnerMaps,
+	} = useRpcQuery({
+		...AnalyticsRpc.getMultipleLearnerMaps(learnerMapIds),
+		enabled: selectedLearnerMapIds.size > 0,
+		placeholderData: (previousData) => previousData,
+		refetchOnWindowFocus: false,
+	});
+
+	if (multipleLearnerMapsError) {
+		return (
+			<div className="flex-1 m-3 rounded-md border-[0.5px]">
+				<ErrorCard
+					title="Failed to load learner maps"
+					description={multipleLearnerMapsError}
+					onRetry={() => refetchMultipleLearnerMaps()}
+					isRetrying={isRefetchingMultipleLearnerMaps}
+				/>
+			</div>
+		);
+	}
+
+	return (
+		<div className={cn("flex-1 m-3 rounded-md overflow-hidden", className)}>
+			{multipleLearnerMapsLoading &&
+			selectedLearnerMapIds.size > 0 &&
+			!multipleLearnerMapDetails ? (
+				<CanvasSkeleton />
+			) : (
+				<CanvasContent
+					selectedAssignmentId={selectedAssignmentId}
+					selectedLearnerMapIds={selectedLearnerMapIds}
+					analyticsData={analyticsData}
+					multipleLearnerMapDetails={multipleLearnerMapDetails ?? null}
+					isLoadingLearnerMaps={multipleLearnerMapsLoading}
+					visibility={visibility}
+					allowNodeDragging={allowNodeDragging}
+				/>
+			)}
+		</div>
+	);
+}

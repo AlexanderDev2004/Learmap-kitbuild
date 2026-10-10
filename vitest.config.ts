@@ -1,14 +1,30 @@
-import { defineConfig } from "vitest/config";
-import path from "node:path";
+import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-	resolve: {
-		alias: {
-			"@": path.resolve(__dirname, "./src"),
-		},
-	},
 	test: {
-		include: ["src/**/*.test.ts"],
-		environment: "node",
+		environment: "jsdom",
+		include: ["**/*.ignored"], // Don't run any tests by default - use test:ui or test:service
+		globals: true,
+		setupFiles: ["src/__tests__/setup/ui.ts"],
+		alias: {
+			"@": new URL("./src/", import.meta.url).pathname,
+			"cloudflare:workers": new URL(
+				"./src/__tests__/mocks/cloudflare-workers.ts",
+				import.meta.url,
+			).pathname,
+		},
+		coverage: {
+			provider: "v8",
+			reporter: ["text", "json", "html", "lcov"],
+			include: ["src/**/*.{ts,tsx}"],
+			exclude: [
+				"node_modules/",
+				"src/__tests__/",
+				"**/*.test.ts",
+				"**/*.test.tsx",
+				"**/*.d.ts",
+				"src/**/*.stories.tsx",
+			],
+		},
 	},
 });

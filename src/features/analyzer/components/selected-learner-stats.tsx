@@ -1,0 +1,47 @@
+import { cn } from "@/lib/utils";
+
+import type { LearnerAnalytics } from "../lib/analytics-service.shared";
+
+function LegendDot({ color }: { color: string }) {
+	return <span className="inline-block size-3 rounded-full" style={{ backgroundColor: color }} />;
+}
+
+interface SelectedLearnerStatsProps {
+	selectedLearners: LearnerAnalytics[];
+	className?: string;
+}
+
+export function SelectedLearnerStats({ selectedLearners, className }: SelectedLearnerStatsProps) {
+	if (selectedLearners.length === 0) return null;
+
+	return (
+		<div
+			className={cn(
+				"border-b-[0.5px] px-3 py-2 flex items-center justify-between gap-8 bg-muted/30",
+				className,
+			)}
+		>
+			<div className="text-sm font-medium">
+				{selectedLearners.length === 1
+					? selectedLearners[0]?.userName
+					: `${selectedLearners.length} learners selected`}
+			</div>
+			<div className="flex items-center gap-4 text-xs">
+				<div className="flex items-center gap-1.5">
+					<LegendDot color="var(--edge-correct)" />
+					<span>{selectedLearners.reduce((sum, l) => sum + l.correct, 0)} correct</span>
+				</div>
+				<div className="flex items-center gap-1.5">
+					<LegendDot color="var(--edge-missing)" />
+					<span>{selectedLearners.reduce((sum, l) => sum + l.missing, 0)} missing</span>
+				</div>
+				<div className="flex items-center gap-1.5">
+					<LegendDot color="var(--edge-excessive)" />
+					<span>
+						{selectedLearners.reduce((sum, l) => sum + l.excessive, 0)} excessive
+					</span>
+				</div>
+			</div>
+		</div>
+	);
+}

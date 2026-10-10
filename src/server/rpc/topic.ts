@@ -1,0 +1,91 @@
+import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
+import { Effect, Schema } from "effect";
+
+import {
+	deleteTopic,
+	listTopics,
+	createTopic,
+	CreateTopicInput,
+} from "@/features/analyzer/lib/topic-service";
+import { authMiddleware, requireRoleMiddleware } from "@/middlewares/auth";
+
+import { AppRuntime } from "../app-runtime";
+import {
+	Rpc,
+	TIMEOUT_DURATION,
+	logRpcError,
+	logAndReturnError,
+	logAndReturnDefect,
+} from "../rpc-helper";
+
+export const listTopicsRpc = createServerFn()
+	.middleware([authMiddleware])
+	.handler(() =>
+		AppRuntime.runPromise(
+			listTopics().pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("listTopics"),
+				Effect.tapError(logRpcError("listTopics")),
+				Effect.catchAll(logAndReturnError("listTopics")),
+				Effect.catchAllDefect(logAndReturnDefect("listTopics")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const deleteTopicRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) =>
+		Schema.decodeUnknownSync(Schema.Struct({ topicId: Schema.String }))(raw),
+	)
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			deleteTopic(data.topicId).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("deleteTopic"),
+				Effect.tapError(logRpcError("deleteTopic")),
+				Effect.catchAll(logAndReturnError("deleteTopic")),
+				Effect.catchAllDefect(logAndReturnDefect("deleteTopic")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const createTopicRpc = createServerFn({ method: "POST" })
+	.middleware([authMiddleware])
+	.inputValidator((raw) => Schema.decodeUnknownSync(CreateTopicInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			createTopic(data).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("createTopic"),
+				Effect.tapError(logRpcError("createTopic")),
+				Effect.catchAll(logAndReturnError("createTopic")),
+				Effect.catchAllDefect(logAndReturnDefect("createTopic")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const TopicRpc = {
+	topics: () => ["topics"],
+	listTopics: () =>
+		queryOptions({
+			queryKey: [...TopicRpc.topics()],
+			queryFn: () => listTopicsRpc(),
+		}),
+	createTopic: () =>
+		mutationOptions({
+			mutationKey: [...TopicRpc.topics()],
+			mutationFn: (data: CreateTopicInput) => createTopicRpc({ data }),
+		}),
+	deleteTopic: () =>
+		mutationOptions({
+			mutationKey: [...TopicRpc.topics(), "delete"],
+			mutationFn: (data: { topicId: string }) => deleteTopicRpc({ data }),
+		}),
+};

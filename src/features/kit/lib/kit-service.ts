@@ -1,0 +1,199 @@
+import { and, desc, eq, isNull } from "drizzle-orm";
+import { Effect, Schema } from "effect";
+
+import { GoalMapNotFoundError } from "@/lib/errors";
+import { safeParseJson } from "@/lib/utils";
+import { NonEmpty } from "@/lib/validation-schemas";
+import { Database } from "@/server/db/client";
+import { goalMaps, kits } from "@/server/db/schema/app-schema";
+
+/** Permissive schema for kit nodes - allows various node formats */
+const KitNodeSchema = Schema.Record({ key: Schema.String, value: Schema.Any }).pipe(
+	Schema.extend(Schema.Struct({ id: Schema.String })),
+);
+
+/** Permissive schema for kit edges */
+const KitEdgeSchema = Schema.Record({ key: Schema.String, value: Schema.Any }).pipe(
+	Schema.extend(
+		Schema.Struct({ id: Schema.String, source: Schema.String, target: Schema.String }),
+	),
+);
+
+export const GetKitInput = Schema.Struct({
+	goalMapId: NonEmpty("Goal map ID"),
+});
+
+export type GetKitInput = typeof GetKitInput.Type;
+
+export const GetKitStatusInput = Schema.Struct({
+	goalMapId: NonEmpty("Goal map ID"),
+});
+
+export type GetKitStatusInput = typeof GetKitStatusInput.Type;
+
+export const GenerateKitInput = Schema.Struct({
+	goalMapId: NonEmpty("Goal map ID"),
+	layout: Schema.optionalWith(Schema.Union(Schema.Literal("preset"), Schema.Literal("random")), {
+		nullable: true,
+	}),
+});
+
+export type GenerateKitInput = typeof GenerateKitInput.Type;
+
+export const listGoalMapsWithKits = Effect.fn("listGoalMapsWithKits")(function* () {
+	const db = yield* Database;
+	const rows = yield* db
+		.select({
+			goalMapId: goalMaps.id,
+			title: goalMaps.title,
+			description: goalMaps.description,
+			updatedAt: goalMaps.updatedAt,
+			teacherId: goalMaps.teacherId,
+		})
+		.from(goalMaps)
+		.leftJoin(kits, and(eq(kits.goalMapId, goalMaps.id), isNull(kits.deletedAt)))
+		.where(isNull(goalMaps.deletedAt))
+		.orderBy(desc(goalMaps.updatedAt));
+
+	return rows.map((row) => ({
+		goalMapId: row.goalMapId,
+		title: row.title,
+		description: row.description,
+		updatedAt: row.updatedAt?.getTime() ?? 0,
+		teacherId: row.teacherId,
+	}));
+});
+
+export const getKit = Effect.fn("getKit")(function* (input: GetKitInput) {
+	const db = yield* Database;
+	const rows = yield* db
+		.select({
+			goalMapId: goalMaps.id,
+			nodes: kits.nodes,
+			edges: kits.edges,
+		})
+		.from(kits)
+		.leftJoin(goalMaps, and(eq(kits.goalMapId, goalMaps.id), isNull(goalMaps.deletedAt)))
+		.where(and(eq(kits.goalMapId, input.goalMapId), isNull(kits.deletedAt)))
+		.limit(1);
+
+	const row = rows[0];
+	if (!row) return null;
+
+	const [nodes, edges] = yield* Effect.all(
+		[
+			safeParseJson(row.nodes, [], Schema.Array(KitNodeSchema)),
+			safeParseJson(row.edges, [], Schema.Array(KitEdgeSchema)),
+		],
+		{ concurrency: 10 },
+	);
+
+	return {
+		goalMapId: row.goalMapId,
+		nodes,
+		edges,
+	};
+});
+
+export const getKitStatus = Effect.fn("getKitStatus")(function* (input: GetKitStatusInput) {
+	const db = yield* Database;
+
+	const [kitRows, goalMapRows] = yield* Effect.all([
+		db
+			.select({
+				id: kits.id,
+				layout: kits.layout,
+				nodes: kits.nodes,
+				updatedAt: kits.updatedAt,
+			})
+			.from(kits)
+			.where(and(eq(kits.goalMapId, input.goalMapId), isNull(kits.deletedAt)))
+			.limit(1),
+		db
+			.select({ updatedAt: goalMaps.updatedAt })
+			.from(goalMaps)
+			.where(and(eq(goalMaps.id, input.goalMapId), isNull(goalMaps.deletedAt)))
+			.limit(1),
+	]);
+
+	const kit = kitRows[0];
+	const goalMap = goalMapRows[0];
+
+	const kitNodes = kit ? yield* safeParseJson(kit.nodes, [], Schema.Array(KitNodeSchema)) : [];
+	const nodeCount = kitNodes.filter((n) => n?.type === "text" || n?.type === "connector").length;
+	const kitUpdatedAt = kit?.updatedAt?.getTime() ?? null;
+	const goalMapUpdatedAt = goalMap?.updatedAt?.getTime() ?? null;
+
+	return {
+		exists: !!kit,
+		layout: kit?.layout ?? "preset",
+		nodeCount,
+		updatedAt: kitUpdatedAt,
+		isOutdated: kitUpdatedAt && goalMapUpdatedAt ? kitUpdatedAt < goalMapUpdatedAt : true,
+	};
+});
+
+export const generateKit = Effect.fn("generateKit")(function* (input: GenerateKitInput) {
+	const db = yield* Database;
+
+	const gmRows = yield* db
+		.select()
+		.from(goalMaps)
+		.where(and(eq(goalMaps.id, input.goalMapId), isNull(goalMaps.deletedAt)))
+		.limit(1);
+
+	const gm = gmRows[0];
+	if (!gm) {
+		return yield* new GoalMapNotFoundError({ goalMapId: input.goalMapId });
+	}
+
+	const nodes = Array.isArray(gm.nodes)
+		? gm.nodes
+		: typeof gm.nodes === "string"
+			? yield* safeParseJson(gm.nodes, [], Schema.Array(Schema.Any))
+			: [];
+
+	const kitNodes = nodes.filter((n) => {
+		if (typeof n !== "object" || n === null) return false;
+		const node = n as { type?: string };
+		return node.type === "text" || node.type === "connector";
+	});
+
+	const kitEdges: Array<Record<string, unknown>> = [];
+
+	const payload = {
+		id: input.goalMapId,
+		kitId: input.goalMapId,
+		name: gm.title,
+		goalMapId: input.goalMapId,
+		teacherId: gm.teacherId ?? "",
+		layout: input.layout ?? "preset",
+		nodes: JSON.stringify(kitNodes),
+		edges: JSON.stringify(kitEdges),
+		textId: gm.textId,
+	};
+
+	const existingRows = yield* db
+		.select({ id: kits.id })
+		.from(kits)
+		.where(and(eq(kits.goalMapId, input.goalMapId), isNull(kits.deletedAt)))
+		.limit(1);
+
+	const existing = existingRows[0];
+	if (existing) {
+		yield* db
+			.update(kits)
+			.set({
+				name: payload.name,
+				teacherId: payload.teacherId,
+				layout: payload.layout,
+				nodes: payload.nodes,
+				edges: payload.edges,
+				textId: payload.textId,
+			})
+			.where(and(eq(kits.goalMapId, input.goalMapId), isNull(kits.deletedAt)));
+	} else {
+		yield* db.insert(kits).values(payload);
+	}
+	return true;
+});

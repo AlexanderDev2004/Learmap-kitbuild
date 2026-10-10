@@ -1,0 +1,89 @@
+import { createRandomStringGenerator } from "@better-auth/utils/random";
+import { type ClassValue, clsx } from "clsx";
+import { Data, Effect, Schema } from "effect";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+	return twMerge(clsx(inputs));
+}
+
+const randomStringGenerator = createRandomStringGenerator("a-z", "A-Z", "0-9");
+
+export const randomString = (length = 32) => randomStringGenerator(length);
+
+export class ParseJsonError extends Data.TaggedError("ParseJsonError")<{
+	readonly message: string;
+}> {}
+
+export function parseJson<A = unknown>(input: unknown): Effect.Effect<A, ParseJsonError, never>;
+export function parseJson<S extends Schema.Schema<any, any, any>>(
+	input: unknown,
+	schema: S,
+): Effect.Effect<
+	Schema.Schema.Type<S>,
+	ParseJsonError | Schema.Schema.Encoded<S>,
+	Schema.Schema.Context<S>
+>;
+
+export function parseJson(
+	input: unknown,
+	schema?: Schema.Schema<any, any, any>,
+): Effect.Effect<any, any, any> {
+	return Effect.gen(function* () {
+		let parsed: unknown;
+		if (typeof input === "string") {
+			parsed = yield* Effect.try({
+				try: () => JSON.parse(input),
+				catch: () => new ParseJsonError({ message: "Invalid JSON string" }),
+			});
+		} else {
+			parsed = input;
+		}
+
+		if (schema) {
+			const result = yield* Schema.decodeUnknown(schema)(parsed);
+			return result;
+		}
+		return parsed;
+	});
+}
+
+export function safeParseJson<A = unknown>(
+	input: unknown,
+	defaultValue: A,
+): Effect.Effect<A, never, never>;
+
+export function safeParseJson<S extends Schema.Schema<any, any, any>>(
+	input: unknown,
+	defaultValue: Schema.Schema.Type<S>,
+	schema: S,
+): Effect.Effect<Schema.Schema.Type<S>, never, Schema.Schema.Context<S>>;
+
+export function safeParseJson<S extends Schema.Schema<any, any, any>>(
+	input: unknown,
+	defaultValue: unknown,
+	schema?: S,
+): Effect.Effect<unknown, never, Schema.Schema.Context<S>> {
+	const warn = (error: unknown) => {
+		const details =
+			error instanceof Error
+				? { message: error.message, stack: error.stack }
+				: { error: String(error) };
+		return Effect.logWarning("safeParseJson fell back to default value", details).pipe(
+			Effect.annotateLogs({ defaultValue: String(defaultValue).slice(0, 100) }),
+		);
+	};
+
+	const withFallback = <A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, never, R> =>
+		effect.pipe(
+			Effect.tapError(warn),
+			Effect.orElse(() => Effect.succeed(defaultValue as A)),
+		);
+
+	return schema ? withFallback(parseJson(input, schema)) : withFallback(parseJson(input));
+}
+
+export function roundToDecimals(value: number, decimals: number): number {
+	const factor = 10 ** decimals;
+	return Math.round(value * factor) / factor;
+}

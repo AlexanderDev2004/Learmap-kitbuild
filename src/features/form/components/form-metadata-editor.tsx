@@ -1,0 +1,215 @@
+import type * as React from "react";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
+export type FormType = "pre_test" | "post_test" | "delayed_test" | "registration" | "questionnaire";
+export type FormAudience = "all" | "experiment" | "control";
+export type FormStatus = "draft" | "published";
+
+export interface FormMetadata {
+	title: string;
+	description: string | null;
+	type: FormType;
+	audience: FormAudience;
+	status: FormStatus;
+}
+
+interface FormMetadataEditorProps {
+	metadata: FormMetadata;
+	onChange: (metadata: FormMetadata) => void;
+	disabled?: boolean;
+}
+
+const formTypeLabels: Record<FormType, string> = {
+	pre_test: "Pre-Test",
+	post_test: "Post-Test",
+	delayed_test: "Delayed-Test",
+	registration: "Registration",
+
+	questionnaire: "Questionnaire",
+};
+
+const formTypeValues = Object.keys(formTypeLabels) as FormType[];
+
+const formTypeDescriptions: Record<FormType, string> = {
+	pre_test: "Assessment before content access",
+	post_test: "Assessment after assignment completion",
+	delayed_test: "Assessment of memory retention (typically 1 week later)",
+	registration: "Initial user registration form",
+
+	questionnaire: "General questionnaire visible to all students",
+};
+
+const audienceLabels: Record<FormAudience, string> = {
+	all: "All students",
+	experiment: "Experiment group",
+	control: "Control group",
+};
+
+const audienceDescriptions: Record<FormAudience, string> = {
+	all: "Visible to everyone",
+	experiment: "Only visible to experiment group",
+	control: "Only visible to control group",
+};
+
+export function FormMetadataEditor({
+	metadata,
+	onChange,
+	disabled = false,
+}: FormMetadataEditorProps) {
+	const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		onChange({ ...metadata, title: e.target.value });
+	};
+
+	const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+		onChange({ ...metadata, description: e.target.value || null });
+	};
+
+	const handleTypeChange = (value: string) => {
+		const nextType = value as FormType;
+		onChange({
+			...metadata,
+			type: nextType,
+			audience: nextType === "questionnaire" ? metadata.audience : "all",
+		});
+	};
+
+	const handleAudienceChange = (value: string) => {
+		onChange({ ...metadata, audience: value as FormAudience });
+	};
+
+	const handleStatusChange = (value: string) => {
+		onChange({ ...metadata, status: value as FormStatus });
+	};
+
+	return (
+		<div className="space-y-6" data-testid="form-metadata-editor">
+			<div className="space-y-2">
+				<Label htmlFor="form-title">
+					Form Title <span className="text-destructive">*</span>
+				</Label>
+				<Input
+					id="form-title"
+					data-testid="form-title-input"
+					value={metadata.title}
+					onChange={handleTitleChange}
+					placeholder="Enter form title"
+					disabled={disabled}
+					aria-required="true"
+				/>
+			</div>
+
+			<div className="space-y-2">
+				<Label htmlFor="form-description">Description</Label>
+				<Textarea
+					id="form-description"
+					data-testid="form-description-input"
+					value={metadata.description ?? ""}
+					onChange={handleDescriptionChange}
+					placeholder="Enter form description (optional)"
+					disabled={disabled}
+					rows={3}
+				/>
+			</div>
+
+			<div className="space-y-2">
+				<Label htmlFor="form-type">Form Type</Label>
+				<Select value={metadata.type} onValueChange={handleTypeChange} disabled={disabled}>
+					<SelectTrigger id="form-type" data-testid="form-type-select" className="w-full">
+						<SelectValue placeholder="Select form type">
+							{formTypeLabels[metadata.type]}
+						</SelectValue>
+					</SelectTrigger>
+					<SelectContent>
+						{formTypeValues.map((type) => (
+							<SelectItem key={type} value={type}>
+								<div className="flex flex-col text-left">
+									<span>{formTypeLabels[type]}</span>
+									<span className="text-xs text-muted-foreground">
+										{formTypeDescriptions[type]}
+									</span>
+								</div>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
+
+			<div className="space-y-2">
+				<Label htmlFor="form-audience">Visibility</Label>
+				<Select
+					value={metadata.audience}
+					onValueChange={handleAudienceChange}
+					disabled={disabled || metadata.type !== "questionnaire"}
+				>
+					<SelectTrigger
+						id="form-audience"
+						data-testid="form-audience-select"
+						className="w-full"
+					>
+						<SelectValue placeholder="Select visibility">
+							{audienceLabels[metadata.audience]}
+						</SelectValue>
+					</SelectTrigger>
+					<SelectContent>
+						{(Object.keys(audienceLabels) as FormAudience[]).map((audience) => (
+							<SelectItem key={audience} value={audience}>
+								<div className="flex flex-col text-left">
+									<span>{audienceLabels[audience]}</span>
+									<span className="text-xs text-muted-foreground">
+										{audienceDescriptions[audience]}
+									</span>
+								</div>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				{metadata.type !== "questionnaire" && (
+					<p className="text-xs text-muted-foreground">
+						Tests are visible to all students.
+					</p>
+				)}
+			</div>
+
+			<div className="space-y-2">
+				<Label htmlFor="form-status">Status</Label>
+				<Select
+					value={metadata.status}
+					onValueChange={handleStatusChange}
+					disabled={disabled}
+				>
+					<SelectTrigger
+						id="form-status"
+						data-testid="form-status-select"
+						className="w-full"
+					>
+						<SelectValue placeholder="Select status" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="draft">
+							<div className="flex items-center gap-2">
+								<span className="size-2 rounded-full bg-warning" />
+								Draft
+							</div>
+						</SelectItem>
+						<SelectItem value="published">
+							<div className="flex items-center gap-2">
+								<span className="size-2 rounded-full bg-success" />
+								Published
+							</div>
+						</SelectItem>
+					</SelectContent>
+				</Select>
+			</div>
+		</div>
+	);
+}

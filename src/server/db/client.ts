@@ -1,22 +1,56 @@
-import { createClient } from "@libsql/client";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { drizzle } from "drizzle-orm/libsql";
+import * as SqliteDrizzle from "@effect/sql-drizzle/Sqlite";
+import { LibsqlClient } from "@effect/sql-libsql";
+import { Config, ConfigProvider, Effect, Layer } from "effect";
 
-import * as schema from "./schema";
+import { ServerConfig } from "@/config";
 
-const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(moduleDir, "../../..");
+const SqlRemote = Layer.unwrapEffect(
+	Effect.gen(function* () {
+		const config = yield* ServerConfig;
+		return LibsqlClient.layer({
+			url: config.databaseUrl,
+			authToken: config.dbAuthToken,
+			concurrency: 10,
+		});
+	}),
+);
 
-function resolveDatabaseUrl(raw: string): string {
-	if (!raw.startsWith("file:") || raw.startsWith("file:/")) return raw;
-	// Path relatif (file:./x.db) diselesaikan terhadap root project, bukan cwd proses.
-	return `file:${path.resolve(projectRoot, raw.slice("file:".length))}`;
-}
+const SqlLocal = Layer.unwrapEffect(
+	Effect.gen(function* () {
+		const databaseUrl = yield* Config.string("TURSO_DATABASE_URL");
+		// @libsql/client requires a scheme on the URL. Accept both `file:...`
+		// and bare paths (normalized to `file:` URLs).
+		const url = /^[A-Za-z][A-Za-z.+-]*:/.test(databaseUrl)
+			? databaseUrl
+			: `file:${databaseUrl}`;
+		return LibsqlClient.layer({ url });
+	}).pipe(Effect.withConfigProvider(ConfigProvider.fromEnv())),
+);
 
-export const DATABASE_URL = resolveDatabaseUrl(process.env.DATABASE_URL ?? "file:./data/learnmap.db");
+const SqlTest = LibsqlClient.layer({
+	url: "file:test.db",
+});
 
-export const client = createClient({ url: DATABASE_URL });
-export const db = drizzle(client, { schema });
+const SqlLive = Layer.unwrapEffect(
+	Effect.gen(function* () {
+		const mode = yield* Config.string("DATABASE_MODE").pipe(
+			Effect.orElseSucceed(() => "remote"),
+			Effect.withConfigProvider(ConfigProvider.fromEnv()),
+		);
+		if (mode === "local") {
+			yield* Effect.log("Using local SQLite database");
+			return SqlLocal;
+		}
+		yield* Effect.log("Using remote Turso database");
+		// Libsql client handles connection internally, no layer-level retry needed
+		return SqlRemote;
+	}),
+);
 
-export type Database = typeof db;
+const DrizzleLive = SqliteDrizzle.layer.pipe(Layer.provide(SqlLive));
+const DrizzleTest = SqliteDrizzle.layer.pipe(Layer.provide(SqlTest));
+
+export const DatabaseLive = Layer.mergeAll(SqlLive, DrizzleLive);
+export const DatabaseTest = Layer.mergeAll(SqlTest, DrizzleTest);
+
+export const Database = SqliteDrizzle.SqliteDrizzle;

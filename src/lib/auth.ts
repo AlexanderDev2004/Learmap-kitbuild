@@ -1,0 +1,150 @@
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { admin } from "better-auth/plugins";
+import { tanstackStartCookies } from "better-auth/tanstack-start";
+import { Effect, Schema } from "effect";
+
+import { ServerConfig } from "@/config";
+import { ac, roles } from "@/lib/auth-permissions";
+import { Database } from "@/server/db/client";
+import * as appSchema from "@/server/db/schema/app-schema";
+import * as authSchema from "@/server/db/schema/auth-schema";
+
+export class Auth extends Effect.Service<Auth>()("Auth", {
+	effect: Effect.gen(function* () {
+		const config = yield* ServerConfig;
+		const db = yield* Database;
+
+		return betterAuth({
+			baseURL: config.siteUrl,
+			trustedOrigins: [config.siteUrl, "http://localhost:5173", "http://localhost:5174"],
+			database: drizzleAdapter(db, {
+				provider: "sqlite",
+				schema: {
+					...authSchema,
+					...appSchema,
+				},
+			}),
+			plugins: [
+				admin({
+					defaultRole: "student",
+					ac,
+					roles,
+				}),
+				tanstackStartCookies(), // needs to be last
+			],
+			emailAndPassword: {
+				enabled: true,
+				requireEmailVerification: false,
+			},
+			user: {
+				additionalFields: {
+					age: {
+						type: "number",
+						required: false,
+					},
+					jlptLevel: {
+						type: "string",
+						required: false,
+					},
+					japaneseLearningDuration: {
+						type: "number",
+						required: false,
+					},
+					previousJapaneseScore: {
+						type: "number",
+						required: false,
+					},
+					mediaConsumption: {
+						type: "number",
+						required: false,
+					},
+					motivation: {
+						type: "string",
+						required: false,
+					},
+					studentId: {
+						type: "string",
+						required: false,
+					},
+					studyGroup: {
+						type: "string",
+						required: false,
+					},
+					consentGiven: {
+						type: "boolean",
+						required: false,
+					},
+				},
+			},
+			logger: { disabled: false },
+		});
+	}),
+}) {}
+
+export const Role = Schema.Literal("teacher", "admin", "student").annotations({
+	message: (issue) => ({
+		message: `Invalid role: ${JSON.stringify(issue.actual)}`,
+		override: true,
+	}),
+});
+
+export const AuthUser = Schema.Struct({
+	id: Schema.String,
+	role: Schema.optionalWith(Role, { default: () => "student" }),
+	email: Schema.optionalWith(Schema.String, { nullable: true }),
+	name: Schema.optionalWith(Schema.String, { nullable: true }),
+	studentId: Schema.optionalWith(Schema.String, { nullable: true }),
+	image: Schema.optionalWith(Schema.String, { nullable: true }),
+	age: Schema.optionalWith(Schema.Number, { nullable: true }),
+	jlptLevel: Schema.optionalWith(
+		Schema.Union(Schema.Literal("N5", "N4", "N3", "N2", "N1", "None")),
+		{ nullable: true },
+	),
+	japaneseLearningDuration: Schema.optionalWith(Schema.Number, {
+		nullable: true,
+	}),
+	previousJapaneseScore: Schema.optionalWith(Schema.Number, { nullable: true }),
+	mediaConsumption: Schema.optionalWith(Schema.Number, { nullable: true }),
+	motivation: Schema.optionalWith(Schema.String, { nullable: true }),
+	studyGroup: Schema.optionalWith(Schema.Union(Schema.Literal("experiment", "control")), {
+		nullable: true,
+	}),
+	consentGiven: Schema.optionalWith(Schema.Boolean, { nullable: true }),
+});
+
+const TRANSIENT_AUTH_PATTERNS = [
+	"session expired",
+	"token expired",
+	"invalid token signature",
+	"session not found",
+] as const;
+
+function isTransientAuthError(message: string): boolean {
+	const lower = message.toLowerCase();
+	return TRANSIENT_AUTH_PATTERNS.some((p) => lower.includes(p));
+}
+
+export const getServerUser = Effect.fn("getServerUser")(function* (headers: Headers) {
+	const auth = yield* Auth;
+	const session = yield* Effect.tryPromise(() => auth.api.getSession({ headers })).pipe(
+		Effect.catchTag("UnknownException", (e) => {
+			const message = e instanceof Error ? e.message : String(e);
+
+			if (!isTransientAuthError(message)) {
+				return Effect.logError("Unexpected auth error", {
+					message,
+					error: e,
+				}).pipe(Effect.andThen(Effect.fail(e)));
+			}
+
+			return Effect.logWarning("Session verification failed, treating as unauthenticated", {
+				message,
+			}).pipe(Effect.andThen(Effect.succeed(null)));
+		}),
+	);
+	if (!session) return null;
+
+	const user = yield* Schema.decodeUnknown(AuthUser)(session.user);
+	return user;
+});

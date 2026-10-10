@@ -1,0 +1,84 @@
+import { Type, AlertCircle, CheckCircle2 } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+
+export interface WordCountValidatorProps {
+	wordCount: number;
+	minWordCount?: number;
+	maxWordCount?: number;
+	showLabels?: boolean;
+	className?: string;
+}
+
+export function WordCountValidator({
+	wordCount,
+	minWordCount,
+	maxWordCount,
+	showLabels = true,
+	className,
+}: WordCountValidatorProps) {
+	const isBelowMinimum =
+		minWordCount !== undefined && minWordCount > 0 && wordCount < minWordCount;
+	const isAboveMaximum = maxWordCount !== undefined && wordCount > maxWordCount;
+
+	const wordLabel = wordCount !== 1 ? "words" : "word";
+
+	const getStatus = () => {
+		if (isAboveMaximum) {
+			return {
+				icon: AlertCircle,
+				iconClassName: "text-destructive",
+				textClassName: "text-destructive",
+				message: maxWordCount
+					? `${wordCount} / ${maxWordCount} ${wordLabel} (exceeds maximum)`
+					: `${wordCount} ${wordLabel} (exceeds maximum)`,
+			};
+		}
+		if (isBelowMinimum) {
+			return {
+				icon: AlertCircle,
+				iconClassName: "text-warning",
+				textClassName: "text-warning",
+				message: minWordCount
+					? `${wordCount} / ${minWordCount} ${wordLabel} minimum`
+					: `${wordCount} ${wordLabel}`,
+			};
+		}
+		return {
+			icon: CheckCircle2,
+			iconClassName: "text-success",
+			textClassName: "text-success",
+			message: `${wordCount} ${wordLabel}`,
+		};
+	};
+
+	const status = getStatus();
+	const StatusIcon = status.icon;
+
+	return (
+		<div
+			className={cn("flex items-center gap-2 text-sm", className)}
+			data-testid="word-count-validator"
+		>
+			<Type className="size-4 text-muted-foreground" />
+			<span
+				className={cn("font-medium", status.textClassName)}
+				data-testid="word-count-message"
+			>
+				<StatusIcon className={cn("mr-1 inline size-4", status.iconClassName)} />
+				{status.message}
+			</span>
+			{showLabels && minWordCount !== undefined && minWordCount > 0 && (
+				<span className="text-xs text-muted-foreground" data-testid="min-word-label">
+					Minimum {minWordCount} words required
+				</span>
+			)}
+		</div>
+	);
+}
+
+export function countWords(text: string): number {
+	const trimmed = text.trim();
+	if (!trimmed) return 0;
+	return trimmed.split(/\s+/).length;
+}

@@ -1,0 +1,78 @@
+import { Effect, Schema } from "effect";
+
+import { NonEmpty } from "@/lib/validation-schemas";
+import { StorageService } from "@/server/storage/storage-service";
+
+class InvalidFileTypeError extends Schema.TaggedError<InvalidFileTypeError>()(
+	"InvalidFileTypeError",
+	{
+		type: Schema.String,
+		allowed: Schema.Array(Schema.String),
+	},
+) {}
+
+class FileTooLargeError extends Schema.TaggedError<FileTooLargeError>()("FileTooLargeError", {
+	size: Schema.Number,
+	maxSize: Schema.Number,
+}) {}
+
+export const UploadMaterialImageInput = Schema.Struct({
+	goalMapId: NonEmpty("Goal map ID"),
+	file: Schema.instanceOf(File),
+});
+
+export type UploadMaterialImageInput = typeof UploadMaterialImageInput.Type;
+
+export const uploadMaterialImage = Effect.fn("uploadMaterialImage")(function* (
+	input: UploadMaterialImageInput,
+) {
+	const allowedTypes = [
+		"image/png",
+		"image/jpeg",
+		"image/jpg",
+		"image/gif",
+		"image/webp",
+		"image/svg+xml",
+	];
+
+	yield* Effect.succeed(input.file.type).pipe(
+		Effect.filterOrFail(
+			(type) => allowedTypes.includes(type),
+			() =>
+				InvalidFileTypeError.make({
+					type: input.file.type,
+					allowed: allowedTypes,
+				}),
+		),
+	);
+
+	const fileMaxSize = 5 * 1024 * 1024;
+	yield* Effect.succeed(input.file.size).pipe(
+		Effect.filterOrFail(
+			(size) => size <= fileMaxSize,
+			() =>
+				FileTooLargeError.make({
+					size: input.file.size,
+					maxSize: fileMaxSize,
+				}),
+		),
+	);
+
+	const imageId = crypto.randomUUID();
+	const key = `materials/${input.goalMapId}/${imageId}`;
+
+	const arrayBuffer = yield* Effect.tryPromise(() => input.file.arrayBuffer());
+	const storage = yield* StorageService;
+	yield* storage.put(key, arrayBuffer, input.file.type);
+
+	const publicUrl = `/api/materials/images/${input.goalMapId}/${imageId}`;
+
+	return {
+		id: imageId,
+		url: publicUrl,
+		name: input.file.name,
+		size: input.file.size,
+		type: input.file.type,
+		uploadedAt: Date.now(),
+	};
+});

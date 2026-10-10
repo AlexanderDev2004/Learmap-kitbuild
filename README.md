@@ -1,110 +1,236 @@
 # LearnMap
 
-Platform eksperimen **Kit-Build Concept Map** untuk penelitian skripsi: **membandingkan dua model segmentasi peta konsep**
+A modern reimplementation of the [KitBuild Concept Map](https://collab.kit-build.net/) platform using contemporary web technologies. Originally built as part of a bachelor thesis.
 
-## Fokus Penelitian
+---
 
-| Model | Deskripsi |
-| --- | --- |
-| **A — Segmentasi Paragraf** | Peta konsep dibagi mengikuti struktur paragraf materi pembelajaran. Setiap konsep ditandai nomor paragrafnya; simpul link mengikuti paragraf konsep tujuannya. |
-| **B — Segmentasi Depth Topik** | Peta konsep dibagi berdasarkan kedalaman hierarki topik: konsep umum (akar) → konsep yang lebih spesifik, satu segmen per level kedalaman. |
+## What is LearnMap?
 
-Landasan teori: **Segmenting Principle (Mayer)** yang dioperasikan pada peta konsep menurut **Schneider et al. (2021)** — segmentasi yang bermakna dan koheren dapat mengurangi beban kognitif dan meningkatkan hasil belajar.
+LearnMap is a modern, researcher-friendly reimplementation of the KitBuild Concept Map platform originally developed by the [Learning Engineering Laboratory at Hiroshima University](https://lel.main.jp/kb/).
+
+The original system (operational since 2009) pioneered automatic diagnosis of concept maps for formative assessment. This reimplementation aims to:
+
+- Provide a cleaner, more accessible interface for researchers and educators. Everything is managed in a single place: pre-test, post-test, delayed-test, questionnaires — no external platforms like Google Forms needed.
+- Run on modern web infrastructure (Cloudflare Workers + Turso/LibSQL). No VPS required to deploy.
+
+All core assessment methods — automatic map diagnosis, kit generation algorithms, feedback frameworks — come directly from the original KitBuild research. This reimplementation **does not** introduce new pedagogical approaches; it reimplements the proven ones in a more maintainable, extensible form. All credits belong to the original researchers.
+
+---
+
+## About KitBuild
+
+KitBuild is a pedagogical approach developed by Tsukasa Hirashima and colleagues at Hiroshima University. The original system has been used across 1700+ institutions worldwide for:
+
+- Automatic diagnosis of student understanding through concept map reconstruction
+- Formative assessment in large classroom settings
+- Visualizing gaps between instructor expectations and student comprehension
+
+### Original System
+
+- Live System: [collab.kit-build.net](https://collab.kit-build.net/)
+- Homepage: [lel.main.jp/kb](https://lel.main.jp/kb)
+
+### Foundational Research
+
+The KitBuild methodology is backed by extensive peer-reviewed research:
+
+| Paper                                                                                                                                   | Authors             | Year |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---- |
+| [Framework of Kit-Build Concept Map for Automatic Diagnosis](https://telrp.springeropen.com/articles/10.1186/s41039-015-0018-9)         | Hirashima et al.    | 2015 |
+| [The Practical Use of Kit-Build Concept Map on Formative Assessment](https://telrp.springeropen.com/articles/10.1186/s41039-017-0060-x) | Pailai et al.       | 2017 |
+| [Collaborative Concept Mapping with Reciprocal Kit-Build](https://link.springer.com/article/10.1186/s41039-020-00136-6)                 | Hayashi & Hirashima | 2020 |
+| [Evaluating the Kit-Build Process Using Sub-Map Scoring](https://rptel.apsce.net/index.php/RPTEL/article/view/2024-19021)               | Rismanto et al.     | 2024 |
+
+---
+
+## How It Works
+
+The KitBuild method follows a 4-step cycle:
+
+1. Goal Map: Instructor creates an expert concept map showing correct relationships
+2. Kit Generation: System disassembles the goal map into components (concepts + links)
+3. Reconstruction: Students rebuild the map from the kit, demonstrating their understanding
+4. Automatic Diagnosis: System compares student maps against the goal map and identifies misconceptions
+
+This approach reduces cognitive load on students (no need to invent terminology) while giving instructors precise, actionable data about understanding gaps.
+
+---
+
+## Research Focus
+
+LearnMap is built for a thesis experiment comparing **two segmentation models** for Kit-Build concept maps:
+
+| Model                    | Description                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Paragraph Segmentation   | The concept map is segmented following the paragraph structure of the learning material.                   |
+| Depth-Topic Segmentation | The concept map is segmented following topic hierarchy depth (general concepts toward more specific ones). |
+
+Grounded in segmentation theory (Schneider et al., 2021), which applies Mayer's Segmenting Principle to concept maps: meaningful, coherent segmentation can reduce cognitive load and improve learning outcomes.
+
+**Measured variables:** pretest, posttest, map score (learner map vs goal map match), completion time, and student perception questionnaire. Sub-Map Scoring (SMS) and build-order analysis are deliberately **not** used.
+
+---
 
 ## Features
 
-LearnMap mengimplementasikan ulang alur kerja KitBuild dengan tooling modern, disesuaikan untuk fokus penelitian segmentasi:
+LearnMap reimplements the core KitBuild workflow with modern tooling:
 
-| Feature | Description |
-| --- | --- |
-| **Concept Map Editor** | Editor visual goal map: tambah/hapus/edit konsep & link (klik simpul → panel Hapus), sambungkan relasi dengan drag dari handle simpul, klik relasi untuk menghapusnya, tombol **Auto Layout** (dagre, kiri→kanan), penandaan nomor paragraf per konsep, serta pratinjau hasil kedua model segmentasi sebelum dipakai. |
-| **Automatic Kit Generation** | Goal map dibongkar otomatis menjadi kit siswa dan dibagi per segmen sesuai model kelompok (Paragraf / Depth Topik); kit disajikan bertahap lewat tombol "Kit berikutnya". |
-| **Map Diagnosis** | Perbandingan otomatis Learner Map vs Goal Map berbasis proposisi konsep–link–konsep (cocok via label): benar / missing / excessive + Map Score. |
-| **Extended Assessments** | Pretest & posttest pilihan ganda (dinilai otomatis) serta kuesioner persepsi skala Likert 1–5 — semuanya di dalam aplikasi, tanpa Google Forms. |
-| **Assignment Management** | Batas waktu membangun peta per eksperimen (dengan hitung mundur & auto-submit), penetapan kelompok A/B otomatis yang seimbang, draf peta tersimpan otomatis, dan fase yang terkunci urut. |
-| **Research Dashboard** | Ringkasan per kelompok (rata-rata pretest/posttest/Map Score/waktu/gain), tabel per partisipan, dialog **detail diagnosis** berisi render peta siswa + daftar proposisi missing & excessive, dan ekspor CSV untuk analisis statistik. |
+| Feature                  | Description                                                                 |
+| ------------------------ | --------------------------------------------------------------------------- |
+| Concept Map Editor       | Visual editor for creating goal maps with bi-directional/multi-link support |
+| Automatic Kit Generation | Disassembles goal maps into student-ready activity kits                     |
+| Map Diagnosis            | Automatic comparison of learner maps against goal maps                      |
+| Extended Assessments     | Quiz builder for MCQ, text, and Likert-scale questions (research extension) |
+| Assignment Management    | Deadlines, time limits, access controls                                     |
+| Research Dashboard       | Analytics and exportable data for research analysis                         |
+| Feedback System          | Targeted feedback based on diagnosis results                                |
 
-Yang **sengaja tidak** diimplementasikan (batasan penelitian): Sub-Map Scoring (SMS) dan analisis urutan pengerjaan.
+---
 
-## Pengukuran (sesuai batasan penelitian)
-
-Yang diukur:
-
-1. **Pretest** — pilihan ganda, dinilai otomatis.
-2. **Posttest** — pilihan ganda, dinilai otomatis.
-3. **Map Score** — kesesuaian Learner Map dengan Goal Map (diagnosis otomatis proposisi konsep–link–konsep, cocok via label).
-4. **Waktu Pengerjaan** — durasi tiap fase dicatat server (pretest, membaca materi, membangun peta, posttest, kuesioner).
-5. **Kuesioner** — persepsi siswa, skala Likert 1–5.
-
-Yang **tidak** digunakan:
-
-- Sub-Map Scoring (SMS)
-- Analisis urutan pengerjaan
-
-## Alur Siswa
-
-```
-Pretest → Baca Materi → Bangun Peta (kit per segmen) → Posttest → Kuesioner
-```
-
-- Kelompok (A/B) ditetapkan otomatis secara seimbang saat siswa memulai sesi.
-- Kit disajikan bertahap per segmen; siswa menyusun relasi **Konsep → Link → Konsep** (sambungan lain ditolak editor).
-- Batas waktu membangun peta dapat diatur per eksperimen; auto-submit saat waktu habis.
-- Draf peta tersimpan otomatis; diagnosis dihitung saat submit.
-
-## Alur Peneliti
-
-1. **Materi** — tulis materi, paragraf dipisah baris kosong.
-2. **Goal Map** — editor canvas: tambah konsep/link, tandai paragraf tiap konsep, sambungkan relasi, pratinjau hasil kedua model segmentasi sebelum dipakai.
-3. **Eksperimen** — pilih goal map, tulis soal pretest/posttest (`pertanyaan | opsiA | opsiB | ... | kunci` satu baris per soal) dan butir kuesioner, atur batas waktu.
-4. **Hasil** — ringkasan per kelompok (rata-rata pretest, posttest, map score, waktu, gain) + tabel per partisipan + **ekspor CSV** untuk analisis statistik.
-
-## Tech Stack
-
-- **Frontend**: React 19 + TypeScript, TanStack Router + React Query, XYFlow (canvas peta konsep), Tailwind CSS 4, Vite.
-- **Backend**: Hono (Node), SQLite via Drizzle ORM + libsql.
-- **Engine riset** (`src/server/lib/`):
-  - `segmentation.ts` — dua model segmentasi + validasi cakupan simpul.
-  - `comparator.ts` — diagnosis peta (proposisi tripel, cocok via label, dedupe, score = benar/total).
-
-## Menjalankan
+## Quick Start (Development)
 
 ```bash
-npm install
-npm run db:migrate     # buat tabel
-npm run db:seed        # data contoh + akun
-npm run dev            # API di :3210 + web di :5199
+# Install dependencies
+vp install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your credentials
+
+# Push database schema
+vpx drizzle-kit push
+
+# Start development server
+vp dev
 ```
 
-Akun contoh (dari seed):
+Visit http://localhost:5173
 
-| Role | Username | Password |
-| --- | --- | --- |
-| Peneliti | `peneliti` | `peneliti123` |
-| Siswa | `siswa1` … `siswa3` | `siswa123` |
+This project is using these tech stack, so check their respective documentations for further information:
 
-Perintah lain: `npm test` (unit test engine segmentasi & comparator), `npm run typecheck`, `npm run build` (frontend), `npm run db:reset` (hapus + migrasi + seed ulang).
+- [Tanstack Start](https://tanstack.com/start/latest)
+- [Vite+](https://viteplus.dev)
+- [Drizzle](https://orm.drizzle.team/)
+- [TailwindCSS](https://tailwindcss.com/)
+- [Effect](https://effect.website)
 
-## Struktur
+---
 
+## Deploying to Cloudflare Workers
+
+### Prerequisites
+
+- [Cloudflare account](https://dash.cloudflare.com/sign-up)
+- [Turso database](https://turso.tech) (SQLite at the edge)
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) authenticated
+
+### 1. Create Turso Database
+
+```bash
+# Install Turso CLI
+curl -sSfL https://get.tur.so/install.sh | bash
+turso auth login
+
+# Create database
+turso db create kitbuild
+
+# Get connection details
+turso db show kitbuild --url
+turso db tokens create kitbuild
 ```
-src/
-├── shared/types.ts            # tipe domain bersama
-├── server/
-│   ├── lib/
-│   │   ├── segmentation.ts    # engine 2 model segmentasi
-│   │   ├── comparator.ts      # map scoring (diagnosis KitBuild)
-│   │   └── auth.ts            # session + hash password
-│   ├── db/                    # schema Drizzle + migrasi
-│   └── routes/                # auth, catalog, experiments, participations, results
-├── features/                  # UI per domain (auth, material, goal-map, experiment, session)
-└── components/                # shell + primitives UI
-scripts/seed.ts                # data contoh riset
-drizzle/                       # migrasi SQL
+
+### 2. Configure Environment
+
+Create `.env`:
+
+```bash
+DATABASE_MODE=remote
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=your-turso-token
+BETTER_AUTH_SECRET=your-random-secret-min-32-chars
+BETTER_AUTH_URL=https://your-domain.com
+SITE_URL=https://your-domain.com
+VITE_SENTRY_DSN=https://your-sentry-dsn  # optional
 ```
 
-## Catatan Implementasi Segmentasi
+### 3. Configure Wrangler
 
-- **Paragraf**: konsep wajib ditandai nomor paragraf (dieditor goal map). Link mengikuti paragraf konsep tujuan sehingga proposisi selesai pada segmen tempat konsep kedua dibahas; sisi lintas segmen tidak ikut kit mana pun.
-- **Depth**: kedalaman dihitung via BFS dari akar (konsep tanpa jalur masuk); link mengikuti kedalaman terkecil konsep tetangganya. Struktur siklik/terputus masuk segmen akhir.
-- Kedua engine menjamin setiap simpul masuk tepat satu segmen (divalidasi + unit test).
+Edit `wrangler.json`:
+
+```json
+{
+	"name": "kitbuild",
+	"compatibility_date": "2025-09-02",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "@tanstack/react-start/server-entry",
+	"r2_buckets": [
+		{
+			"binding": "MATERIAL_IMAGES",
+			"bucket_name": "kitbuild-materials"
+		}
+	]
+}
+```
+
+### 4. Create R2 Bucket & Deploy
+
+```bash
+# Create storage bucket
+wrangler r2 bucket create kitbuild-materials
+
+# Wipe local SQLite db file, then rerun migrations
+vp run db:wipe
+vp run db:migrate
+
+# Wipe remote Turso DB, then rerun migrations
+vp run db:wipe --force
+vp run db:migrate
+
+# Push database schema (remote Turso)
+export DATABASE_MODE=remote
+export TURSO_DATABASE_URL=libsql://your-db.turso.io
+export TURSO_AUTH_TOKEN=your-turso-token
+vpx drizzle-kit push
+
+# Deploy
+vp run deploy
+```
+
+### Environment Reference
+
+| Variable             | Type       | Purpose                                   |
+| -------------------- | ---------- | ----------------------------------------- |
+| `DATABASE_MODE`      | env        | `remote` (Turso) or `local` (SQLite file) |
+| `TURSO_DATABASE_URL` | env        | Database connection string                |
+| `TURSO_AUTH_TOKEN`   | secret     | Turso authentication                      |
+| `BETTER_AUTH_SECRET` | secret     | Session signing key (32+ chars)           |
+| `BETTER_AUTH_URL`    | env        | Auth callback URL                         |
+| `SITE_URL`           | env        | Canonical site URL                        |
+| `MATERIAL_IMAGES`    | R2 binding | Image storage bucket                      |
+
+---
+
+## Deploying with Docker (self-hosted)
+
+Prefer to run KitBuild on your own server instead of Cloudflare Workers? The Docker image builds the app for a **Bun runtime** and serves it as a regular HTTP server with a local SQLite database and on-disk image storage.
+
+```bash
+cp .env.example .env        # then set DATABASE_MODE=local, TURSO_DATABASE_URL=file:/app/data/kitbuild.sqlite
+vp run docker:up            # build + start (migrations run automatically)
+# → open http://localhost:3000
+```
+
+Full instructions — including the production setup, environment reference, persistence, and backups — are in [docs/docker.md](docs/docker.md).
+
+---
+
+## Attribution
+
+- Original research and algorithms: Tsukasa Hirashima and colleagues
+- Original system: [collab.kit-build.net](https://collab.kit-build.net/)
+
+If you use KitBuild for research, please cite the original KitBuild papers to acknowledge the foundational work.
+
+## License
+
+See [LICENSE](./LICENSE)

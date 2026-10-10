@@ -1,0 +1,28 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "learnmap",
+	"compatibility_date": "2026-01-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"workers_dev": true,
+	"preview_urls": true,
+	"observability": {
+		"logs": {
+			"enabled": true,
+			"invocation_logs": false
+		}
+	},
+	"main": "./src/server.ts",
+	"vars": {
+		"VITE_SENTRY_DSN": "https://5823410ade9efac97ee0a2281bb49bae@o4505224747352064.ingest.us.sentry.io/4510510883012608",
+		"VITE_APP_URL": "https://learnmap.example.com",
+		"BETTER_AUTH_URL": "https://learnmap.example.com",
+		"SITE_URL": "https://learnmap.example.com",
+		"TURSO_DATABASE_URL": "libsql://learnmap-YOUR.turso.io"
+	},
+	"r2_buckets": [
+		{
+			"binding": "MATERIAL_IMAGES",
+			"bucket_name": "learnmap-materials"
+		}
+	]
+}

@@ -1,10 +1,16 @@
 import { defineConfig } from "drizzle-kit";
 
+const isLocal =
+	process.env.DATABASE_MODE === "local" || process.env.TURSO_DATABASE_URL?.startsWith("file:");
+
 export default defineConfig({
-	dialect: "sqlite",
-	schema: "./src/server/db/schema.ts",
+	schema: "./src/server/db/schema/*",
 	out: "./drizzle",
-	dbCredentials: {
-		url: process.env.DATABASE_URL ?? "file:./data/learnmap.db",
-	},
+	dialect: isLocal ? "sqlite" : "turso",
+	dbCredentials: isLocal
+		? { url: process.env.TURSO_DATABASE_URL as string }
+		: {
+				url: process.env.TURSO_DATABASE_URL as string,
+				authToken: process.env.TURSO_AUTH_TOKEN,
+			},
 });
