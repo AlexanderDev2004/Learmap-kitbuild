@@ -49,6 +49,12 @@ export function LoginPage() {
 							{login.isPending ? "Memproses..." : "Masuk"}
 						</Button>
 					</form>
+					<p className="text-center text-sm text-slate-500">
+						Belum punya akun?{" "}
+						<a href="/register" className="font-medium text-blue-600 hover:underline">
+							Daftar siswa baru
+						</a>
+					</p>
 				</CardBody>
 			</Card>
 		</div>

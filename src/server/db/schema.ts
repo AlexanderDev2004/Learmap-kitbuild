@@ -11,6 +11,14 @@ export const users = sqliteTable("users", {
 	name: text("name").notNull(),
 	passwordHash: text("password_hash").notNull(),
 	role: text("role", { enum: ["peneliti", "siswa"] }).notNull(),
+	/** Kelas siswa (mis. "XI-A"); null untuk peneliti. */
+	className: text("class_name"),
+	/** Jurusan siswa (mis. "IPA"); null untuk peneliti. */
+	major: text("major"),
+	/** pending = menunggu ACC, active = disetujui. Akun peneliti selalu active. */
+	status: text("status", { enum: ["pending", "active", "rejected"] })
+		.notNull()
+		.default("active"),
 	createdAt,
 });
 

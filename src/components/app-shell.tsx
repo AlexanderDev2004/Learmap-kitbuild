@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { FlaskConical, LogOut, Map, ScrollText } from "lucide-react";
+import { FlaskConical, LogOut, Map, ScrollText, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Role } from "@/shared/types";
 
@@ -12,6 +12,7 @@ const navItems: { to: string; label: string; icon: typeof Map; roles: Role[] }[]
 	{ to: "/materi", label: "Materi", icon: ScrollText, roles: ["peneliti"] },
 	{ to: "/goal-map", label: "Goal Map", icon: Map, roles: ["peneliti"] },
 	{ to: "/eksperimen", label: "Eksperimen", icon: FlaskConical, roles: ["peneliti"] },
+	{ to: "/pengguna", label: "Pengguna", icon: Users, roles: ["peneliti"] },
 	{ to: "/sesi", label: "Sesi Saya", icon: FlaskConical, roles: ["siswa"] },
 ];
 

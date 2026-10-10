@@ -11,6 +11,8 @@ import type { ReactNode } from "react";
 
 import type { SessionUserLike } from "@/features/auth/types";
 import { LoginPage } from "@/features/auth/login-page";
+import { RegisterPage } from "@/features/auth/register-page";
+import { UsersPage } from "@/features/user/users-page";
 import { AppShell } from "@/components/app-shell";
 import { MaterialsPage } from "@/features/material/materials-page";
 import { GoalMapsPage } from "@/features/goal-map/goal-maps-page";
@@ -62,6 +64,12 @@ const loginRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/login",
 	component: LoginPage,
+});
+
+const registerRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/register",
+	component: RegisterPage,
 });
 
 const layoutRoute = createRoute({
@@ -126,6 +134,16 @@ const experimentDetailRoute = createRoute({
 	),
 });
 
+const usersRoute = createRoute({
+	getParentRoute: () => layoutRoute,
+	path: "/pengguna",
+	component: () => (
+		<Protected role="peneliti">
+			<UsersPage />
+		</Protected>
+	),
+});
+
 const sessionsRoute = createRoute({
 	getParentRoute: () => layoutRoute,
 	path: "/sesi",
@@ -148,6 +166,7 @@ const sessionWizardRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
 	loginRoute,
+	registerRoute,
 	layoutRoute.addChildren([
 		homeRoute,
 		materiRoute,
@@ -155,6 +174,7 @@ const routeTree = rootRoute.addChildren([
 		goalMapEditorRoute,
 		experimentsRoute,
 		experimentDetailRoute,
+		usersRoute,
 		sessionsRoute,
 		sessionWizardRoute,
 	]),

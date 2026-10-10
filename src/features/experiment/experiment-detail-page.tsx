@@ -5,12 +5,14 @@ import { useMemo, useState } from "react";
 
 import type { SegmentModel } from "@/shared/types";
 import { api } from "@/lib/api";
-import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Spinner } from "@/components/ui";
+import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Field, Spinner } from "@/components/ui";
 import { DiagnosisDetailDialog } from "./diagnosis-detail-dialog";
 
 interface ResultRow {
 	participationId: string;
 	studentName: string;
+	studentClass: string | null;
+	studentMajor: string | null;
 	segmentModel: SegmentModel;
 	phase: string;
 	pretestScore: number | null;
@@ -94,9 +96,18 @@ function GainText({ group }: { group: ResultRow[] }) {
 
 export function ExperimentDetailPage() {
 	const { id } = useParams({ from: "/layout/eksperimen/$id" });
+	const [classFilter, setClassFilter] = useState("");
 	const results = useQuery({
-		queryKey: ["results", id],
-		queryFn: () => api.get<ResultRow[]>(`/results?experimentId=${id}`),
+		queryKey: ["results", id, classFilter],
+		queryFn: () => {
+			const suffix = classFilter ? `&class=${encodeURIComponent(classFilter)}` : "";
+			return api.get<ResultRow[]>(`/results?experimentId=${id}${suffix}`);
+		},
+	});
+	const classes = useQuery({
+		queryKey: ["user-classes"],
+		queryFn: () => api.get<{ classes: string[] }>("/users?role=siswa"),
+		enabled: true,
 	});
 
 	const rows = results.data ?? [];
@@ -120,14 +131,32 @@ export function ExperimentDetailPage() {
 					</a>
 					<h1 className="text-xl font-bold">Hasil Eksperimen</h1>
 				</div>
-				{hasData ? (
-					<a href={`/api/results/export?experimentId=${id}`} className="no-underline">
-						<Button variant="outline">
-							<Download className="size-4" />
-							Ekspor CSV
-						</Button>
-					</a>
-				) : null}
+				<div className="flex items-center gap-3">
+					{hasData ? (
+						<Field label="Filter kelas">
+							<select
+								className="h-9 rounded-lg border border-slate-300 px-2 text-sm"
+								value={classFilter}
+								onChange={(e) => setClassFilter(e.target.value)}
+							>
+								<option value="">Semua kelas</option>
+								{(classes.data?.classes ?? []).map((className) => (
+									<option key={className} value={className}>
+										{className}
+									</option>
+								))}
+							</select>
+						</Field>
+					) : null}
+					{hasData ? (
+						<a href={`/api/results/export?experimentId=${id}${classFilter ? `&class=${encodeURIComponent(classFilter)}` : ""}`} className="no-underline">
+							<Button variant="outline">
+								<Download className="size-4" />
+								Ekspor CSV
+							</Button>
+						</a>
+					) : null}
+				</div>
 			</div>
 
 			{results.isPending ? <Spinner /> : null}
@@ -146,6 +175,7 @@ export function ExperimentDetailPage() {
 								<thead>
 									<tr className="border-b border-slate-200 text-left text-xs text-slate-500">
 										<th className="px-4 py-2">Siswa</th>
+										<th className="px-4 py-2">Kelas</th>
 										<th className="px-4 py-2">Kelompok</th>
 										<th className="px-4 py-2">Fase</th>
 										<th className="px-4 py-2">Pretest</th>
@@ -163,6 +193,7 @@ export function ExperimentDetailPage() {
 									{sorted.map((row) => (
 										<tr key={row.participationId} className="border-b border-slate-100 last:border-0">
 											<td className="px-4 py-2 font-medium">{row.studentName}</td>
+											<td className="px-4 py-2 text-slate-500">{row.studentClass ?? "—"}{row.studentMajor ? ` · ${row.studentMajor}` : ""}</td>
 											<td className="px-4 py-2">
 												<Badge tone={row.segmentModel === "paragraph" ? "blue" : "green"}>
 													{row.segmentModel === "paragraph" ? "Paragraf" : "Depth"}
