@@ -77,6 +77,30 @@ export const DEMO_STUDENTS: DemoStudent[] = [
 		motivation: "Anime and Japanese culture",
 		studyGroup: "experiment",
 	},
+	{
+		email: "sari@kitbuild.mail",
+		name: "Sari",
+		studentId: "STD-002",
+		age: 17,
+		jlptLevel: "None",
+		japaneseLearningDuration: 0,
+		previousJapaneseScore: 0,
+		mediaConsumption: 10,
+		motivation: "Biology and natural sciences",
+		studyGroup: "experiment",
+	},
+	{
+		email: "rudi@kitbuild.mail",
+		name: "Rudi",
+		studentId: "STD-003",
+		age: 17,
+		jlptLevel: "None",
+		japaneseLearningDuration: 0,
+		previousJapaneseScore: 0,
+		mediaConsumption: 20,
+		motivation: "Science experiments",
+		studyGroup: "control",
+	},
 ];
 
 export const DEMO_STUDENT_EMAILS = DEMO_STUDENTS.map((s) => s.email);

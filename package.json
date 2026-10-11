@@ -18,6 +18,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:seed": "tsx --env-file=.env scripts/seed/index.ts",
+		"db:seed:fotosintesis": "tsx --env-file=.env scripts/seed/photosynthesis.ts",
 		"db:seed:wri": "tsx --env-file=.env scripts/seed/wri-2026.ts",
 		"db:reset": "tsx --env-file=.env scripts/seed/reset.ts",
 		"db:reset:full": "tsx --env-file=.env scripts/seed/reset.ts full",
