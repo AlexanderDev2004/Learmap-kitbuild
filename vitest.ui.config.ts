@@ -1,13 +1,15 @@
+import { fileURLToPath } from "node:url";
+
 import { defineConfig } from "vite-plus";
 
 const baseConfig = {
 	environment: "jsdom",
 	alias: {
-		"@": new URL("./src/", import.meta.url).pathname,
-		"cloudflare:workers": new URL(
-			"./src/__tests__/mocks/cloudflare-workers.ts",
-			import.meta.url,
-		).pathname,
+		// fileURLToPath (not `.pathname`) so this works on Windows too.
+		"@": fileURLToPath(new URL("./src/", import.meta.url)),
+		"cloudflare:workers": fileURLToPath(
+			new URL("./src/__tests__/mocks/cloudflare-workers.ts", import.meta.url),
+		),
 	},
 	globals: true,
 };

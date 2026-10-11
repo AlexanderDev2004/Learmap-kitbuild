@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 
@@ -40,7 +41,9 @@ function parseFrontmatter(content: string): ParsedMaterial {
 }
 
 function loadMaterials(): MaterialData[] {
-	const materialsDir = new URL(".", import.meta.url).pathname;
+	// fileURLToPath (not `.pathname`) so this works on Windows too, where a
+	// file URL pathname is "/D:/..." instead of "D:\...".
+	const materialsDir = fileURLToPath(new URL(".", import.meta.url));
 	const files = readdirSync(materialsDir)
 		.filter((f) => f.startsWith("material-") && f.endsWith(".md"))
 		.sort();

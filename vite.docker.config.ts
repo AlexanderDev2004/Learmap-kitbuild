@@ -2,6 +2,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
 import { defineConfig, type PluginOption } from "vite-plus";
 
 /**
@@ -18,14 +19,16 @@ export default defineConfig({
 	resolve: {
 		conditions: ["development", "module", "browser", "default"],
 		alias: {
-			"@": new URL("./src/", import.meta.url).pathname,
+			// fileURLToPath (not `.pathname`) so this works on Windows too.
+			"@": fileURLToPath(new URL("./src/", import.meta.url)),
 			// The `@libsql/client` web build (selected by the workerd/browser
 			// conditions) only speaks libsql:/wss:/https: — it cannot open local
 			// SQLite files. The Docker deployment runs on Bun/Node, so force the
 			// node build, which supports `file:` URLs via the native binding.
 			"@libsql/client": "@libsql/client/node",
-			"cloudflare:workers": new URL("./docker/shims/cloudflare-workers.ts", import.meta.url)
-				.pathname,
+			"cloudflare:workers": fileURLToPath(
+				new URL("./docker/shims/cloudflare-workers.ts", import.meta.url),
+			),
 		},
 	},
 	build: {

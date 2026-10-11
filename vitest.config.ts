@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -7,11 +9,11 @@ export default defineConfig({
 		globals: true,
 		setupFiles: ["src/__tests__/setup/ui.ts"],
 		alias: {
-			"@": new URL("./src/", import.meta.url).pathname,
-			"cloudflare:workers": new URL(
-				"./src/__tests__/mocks/cloudflare-workers.ts",
-				import.meta.url,
-			).pathname,
+			// fileURLToPath (not `.pathname`) so this works on Windows too.
+			"@": fileURLToPath(new URL("./src/", import.meta.url)),
+			"cloudflare:workers": fileURLToPath(
+				new URL("./src/__tests__/mocks/cloudflare-workers.ts", import.meta.url),
+			),
 		},
 		coverage: {
 			provider: "v8",
