@@ -38,10 +38,12 @@ type UserDetailSheetProps = {
 	onUnban: (userId: string) => void;
 	onDelete: (userId: string) => void;
 	onRoleChange: (userId: string, role: string) => void;
+	onSetPassword: (userId: string, newPassword: string) => void;
 	isAdmin: boolean;
 	currentUserId: string;
 	isSaving?: boolean;
 	isDeleting?: boolean;
+	isSettingPassword?: boolean;
 };
 
 export function UserDetailSheet({
@@ -53,15 +55,20 @@ export function UserDetailSheet({
 	onUnban,
 	onDelete,
 	onRoleChange,
+	onSetPassword,
 	isAdmin,
 	currentUserId,
 	isSaving,
 	isDeleting,
+	isSettingPassword,
 }: UserDetailSheetProps) {
 	const [formData, setFormData] = useState<Partial<UpdateUserInput>>({});
 	const [banReason, setBanReason] = useState("");
 	const [showBanInput, setShowBanInput] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [passwordOpen, setPasswordOpen] = useState(false);
+	const [newPassword, setNewPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
 
 	useEffect(() => {
 		if (user) {
@@ -80,6 +87,9 @@ export function UserDetailSheet({
 		}
 		setBanReason("");
 		setShowBanInput(false);
+		setPasswordOpen(false);
+		setNewPassword("");
+		setConfirmPassword("");
 	}, [user]);
 
 	if (!user) return null;
@@ -102,6 +112,17 @@ export function UserDetailSheet({
 			setShowBanInput(false);
 			setBanReason("");
 		}
+	};
+
+	const passwordValid =
+		newPassword.length >= 8 && newPassword === confirmPassword;
+
+	const handleSetPassword = () => {
+		if (!passwordValid) return;
+		onSetPassword(user.id, newPassword);
+		setPasswordOpen(false);
+		setNewPassword("");
+		setConfirmPassword("");
 	};
 
 	return (
@@ -272,6 +293,20 @@ export function UserDetailSheet({
 						</div>
 					</div>
 
+					{/* Account Actions */}
+					<div className="space-y-4 border-t pt-4">
+						<h3 className="text-sm font-medium text-muted-foreground">
+							Account Actions
+						</h3>
+						<Button
+							variant="outline"
+							onClick={() => setPasswordOpen(true)}
+							disabled={isSettingPassword}
+						>
+							Set Password
+						</Button>
+					</div>
+
 					{/* Admin Actions */}
 					{canBan && (
 						<div className="space-y-4 border-t pt-4">
@@ -355,6 +390,58 @@ export function UserDetailSheet({
 							disabled={isDeleting}
 						>
 							Delete
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={passwordOpen} onOpenChange={setPasswordOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Set New Password</DialogTitle>
+						<DialogDescription>
+							Replace this user's password with a new one. Minimum 8 characters.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="newPassword">New Password</Label>
+							<Input
+								id="newPassword"
+								type="password"
+								value={newPassword}
+								onChange={(e) => setNewPassword(e.target.value)}
+								placeholder="At least 8 characters"
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="confirmNewPassword">Confirm Password</Label>
+							<Input
+								id="confirmNewPassword"
+								type="password"
+								value={confirmPassword}
+								onChange={(e) => setConfirmPassword(e.target.value)}
+								placeholder="Repeat the new password"
+							/>
+						</div>
+						{newPassword.length > 0 && newPassword.length < 8 && (
+							<p className="text-sm text-destructive">
+								Password must be at least 8 characters
+							</p>
+						)}
+						{confirmPassword.length > 0 && newPassword !== confirmPassword && (
+							<p className="text-sm text-destructive">Passwords do not match</p>
+						)}
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setPasswordOpen(false)}>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleSetPassword}
+							disabled={!passwordValid || isSettingPassword}
+						>
+							{isSettingPassword ? "Saving..." : "Save Password"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

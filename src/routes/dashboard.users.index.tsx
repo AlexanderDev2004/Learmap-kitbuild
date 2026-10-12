@@ -93,6 +93,12 @@ function UsersPage() {
 		successMessage: "User unbanned successfully",
 	});
 
+	const setPasswordMutation = useRpcMutation(UserRpc.setUserPassword(), {
+		operation: "set user credential",
+		showSuccess: true,
+		successMessage: "Password updated successfully",
+	});
+
 	const bulkCohortMutation = useRpcMutation(UserRpc.bulkAssignCohort(), {
 		operation: "bulk assign cohort",
 		showSuccess: true,
@@ -140,6 +146,10 @@ function UsersPage() {
 
 	const handleUnban = (userId: string) => {
 		unbanMutation.mutate({ userId }, { onSuccess: invalidateUsers });
+	};
+
+	const handleSetPassword = (userId: string, newPassword: string) => {
+		setPasswordMutation.mutate({ userId, newPassword });
 	};
 
 	const handleBulkAction = (action: "assign" | "ban") => {
@@ -241,10 +251,12 @@ function UsersPage() {
 					onUnban={handleUnban}
 					onRoleChange={handleRoleChange}
 					onDelete={handleDelete}
+					onSetPassword={handleSetPassword}
 					isAdmin={isAdmin}
 					currentUserId={currentUserId}
 					isSaving={updateMutation.isPending}
 					isDeleting={deleteUserMutation.isPending}
+					isSettingPassword={setPasswordMutation.isPending}
 				/>
 
 				<BulkCohortDialog

@@ -82,6 +82,18 @@ export class CohortNotFoundError extends Data.TaggedError("CohortNotFoundError")
 	cohortId: string;
 }> {}
 
+export const SetUserPasswordInput = Schema.Struct({
+	userId: NonEmpty("User ID"),
+	newPassword: Schema.String.pipe(
+		Schema.filter((password) => password.length >= 8, {
+			message: () => "Password must be at least 8 characters",
+		}),
+	),
+});
+
+export type SetUserPasswordInput = typeof SetUserPasswordInput.Type;
+
+
 export const UpdateRoleInput = Schema.Struct({
 	userId: Schema.String,
 	role: Role,

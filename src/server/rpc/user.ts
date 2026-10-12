@@ -5,6 +5,7 @@ import { Effect, Schema } from "effect";
 import {
 	deleteUser,
 	createUserByAdmin,
+	setUserPassword,
 	updateUser,
 	updateUserRole,
 	banUser,
@@ -21,12 +22,13 @@ import {
 	CohortIdInput,
 	CreateCohortInput,
 	CreateUserInput,
+	SetUserPasswordInput,
 	UpdateCohortInput,
 	UpdateRoleInput,
 	UpdateUserInput,
 	UserFilterInput,
 } from "@/features/user/lib/user-service.shared";
-import { requireRoleMiddleware } from "@/middlewares/auth";
+import { requireRoleMiddleware, requireRoleWithHeadersMiddleware } from "@/middlewares/auth";
 
 import { AppRuntime } from "../app-runtime";
 import {
@@ -124,6 +126,26 @@ export const updateUserRpc = createServerFn({ method: "POST" })
 				}),
 				Effect.catchAll(logAndReturnError("updateUser")),
 				Effect.catchAllDefect(logAndReturnDefect("updateUser")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const setUserPasswordRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleWithHeadersMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(SetUserPasswordInput)(raw))
+	.handler(({ data, context }) =>
+		AppRuntime.runPromise(
+			setUserPassword(data, context.headers).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("setUserPassword"),
+				Effect.tapError(logRpcError("setUserPassword")),
+				Effect.catchTags({
+					UserNotFoundError: () => Rpc.notFound("User"),
+				}),
+				Effect.catchAll(logAndReturnError("setUserPassword")),
+				Effect.catchAllDefect(logAndReturnDefect("setUserPassword")),
 				Effect.timeout(TIMEOUT_DURATION),
 				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
 			),
@@ -322,6 +344,11 @@ export const UserRpc = {
 			mutationKey: [...UserRpc.users(), "update"],
 			mutationFn: (data: { userId: string; data: UpdateUserInput }) =>
 				updateUserRpc({ data }),
+		}),
+	setUserPassword: () =>
+		mutationOptions({
+			mutationKey: [...UserRpc.users(), "setCredential"],
+			mutationFn: (data: SetUserPasswordInput) => setUserPasswordRpc({ data }),
 		}),
 	updateUserRole: () =>
 		mutationOptions({

@@ -22,6 +22,7 @@ import {
 	type UpdateCohortInput,
 	type UpdateRoleInput,
 	type UpdateUserInput,
+	type SetUserPasswordInput,
 } from "./user-service.shared";
 
 // Create a user account on behalf of someone else. Uses Better Auth's admin
@@ -117,6 +118,45 @@ export const updateUser = Effect.fn("updateUser")(
 			yield* db.update(user).set(updateData).where(eq(user.id, userId));
 
 			return yield* getUserById(userId);
+		}),
+);
+
+// Replace a user's password on their behalf (admin/teacher action). Delegates
+// to Better Auth's admin plugin so the hash and account table stay consistent;
+// it does not create or touch any session. The acting user's request headers
+// must be forwarded so the admin endpoint can resolve their session.
+export const setUserPassword = Effect.fn("setUserPassword")(
+	(data: SetUserPasswordInput, headers: Headers) =>
+		Effect.gen(function* () {
+			const db = yield* Database;
+			const authService = yield* Auth;
+
+			const existingRows = yield* db
+				.select({ id: user.id })
+				.from(user)
+				.where(and(eq(user.id, data.userId), isNull(user.deletedAt)))
+				.limit(1);
+
+			if (existingRows.length === 0) {
+				return yield* new UserNotFoundError({ userId: data.userId });
+			}
+
+			yield* Effect.tryPromise({
+				try: () =>
+					authService.api.setUserPassword({
+						body: {
+							newPassword: data.newPassword,
+							userId: data.userId,
+						},
+						headers,
+					}),
+				catch: (error) => {
+					console.error(`Failed to set new credential for user ${data.userId}:`, error);
+					return new UserNotFoundError({ userId: data.userId });
+				},
+			});
+
+			return yield* getUserById(data.userId);
 		}),
 );
 

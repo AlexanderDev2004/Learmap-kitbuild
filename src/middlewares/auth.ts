@@ -44,3 +44,18 @@ export const requireRoleMiddleware = (...roles: string[]) =>
 
 			return next({ context });
 		});
+
+/** Same as requireRoleMiddleware but also exposes the request Headers in
+ * context, for handlers that must forward them to Better Auth's admin API. */
+export const requireRoleWithHeadersMiddleware = (...roles: string[]) =>
+	createMiddleware()
+		.middleware([authMiddleware])
+		.server(async ({ next, context, request }) => {
+			await AppRuntime.runPromise(
+				requireAnyRole(context.user.id, roles).pipe(
+					Effect.mapError((e) => new Error(e.message)),
+				),
+			);
+
+			return next({ context: { ...context, headers: request.headers } });
+		});
