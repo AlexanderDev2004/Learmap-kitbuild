@@ -23,6 +23,14 @@ export const CreateTopicInput = Schema.Struct({
 
 export type CreateTopicInput = typeof CreateTopicInput.Type;
 
+export const UpdateTopicInput = Schema.Struct({
+	topicId: NonEmpty("Topic ID"),
+	title: NonEmpty("Title"),
+	description: Schema.optionalWith(NonEmpty("Description"), { nullable: true }),
+});
+
+export type UpdateTopicInput = typeof UpdateTopicInput.Type;
+
 export const listTopics = Effect.fn("listTopics")(function* () {
 	const db = yield* Database;
 	const rows = yield* db
@@ -55,5 +63,17 @@ export const deleteTopic = Effect.fn("deleteTopic")(function* (topicId: string) 
 		.update(topics)
 		.set({ deletedAt: new Date() })
 		.where(and(eq(topics.id, topicId), isNull(topics.deletedAt)));
+	return true;
+});
+
+export const updateTopic = Effect.fn("updateTopic")(function* (data: UpdateTopicInput) {
+	const db = yield* Database;
+	yield* db
+		.update(topics)
+		.set({
+			title: data.title,
+			description: data.description ?? null,
+		})
+		.where(and(eq(topics.id, data.topicId), isNull(topics.deletedAt)));
 	return true;
 });

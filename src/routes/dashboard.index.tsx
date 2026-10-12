@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewTopicDialog } from "@/features/analyzer/components/new-topic-dialog";
+import { TopicActions } from "@/features/analyzer/components/topic-actions";
 import type { Topic } from "@/features/analyzer/lib/topic-service";
 import { Guard } from "@/features/auth/components/Guard";
 import { GoalMapCard } from "@/features/goal-map/components/goal-map-card";
@@ -28,6 +29,9 @@ function DashboardPage() {
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [goalMapToDelete, setGoalMapToDelete] = useState<string | null>(null);
 	const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+	// Which topic's edit / delete dialog is open (one at a time).
+	const [topicEditId, setTopicEditId] = useState<string | null>(null);
+	const [topicDeleteId, setTopicDeleteId] = useState<string | null>(null);
 
 	const {
 		data: topicsData,
@@ -65,6 +69,18 @@ function DashboardPage() {
 
 	const error = topicsError || goalMapsError;
 
+	const handleTopicDeleted = (topicId: string) => {
+		setTopicDeleteId(null);
+		if (selectedTopic?.id === topicId) setSelectedTopic(null);
+		// Refresh the topic list everywhere it is queried.
+		void queryClient.invalidateQueries({ queryKey: TopicRpc.topics() });
+	};
+
+	const handleTopicUpdated = () => {
+		setTopicEditId(null);
+		void queryClient.invalidateQueries({ queryKey: TopicRpc.topics() });
+	};
+
 	const handleDelete = (goalMapId: string) => {
 		setGoalMapToDelete(goalMapId);
 		setDeleteConfirmOpen(true);
@@ -95,31 +111,53 @@ function DashboardPage() {
 								</div>
 							))
 						: topics.map((topic) => (
-								<button
-									type="button"
-									key={topic.id}
-									onClick={() => setSelectedTopic(topic)}
-									className={cn(
-										"cursor-pointer interactive w-full text-left px-4 py-2 rounded-lg hover:bg-primary/20 bg-transparent text-foreground",
-										selectedTopic?.id === topic.id
-											? "bg-primary hover:bg-primary text-white"
-											: "",
-									)}
-								>
-									<span className="font-medium">{topic.title}</span>
-									{topic.description && (
-										<p
-											className={cn(
-												"text-sm mt-0.5 line-clamp-1",
-												selectedTopic?.id === topic.id
-													? "text-white/70"
-													: "text-muted-foreground",
-											)}
-										>
-											{topic.description}
-										</p>
-									)}
-								</button>
+								<div key={topic.id} className="group relative">
+									<button
+										type="button"
+										onClick={() => setSelectedTopic(topic)}
+										className={cn(
+											"cursor-pointer interactive w-full text-left px-4 py-2 pr-16 rounded-lg hover:bg-primary/20 bg-transparent text-foreground",
+											selectedTopic?.id === topic.id
+												? "bg-primary hover:bg-primary text-white"
+												: "",
+										)}
+									>
+										<span className="font-medium">{topic.title}</span>
+										{topic.description && (
+											<p
+												className={cn(
+													"text-sm mt-0.5 line-clamp-1",
+													selectedTopic?.id === topic.id
+														? "text-white/70"
+														: "text-muted-foreground",
+												)}
+											>
+												{topic.description}
+											</p>
+										)}
+									</button>
+									{/* Edit / delete actions, revealed on hover */}
+									<div
+										className={cn(
+											"absolute top-1.5 right-1.5 flex items-center gap-0.5 transition-opacity",
+											selectedTopic?.id === topic.id
+												? "opacity-90"
+												: "opacity-0 group-hover:opacity-90",
+										)}
+									>
+										<TopicActions
+											topic={topic}
+											isEditOpen={topicEditId === topic.id}
+											isDeleteOpen={topicDeleteId === topic.id}
+											onEditOpenChange={(open) => setTopicEditId(open ? topic.id : null)}
+											onDeleteOpenChange={(open) =>
+												setTopicDeleteId(open ? topic.id : null)
+											}
+											onUpdated={handleTopicUpdated}
+											onDeleted={() => handleTopicDeleted(topic.id)}
+										/>
+									</div>
+								</div>
 							))}
 				</div>
 			</div>

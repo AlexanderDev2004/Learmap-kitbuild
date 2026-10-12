@@ -3,10 +3,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { Effect, Schema } from "effect";
 
 import {
+	createTopic,
 	deleteTopic,
 	listTopics,
-	createTopic,
+	updateTopic,
 	CreateTopicInput,
+	UpdateTopicInput,
 } from "@/features/analyzer/lib/topic-service";
 import { authMiddleware, requireRoleMiddleware } from "@/middlewares/auth";
 
@@ -71,6 +73,23 @@ export const createTopicRpc = createServerFn({ method: "POST" })
 		),
 	);
 
+export const updateTopicRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(UpdateTopicInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			updateTopic(data).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("updateTopic"),
+				Effect.tapError(logRpcError("updateTopic")),
+				Effect.catchAll(logAndReturnError("updateTopic")),
+				Effect.catchAllDefect(logAndReturnDefect("updateTopic")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
 export const TopicRpc = {
 	topics: () => ["topics"],
 	listTopics: () =>
@@ -82,6 +101,11 @@ export const TopicRpc = {
 		mutationOptions({
 			mutationKey: [...TopicRpc.topics()],
 			mutationFn: (data: CreateTopicInput) => createTopicRpc({ data }),
+		}),
+	updateTopic: () =>
+		mutationOptions({
+			mutationKey: [...TopicRpc.topics(), "update"],
+			mutationFn: (data: UpdateTopicInput) => updateTopicRpc({ data }),
 		}),
 	deleteTopic: () =>
 		mutationOptions({
