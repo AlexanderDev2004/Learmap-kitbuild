@@ -97,21 +97,49 @@ vp install
 cp .env.example .env
 # Edit .env with your credentials
 
-# Start the local LibSQL server (dev database) — the Workers runtime used by
-# `vp dev` cannot open `file:` SQLite URLs, so dev talks to sqld over HTTP:
-docker compose -f docker-compose.dev.yml up -d
-
-# Push database schema
-vpx drizzle-kit push
-
-# (Optional) load demo users, goal maps, kit, assignment, and forms
+# First time: create the schema and load demo data
+pnpm run db:migrate
 pnpm run db:seed
 
-# Start development server
-vp dev
+# Start the development server
+pnpm run dev
+```
+
+`pnpm run dev` = `vp dev` plus a small LibSQL-compatible HTTP server
+(`scripts/dev/sqlite-server.ts`) that is started automatically when nothing is
+listening on `TURSO_DATABASE_URL`. The Workers runtime used by `vp dev` cannot
+open `file:` SQLite URLs, so local development talks to sqld over HTTP — with
+no Docker and no Turso account. If you prefer a real sqld instance (Linux/WSL),
+start Docker first and it will be reused as-is:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+pnpm run dev
 ```
 
 Visit http://localhost:5173
+
+> Tip: cookies are scoped per host, so you can test two accounts side by side —
+> sign in as a researcher at `http://localhost:5173` and as a student at
+> `http://127.0.0.1:5173`.
+
+### Demo accounts (after `pnpm run db:seed`)
+
+| Role     | Email                  | Password    |
+| -------- | ---------------------- | ----------- |
+| Admin    | admin@kitbuild.mail    | admin12345  |
+| Admin    | bagas@kitbuild.mail    | bagas12345  |
+| Admin    | citra@kitbuild.mail    | citra12345  |
+| Teacher  | banni@kitbuild.mail    | banni12345  |
+| Teacher  | helmy@kitbuild.mail    | helmy12345  |
+| Teacher  | alex@kitbuild.mail     | alex12345   |
+| Student  | tanaka@kitbuild.mail   | demo12345   |
+| Student  | sari@kitbuild.mail     | demo12345   |
+| Student  | rudi@kitbuild.mail     | demo12345   |
+
+`db:seed:fotosintesis` additionally loads the photosynthesis experiment kit
+(two segmentation models in one goal map: Kelompok A = Segmen Paragraf, Kelompok
+B = Segmen Depth Topik) with the student accounts above.
 
 This project is using these tech stack, so check their respective documentations for further information:
 
