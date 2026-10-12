@@ -18,9 +18,11 @@ import {
 	type UpdateUserInput,
 } from "./user-service.shared";
 
-// Create a user account on behalf of someone else. Reuses Better Auth's
-// signUpEmail (same as the seed scripts) so the password is hashed and the
-// account/email tables stay consistent, then applies the requested role.
+// Create a user account on behalf of someone else. Uses Better Auth's admin
+// plugin createUser API so the password is hashed and the account/email tables
+// stay consistent. Crucially it does NOT create a session — signUpEmail would
+// write a session cookie for the new user via tanstackStartCookies() and
+// silently replace the acting admin's session.
 export const createUserByAdmin = Effect.fn("createUserByAdmin")(
 	(data: CreateUserInput) =>
 		Effect.gen(function* () {
@@ -38,11 +40,13 @@ export const createUserByAdmin = Effect.fn("createUserByAdmin")(
 
 			const result = yield* Effect.tryPromise({
 				try: () =>
-					authService.api.signUpEmail({
+					authService.api.createUser({
 						body: {
 							email: data.email,
 							password: data.password,
 							name: data.name,
+							role: data.role,
+							...(data.studentId ? { data: { studentId: data.studentId } } : {}),
 						},
 					}),
 				catch: (error) => {
@@ -51,7 +55,7 @@ export const createUserByAdmin = Effect.fn("createUserByAdmin")(
 				},
 			});
 
-			const userId = result.user?.id ?? null;
+			const userId = result?.user?.id ?? null;
 			if (!userId) {
 				return yield* new EmailAlreadyExistsError({ email: data.email });
 			}
