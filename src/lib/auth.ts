@@ -17,7 +17,16 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 
 		return betterAuth({
 			baseURL: config.siteUrl,
-			trustedOrigins: [config.siteUrl, "http://localhost:5173", "http://localhost:5174"],
+			trustedOrigins: [
+				config.siteUrl,
+				"http://localhost:5173",
+				"http://localhost:5174",
+				// 127.0.0.1 is a separate cookie jar from localhost, so researchers
+				// can sign in as a different account (e.g. a student) in a second
+				// tab at http://127.0.0.1:<port> to test both roles side by side.
+				"http://127.0.0.1:5173",
+				"http://127.0.0.1:5174",
+			],
 			database: drizzleAdapter(db, {
 				provider: "sqlite",
 				schema: {
