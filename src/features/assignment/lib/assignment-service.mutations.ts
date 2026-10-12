@@ -9,8 +9,10 @@ import { assignments, assignmentTargets, goalMaps, kits } from "@/server/db/sche
 import {
 	AssignmentAccessDeniedError,
 	AssignmentNotFoundError,
+	AssignmentTargetsEmptyError,
 	CreateAssignmentInput,
 	DeleteAssignmentInput,
+	UpdateAssignmentTargetsInput,
 } from "./assignment-service.shared";
 
 export const createAssignment = Effect.fn("createAssignment")(function* (
@@ -107,6 +109,69 @@ export const createAssignment = Effect.fn("createAssignment")(function* (
 		targets.push({
 			id: randomString(),
 			assignmentId,
+			userId,
+		});
+	}
+
+	if (targets.length > 0) {
+		yield* db.insert(assignmentTargets).values(targets);
+	}
+
+	return true;
+});
+
+export const updateAssignmentTargets = Effect.fn("updateAssignmentTargets")(function* (
+	userId: string,
+	input: UpdateAssignmentTargetsInput,
+	options: { isAdmin?: boolean } = {},
+) {
+	const db = yield* Database;
+
+	const assignmentRows = yield* db
+		.select({ createdBy: assignments.createdBy })
+		.from(assignments)
+		.where(and(eq(assignments.id, input.id), isNull(assignments.deletedAt)))
+		.limit(1);
+
+	const assignment = assignmentRows[0];
+	if (!assignment) {
+		return yield* new AssignmentNotFoundError({ assignmentId: input.id });
+	}
+	if (assignment.createdBy !== userId && !options.isAdmin) {
+		return yield* new AssignmentAccessDeniedError({
+			assignmentId: input.id,
+			userId,
+		});
+	}
+
+	if (input.cohortIds.length === 0 && input.userIds.length === 0) {
+		return yield* new AssignmentTargetsEmptyError();
+	}
+
+	// Replace the target list: delete existing rows, then insert the new set.
+	yield* db
+		.delete(assignmentTargets)
+		.where(eq(assignmentTargets.assignmentId, input.id));
+
+	const targets: Array<{
+		id: string;
+		assignmentId: string;
+		cohortId?: string;
+		userId?: string;
+	}> = [];
+
+	for (const cohortId of input.cohortIds) {
+		targets.push({
+			id: randomString(),
+			assignmentId: input.id,
+			cohortId,
+		});
+	}
+
+	for (const userId of input.userIds) {
+		targets.push({
+			id: randomString(),
+			assignmentId: input.id,
 			userId,
 		});
 	}

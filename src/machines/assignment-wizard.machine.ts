@@ -24,6 +24,8 @@ export type WizardEvent =
 	  }
 	| { type: "TOGGLE_COHORT"; cohortId: string }
 	| { type: "TOGGLE_USER"; userId: string }
+	| { type: "SET_SELECTED_COHORTS"; cohortIds: string[] }
+	| { type: "SET_SELECTED_USERS"; userIds: string[] }
 	| { type: "SUBMIT" }
 	| { type: "SUCCESS" }
 	| { type: "RESET" };
@@ -77,6 +79,18 @@ export const assignmentWizardMachine = setup({
 				? context.assignment.selectedUsers.filter((id) => id !== event.userId)
 				: [...context.assignment.selectedUsers, event.userId];
 			return { assignment: { ...context.assignment, selectedUsers: users } };
+		}),
+		setSelectedCohorts: assign(({ context, event }) => {
+			if (event.type !== "SET_SELECTED_COHORTS") return {};
+			return {
+				assignment: { ...context.assignment, selectedCohorts: event.cohortIds },
+			};
+		}),
+		setSelectedUsers: assign(({ context, event }) => {
+			if (event.type !== "SET_SELECTED_USERS") return {};
+			return {
+				assignment: { ...context.assignment, selectedUsers: event.userIds },
+			};
 		}),
 		resetFields: assign(() => ({
 			...initialFields,
@@ -147,6 +161,8 @@ export const assignmentWizardMachine = setup({
 				BACK: { target: "procedure" },
 				TOGGLE_COHORT: { actions: "toggleCohort" },
 				TOGGLE_USER: { actions: "toggleUser" },
+				SET_SELECTED_COHORTS: { actions: "setSelectedCohorts" },
+				SET_SELECTED_USERS: { actions: "setSelectedUsers" },
 				RESET: { target: "basicInfo", actions: "resetFields" },
 			},
 		},

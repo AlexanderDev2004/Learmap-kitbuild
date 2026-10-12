@@ -31,6 +31,14 @@ export const DeleteAssignmentInput = Schema.Struct({
 
 export type DeleteAssignmentInput = typeof DeleteAssignmentInput.Type;
 
+export const UpdateAssignmentTargetsInput = Schema.Struct({
+	id: NonEmpty("Assignment ID"),
+	cohortIds: Schema.Array(Schema.String),
+	userIds: Schema.Array(Schema.String),
+});
+
+export type UpdateAssignmentTargetsInput = typeof UpdateAssignmentTargetsInput.Type;
+
 export class AssignmentNotFoundError extends Data.TaggedError("AssignmentNotFoundError")<{
 	readonly assignmentId: string;
 }> {}
@@ -43,3 +51,7 @@ export class AssignmentAccessDeniedError extends Data.TaggedError("AssignmentAcc
 export class KitNotFoundError extends Data.TaggedError("KitNotFoundError")<{
 	readonly goalMapId: string;
 }> {}
+
+export class AssignmentTargetsEmptyError extends Data.TaggedError(
+	"AssignmentTargetsEmptyError",
+)<{}> {}

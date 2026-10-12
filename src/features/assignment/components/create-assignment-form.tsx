@@ -259,10 +259,56 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 
 			{snapshot.matches("assignment") && (
 				<div className="space-y-4">
+					<div className="rounded-md bg-muted px-3 py-2 text-sm">
+						{ctx.assignment.selectedCohorts.length === 0 &&
+						ctx.assignment.selectedUsers.length === 0 ? (
+							<span className="text-muted-foreground">
+								Nothing selected yet — pick at least one cohort or student below.
+							</span>
+						) : (
+							<span>
+								Selected:{" "}
+								<strong>
+									{ctx.assignment.selectedCohorts.length} cohort
+									{ctx.assignment.selectedCohorts.length === 1 ? "" : "s"}
+								</strong>{" "}
+								and{" "}
+								<strong>
+									{ctx.assignment.selectedUsers.length} student
+									{ctx.assignment.selectedUsers.length === 1 ? "" : "s"}
+								</strong>
+							</span>
+						)}
+					</div>
 					<div className="space-y-2">
 						<Label className="flex items-center gap-2">
 							<UsersIcon className="size-4" />
 							Assign to Cohorts
+							<span className="text-xs font-normal text-muted-foreground">
+								({ctx.assignment.selectedCohorts.length}/{formOptions.cohorts.length})
+							</span>
+							{formOptions.cohorts.length > 0 && (
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="ml-auto h-6 px-2 text-xs"
+									onClick={() =>
+										send({
+											type: "SET_SELECTED_COHORTS",
+											cohortIds:
+												ctx.assignment.selectedCohorts.length ===
+												formOptions.cohorts.length
+													? []
+													: formOptions.cohorts.map((c) => c.id),
+										})
+									}
+								>
+									{ctx.assignment.selectedCohorts.length === formOptions.cohorts.length
+										? "Deselect all"
+										: "Select all"}
+								</Button>
+							)}
 						</Label>
 						<div className="border rounded-lg p-3 max-h-32 overflow-y-auto">
 							{formOptions.cohorts.length > 0 ? (
@@ -303,6 +349,31 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 						<Label className="flex items-center gap-2">
 							<UserIcon className="size-4" />
 							Assign to Individual Users
+							<span className="text-xs font-normal text-muted-foreground">
+								({ctx.assignment.selectedUsers.length}/{formOptions.users.length})
+							</span>
+							{formOptions.users.length > 0 && (
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="ml-auto h-6 px-2 text-xs"
+									onClick={() =>
+										send({
+											type: "SET_SELECTED_USERS",
+											userIds:
+												ctx.assignment.selectedUsers.length ===
+												formOptions.users.length
+													? []
+													: formOptions.users.map((u) => u.id),
+										})
+									}
+								>
+									{ctx.assignment.selectedUsers.length === formOptions.users.length
+										? "Deselect all"
+										: "Select all"}
+								</Button>
+							)}
 						</Label>
 						<div className="border rounded-lg p-3 max-h-32 overflow-y-auto">
 							{formOptions.users.length > 0 ? (

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import {
 	ArrowUpRightIcon,
@@ -11,12 +12,14 @@ import {
 	GraduationCapIcon,
 	UsersIcon,
 } from "lucide-react";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EditTargetsDialog } from "@/features/assignment/components/edit-targets-dialog";
 import { cn } from "@/lib/utils";
 
 interface FormInfo {
@@ -69,6 +72,9 @@ export interface AssignmentDetailPageProps {
 }
 
 export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) {
+	const queryClient = useQueryClient();
+	const [targetsOpen, setTargetsOpen] = useState(false);
+
 	const formattedStartDate = assignment.startDate
 		? new Date(assignment.startDate).toLocaleDateString()
 		: "Not set";
@@ -104,6 +110,14 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 					<p className="text-sm text-muted-foreground">Created {timeAgo}</p>
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setTargetsOpen(true)}
+					>
+						<UsersIcon className="size-4 mr-1.5" />
+						Edit Targeting
+					</Button>
 					<Link
 						to="/dashboard/goal-map/$goalMapId"
 						params={{ goalMapId: assignment.goalMapId }}
@@ -512,6 +526,17 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 					</Card>
 				</TabsContent>
 			</Tabs>
+
+			<EditTargetsDialog
+				assignmentId={assignment.id}
+				open={targetsOpen}
+				onOpenChange={setTargetsOpen}
+				currentCohortIds={assignment.assignedCohorts.map((c) => c.id)}
+				currentUserIds={assignment.assignedUsers.map((u) => u.id)}
+				onSaved={() => {
+					void queryClient.invalidateQueries({ queryKey: ["assignments"] });
+				}}
+			/>
 		</div>
 	);
 }

@@ -5,6 +5,7 @@ import { Effect, Schema } from "effect";
 import {
 	createAssignment,
 	deleteAssignment,
+	updateAssignmentTargets,
 } from "@/features/assignment/lib/assignment-service.mutations";
 import {
 	listTeacherAssignments,
@@ -17,6 +18,7 @@ import {
 import {
 	CreateAssignmentInput,
 	DeleteAssignmentInput,
+	UpdateAssignmentTargetsInput,
 } from "@/features/assignment/lib/assignment-service.shared";
 import { requireRoleMiddleware } from "@/middlewares/auth";
 
@@ -83,6 +85,37 @@ export const deleteAssignmentRpc = createServerFn({ method: "POST" })
 				}),
 				Effect.catchAll(logAndReturnError("deleteAssignment")),
 				Effect.catchAllDefect(logAndReturnDefect("deleteAssignment")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const updateAssignmentTargetsRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) =>
+		Schema.decodeUnknownSync(UpdateAssignmentTargetsInput)(raw),
+	)
+	.handler(({ data, context }) =>
+		AppRuntime.runPromise(
+			updateAssignmentTargets(context.user.id, data, {
+				isAdmin: context.user.role === "admin",
+			}).pipe(
+				Effect.map(() => Rpc.ok(true)),
+				Effect.withSpan("updateAssignmentTargets"),
+				Effect.tapError(logRpcError("updateAssignmentTargets")),
+				Effect.catchTags({
+					AssignmentNotFoundError: () => Rpc.notFound("Assignment"),
+					AssignmentAccessDeniedError: (e: { assignmentId: string }) =>
+						Rpc.forbidden(`Access denied to assignment ${e.assignmentId}`),
+					AssignmentTargetsEmptyError: () =>
+						Rpc.err(
+							"Select at least one cohort or student to assign",
+							"VALIDATION",
+						),
+				}),
+				Effect.catchAll(logAndReturnError("updateAssignmentTargets")),
+				Effect.catchAllDefect(logAndReturnDefect("updateAssignmentTargets")),
 				Effect.timeout(TIMEOUT_DURATION),
 				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
 			),
@@ -194,6 +227,12 @@ export const AssignmentRpc = {
 		mutationOptions({
 			mutationKey: [...AssignmentRpc.assignments(), "delete"],
 			mutationFn: (data: DeleteAssignmentInput) => deleteAssignmentRpc({ data }),
+		}),
+	updateAssignmentTargets: () =>
+		mutationOptions({
+			mutationKey: [...AssignmentRpc.assignments(), "updateTargets"],
+			mutationFn: (data: UpdateAssignmentTargetsInput) =>
+				updateAssignmentTargetsRpc({ data }),
 		}),
 	getAvailableCohorts: () =>
 		queryOptions({
