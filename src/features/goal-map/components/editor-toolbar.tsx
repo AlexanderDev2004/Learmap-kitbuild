@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useSetAtom } from "jotai";
 import {
 	BookOpen,
@@ -87,6 +88,7 @@ function EditorToolbarImpl({
 	goalMapId,
 	onDeleted,
 }: EditorToolbarProps) {
+	const queryClient = useQueryClient();
 	const setConceptDialogOpen = useSetAtom(conceptDialogOpenAtom);
 	const setLinkDialogOpen = useSetAtom(linkDialogOpenAtom);
 	const setMaterialDialogOpen = useSetAtom(materialDialogOpenAtom);
@@ -98,7 +100,10 @@ function EditorToolbarImpl({
 		operation: "delete goal map",
 		showSuccess: true,
 		successMessage: "Goal map deleted",
-		onSuccess: () => onDeleted?.(),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: GoalMapRpc.goalMap() });
+			onDeleted?.();
+		},
 	});
 
 	const handleSave = () => {

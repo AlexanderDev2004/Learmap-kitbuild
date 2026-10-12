@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { MapIcon, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/dashboard/")({
 });
 
 function DashboardPage() {
+	const queryClient = useQueryClient();
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [goalMapToDelete, setGoalMapToDelete] = useState<string | null>(null);
 	const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
@@ -53,6 +55,12 @@ function DashboardPage() {
 		operation: "delete goal map",
 		showSuccess: true,
 		successMessage: "Goal map deleted successfully",
+		onSuccess: () => {
+			// Close the confirm dialog and refresh every goal map list
+			// (dashboard, by-topic, detail) so the card disappears at once.
+			setDeleteConfirmOpen(false);
+			void queryClient.invalidateQueries({ queryKey: GoalMapRpc.goalMap() });
+		},
 	});
 
 	const error = topicsError || goalMapsError;
@@ -215,7 +223,8 @@ function DashboardPage() {
 								isDeleting={deleteMutation.isPending}
 								onDeleteClick={handleDelete}
 								onConfirmDelete={confirmDelete}
-							/>
+								onDeleteDialogOpenChange={setDeleteConfirmOpen}
+								/>
 						))}
 					</div>
 				)}

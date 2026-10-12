@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { safeParseJson } from "@/lib/utils";
@@ -25,7 +25,10 @@ export const getGoalMap = Effect.fn("getGoalMap")(function* (input: GetGoalMapIn
 			teacherId: goalMaps.teacherId,
 			topicId: goalMaps.topicId,
 			textId: goalMaps.textId,
-			kitId: kits.id,
+			// Alias the column: selecting kits.id unaliased produces a second
+			// result column named "id", which overwrites goalMaps.id when the
+			// driver keys rows by column name (the map id became the kit id).
+			kitId: sql<string | null>`kits.id`.as("kit_id"),
 			materialText: texts.content,
 			materialImages: texts.images,
 		})
@@ -108,7 +111,11 @@ export const listGoalMapsByTopic = Effect.fn("listGoalMapsByTopic")(function* (
 	input: ListGoalMapsByTopicInput,
 ) {
 	const db = yield* Database;
-	const query = db
+	// Drizzle's query builder is immutable: `.where(...)` returns a new builder
+	// and does not mutate the one it is called on, so the condition must be
+	// passed inline (or the result assigned). Passing it inline keeps the
+	// deletedAt / topicId filters from being silently dropped.
+	const rows = yield* db
 		.select({
 			id: goalMaps.id,
 			title: goalMaps.title,
@@ -119,26 +126,21 @@ export const listGoalMapsByTopic = Effect.fn("listGoalMapsByTopic")(function* (
 			updatedAt: goalMaps.updatedAt,
 			nodes: goalMaps.nodes,
 			edges: goalMaps.edges,
-			kitId: kits.id,
+			// Alias for the same reason as in getGoalMap above.
+			kitId: sql<string | null>`kits.id`.as("kit_id"),
 		})
 		.from(goalMaps)
-		.leftJoin(kits, eq(kits.goalMapId, goalMaps.id));
-
-	if (input.topicId) {
-		query.where(
-			and(
-				eq(goalMaps.topicId, input.topicId),
-				isNull(goalMaps.deletedAt),
-				isNull(kits.deletedAt),
-			),
-		);
-	} else {
-		query.where(
-			and(isNull(goalMaps.topicId), isNull(goalMaps.deletedAt), isNull(kits.deletedAt)),
-		);
-	}
-
-	const rows = yield* query.orderBy(desc(goalMaps.updatedAt));
+		.leftJoin(kits, eq(kits.goalMapId, goalMaps.id))
+		.where(
+			input.topicId
+				? and(
+						eq(goalMaps.topicId, input.topicId),
+						isNull(goalMaps.deletedAt),
+						isNull(kits.deletedAt),
+					)
+				: and(isNull(goalMaps.topicId), isNull(goalMaps.deletedAt), isNull(kits.deletedAt)),
+		)
+		.orderBy(desc(goalMaps.updatedAt));
 
 	return yield* Effect.all(
 		rows.map((row) =>

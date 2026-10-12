@@ -1,4 +1,4 @@
-import { and, avg, count, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, avg, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { isCorrectMcqAnswer } from "@/features/form/lib/form-scoring";
@@ -49,7 +49,9 @@ export const getTeacherAssignments = Effect.fn("getTeacherAssignments")(function
 			title: assignments.title,
 			goalMapId: assignments.goalMapId,
 			goalMapTitle: goalMaps.title,
-			kitId: kits.id,
+			// Alias: an unaliased kits.id would collide with assignments.id on
+			// the "id" result column and overwrite it (see goal-map-service.queries).
+			kitId: sql<string | null>`kits.id`.as("kit_id"),
 			createdAt: assignments.createdAt,
 			dueAt: assignments.dueAt,
 			submissionCount: count(learnerMaps.id),

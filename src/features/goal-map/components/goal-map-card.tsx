@@ -22,6 +22,7 @@ interface GoalMapCardProps {
 	isDeleting: boolean;
 	onDeleteClick: (goalMapId: string) => void;
 	onConfirmDelete: () => void;
+	onDeleteDialogOpenChange: (open: boolean) => void;
 }
 
 function parseGoalMapStats(nodes: readonly unknown[], edges: readonly unknown[]) {
@@ -37,6 +38,7 @@ export function GoalMapCard({
 	isDeleting,
 	onDeleteClick,
 	onConfirmDelete,
+	onDeleteDialogOpenChange,
 }: GoalMapCardProps) {
 	const { nodeCount, edgeCount } = parseGoalMapStats(goalMap.nodes, goalMap.edges);
 
@@ -85,7 +87,10 @@ export function GoalMapCard({
 						<span className="sr-only">Edit</span>
 					</Link>
 				</Button>
-				<AlertDialog open={isDeleteConfirmOpen}>
+				<AlertDialog
+						open={isDeleteConfirmOpen}
+						onOpenChange={onDeleteDialogOpenChange}
+					>
 					<AlertDialogTrigger asChild>
 						<Button
 							variant="secondary"
