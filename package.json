@@ -4,7 +4,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "vp dev",
+		"dev": "tsx --env-file=.env scripts/dev/with-db-server.ts",
 		"db:server": "tsx --env-file=.env scripts/dev/sqlite-server.ts",
 		"spotlight": "vpx @spotlightjs/spotlight",
 		"build": "vp build",
