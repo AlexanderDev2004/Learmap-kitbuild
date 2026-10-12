@@ -57,7 +57,7 @@ export const listUsers = Effect.fn("listUsers")((input: UserFilterInput) =>
 		const users_ = yield* db
 			.select({
 				id: user.id,
-				name: user.name,
+				name: sql<string>`user.name`.as("user_name"),
 				email: user.email,
 				studentId: user.studentId,
 				role: user.role,

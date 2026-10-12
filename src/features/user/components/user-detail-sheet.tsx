@@ -66,8 +66,8 @@ export function UserDetailSheet({
 	useEffect(() => {
 		if (user) {
 			setFormData({
-				name: user.name,
-				email: user.email,
+				name: user.name ?? undefined,
+				email: user.email ?? undefined,
 				studentId: user.studentId ?? "",
 				age: user.age ?? undefined,
 				jlptLevel: user.jlptLevel ?? undefined,
