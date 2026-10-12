@@ -52,7 +52,7 @@ export const saveGoalMapRpc = createServerFn({ method: "POST" })
 	.inputValidator((raw) => Schema.decodeUnknownSync(SaveGoalMapInput)(raw))
 	.handler(({ data, context }) =>
 		AppRuntime.runPromise(
-			saveGoalMap(context.user.id, data).pipe(
+			saveGoalMap(context.user.id, data, { isAdmin: context.user.role === "admin" }).pipe(
 				Effect.map(Rpc.ok),
 				Effect.withSpan("saveGoalMap"),
 				Effect.tapError(logRpcError("saveGoalMap")),
@@ -108,7 +108,7 @@ export const deleteGoalMapRpc = createServerFn({ method: "POST" })
 	.inputValidator((raw) => Schema.decodeUnknownSync(DeleteGoalMapInput)(raw))
 	.handler(({ data, context }) =>
 		AppRuntime.runPromise(
-			deleteGoalMap(context.user.id, data).pipe(
+			deleteGoalMap(context.user.id, data, { isAdmin: context.user.role === "admin" }).pipe(
 				Effect.map(() => Rpc.ok(true)),
 				Effect.withSpan("deleteGoalMap"),
 				Effect.tapError(logRpcError("deleteGoalMap")),
@@ -130,7 +130,7 @@ export const updateMaterialRpc = createServerFn({ method: "POST" })
 	.inputValidator((raw) => Schema.decodeUnknownSync(UpdateMaterialInput)(raw))
 	.handler(({ data, context }) =>
 		AppRuntime.runPromise(
-			updateMaterial(context.user.id, data).pipe(
+			updateMaterial(context.user.id, data, { isAdmin: context.user.role === "admin" }).pipe(
 				Effect.map(Rpc.ok),
 				Effect.withSpan("updateMaterial"),
 				Effect.tapError(logRpcError("updateMaterial")),

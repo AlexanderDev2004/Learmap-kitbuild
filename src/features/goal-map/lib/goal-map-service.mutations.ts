@@ -18,9 +18,13 @@ import {
 export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 	userId: string,
 	data: SaveGoalMapInput,
+	options: { isAdmin?: boolean } = {},
 ) {
 	const db = yield* Database;
 
+	// Admins may manage every goal map; ownership is preserved when they edit
+	// someone else's map (ownerId below).
+	let ownerId = userId;
 	if (data.goalMapId !== NEW_GOAL_MAP_ID) {
 		const goalMap = yield* Effect.tryPromise(() =>
 			db
@@ -29,7 +33,8 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 				.where(and(eq(goalMaps.id, data.goalMapId), isNull(goalMaps.deletedAt)))
 				.get(),
 		);
-		if (goalMap && goalMap.teacherId && goalMap.teacherId !== userId) {
+		if (goalMap?.teacherId) ownerId = goalMap.teacherId;
+		if (goalMap && goalMap.teacherId && goalMap.teacherId !== userId && !options.isAdmin) {
 			return yield* new GoalMapAccessDeniedError({
 				goalMapId: data.goalMapId,
 				userId,
@@ -93,7 +98,7 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 		nodes: JSON.stringify(data.nodes ?? []),
 		edges: JSON.stringify(data.edges ?? []),
 		updatedAt: new Date(),
-		teacherId: userId,
+		teacherId: ownerId,
 		topicId: data.topicId ?? null,
 		textId,
 	};
@@ -124,7 +129,7 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 				kitId: data.goalMapId,
 				name: data.title,
 				goalMapId: data.goalMapId,
-				teacherId: userId,
+				teacherId: ownerId,
 				layout,
 				nodes: JSON.stringify(kitNodes),
 				edges: JSON.stringify([]),
@@ -159,6 +164,7 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 export const deleteGoalMap = Effect.fn("deleteGoalMap")(function* (
 	userId: string,
 	input: DeleteGoalMapInput,
+	options: { isAdmin?: boolean } = {},
 ) {
 	const db = yield* Database;
 
@@ -174,7 +180,7 @@ export const deleteGoalMap = Effect.fn("deleteGoalMap")(function* (
 		return yield* new GoalMapNotFoundError({ goalMapId: input.goalMapId });
 	}
 
-	if (goalMap.teacherId !== userId) {
+	if (goalMap.teacherId !== userId && !options.isAdmin) {
 		return yield* new GoalMapAccessDeniedError({
 			goalMapId: input.goalMapId,
 			userId,
@@ -191,6 +197,7 @@ export const deleteGoalMap = Effect.fn("deleteGoalMap")(function* (
 export const updateMaterial = Effect.fn("updateMaterial")(function* (
 	userId: string,
 	input: UpdateMaterialInput,
+	options: { isAdmin?: boolean } = {},
 ) {
 	const db = yield* Database;
 
@@ -211,7 +218,7 @@ export const updateMaterial = Effect.fn("updateMaterial")(function* (
 		return yield* new GoalMapNotFoundError({ goalMapId: input.goalMapId });
 	}
 
-	if (existing.teacherId !== userId) {
+	if (existing.teacherId !== userId && !options.isAdmin) {
 		return yield* new GoalMapAccessDeniedError({
 			goalMapId: input.goalMapId,
 			userId,
