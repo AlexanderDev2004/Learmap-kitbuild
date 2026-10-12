@@ -4,6 +4,7 @@ import { Effect, Schema } from "effect";
 
 import {
 	deleteUser,
+	createUserByAdmin,
 	updateUser,
 	updateUserRole,
 	banUser,
@@ -14,6 +15,7 @@ import { listUsers, getUserById } from "@/features/user/lib/user-service.queries
 import {
 	BanUserInput,
 	BulkCohortAssignInput,
+	CreateUserInput,
 	UpdateRoleInput,
 	UpdateUserInput,
 	UserFilterInput,
@@ -62,6 +64,33 @@ export const getUserByIdRpc = createServerFn()
 				}),
 				Effect.catchAll(logAndReturnError("getUserById")),
 				Effect.catchAllDefect(logAndReturnDefect("getUserById")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const createUserRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(CreateUserInput)(raw))
+	.handler(({ data, context }) =>
+		AppRuntime.runPromise(
+			// Teachers may only create student accounts; admins may create any role.
+			(context.user.role !== "admin" && data.role !== "student"
+				? Effect.fail(new Error("Only admins can create teacher or admin accounts"))
+				: Effect.succeed(null)
+			).pipe(
+				Effect.andThen(createUserByAdmin(data)),
+				Effect.map(Rpc.ok),
+				Effect.withSpan("createUser"),
+				Effect.tapError(logRpcError("createUser")),
+				Effect.catchTags({
+					UserNotFoundError: () => Rpc.notFound("User"),
+					EmailAlreadyExistsError: (e: { email: string }) =>
+						Rpc.err(`A user with email ${e.email} already exists`, "EMAIL_EXISTS"),
+				}),
+				Effect.catchAll(logAndReturnError("createUser")),
+				Effect.catchAllDefect(logAndReturnDefect("createUser")),
 				Effect.timeout(TIMEOUT_DURATION),
 				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
 			),
@@ -208,6 +237,11 @@ export const UserRpc = {
 		queryOptions({
 			queryKey: [...UserRpc.users(), "list", filters],
 			queryFn: () => listUsersRpc({ data: { page: 1, pageSize: 20, ...filters } }),
+		}),
+	createUser: () =>
+		mutationOptions({
+			mutationKey: [...UserRpc.users(), "create"],
+			mutationFn: (data: CreateUserInput) => createUserRpc({ data }),
 		}),
 	getUserById: (userId: string) =>
 		queryOptions({

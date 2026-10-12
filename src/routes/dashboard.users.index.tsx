@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Guard } from "@/features/auth/components/Guard";
 import { BulkCohortDialog } from "@/features/user/components/bulk-cohort-dialog";
+import { CreateUserDialog } from "@/features/user/components/create-user-dialog";
 import { UserDetailSheet } from "@/features/user/components/user-detail-sheet";
 import { UserFilterBar } from "@/features/user/components/user-filter-bar";
 import { UserTable } from "@/features/user/components/user-table";
@@ -169,11 +170,14 @@ function UsersPage() {
 				<TabsTrigger value="whitelist">Whitelist</TabsTrigger>
 			</TabsList>
 			<TabsContent value="users" className="space-y-4">
-				<PageHeader
-					icon={UsersIcon}
-					title="Users"
-					description="Manage user accounts and permissions"
-				/>
+				<div className="flex items-start justify-between gap-4">
+					<PageHeader
+						icon={UsersIcon}
+						title="Users"
+						description="Manage user accounts and permissions"
+					/>
+					<CreateUserDialog isAdmin={isAdmin} />
+				</div>
 
 				<UserFilterBar
 					cohorts={cohorts}

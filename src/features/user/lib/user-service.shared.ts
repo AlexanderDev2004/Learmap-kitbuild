@@ -60,6 +60,28 @@ export const UpdateRoleInput = Schema.Struct({
 
 export type UpdateRoleInput = typeof UpdateRoleInput.Type;
 
+export const CreateUserInput = Schema.Struct({
+	email: Schema.String.pipe(
+		Schema.filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), {
+			message: () => "Please enter a valid email address",
+		}),
+	),
+	password: Schema.String.pipe(
+		Schema.filter((password) => password.length >= 8, {
+			message: () => "Password must be at least 8 characters",
+		}),
+	),
+	name: NonEmpty("Name"),
+	role: Role,
+	studentId: Schema.optionalWith(Schema.String, { nullable: true }),
+});
+
+export type CreateUserInput = typeof CreateUserInput.Type;
+
+export class EmailAlreadyExistsError extends Data.TaggedError("EmailAlreadyExistsError")<{
+	readonly email: string;
+}> {}
+
 export type UserWithCohorts = {
 	id: string;
 	name: string;

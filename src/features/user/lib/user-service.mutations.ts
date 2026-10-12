@@ -1,19 +1,71 @@
 import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 
+import { Auth } from "@/lib/auth";
 import { Database } from "@/server/db/client";
 import { cohortMembers, user } from "@/server/db/schema/auth-schema";
 
 import { getUserById } from "./user-service.queries";
 import {
 	CannotModifySelfError,
+	EmailAlreadyExistsError,
 	LastAdminError,
 	UserNotFoundError,
 	type BanUserInput,
 	type BulkCohortAssignInput,
+	type CreateUserInput,
 	type UpdateRoleInput,
 	type UpdateUserInput,
 } from "./user-service.shared";
+
+// Create a user account on behalf of someone else. Reuses Better Auth's
+// signUpEmail (same as the seed scripts) so the password is hashed and the
+// account/email tables stay consistent, then applies the requested role.
+export const createUserByAdmin = Effect.fn("createUserByAdmin")(
+	(data: CreateUserInput) =>
+		Effect.gen(function* () {
+			const db = yield* Database;
+			const authService = yield* Auth;
+
+			const existing = yield* db
+				.select({ id: user.id })
+				.from(user)
+				.where(eq(user.email, data.email))
+				.limit(1);
+			if (existing.length > 0) {
+				return yield* new EmailAlreadyExistsError({ email: data.email });
+			}
+
+			const result = yield* Effect.tryPromise({
+				try: () =>
+					authService.api.signUpEmail({
+						body: {
+							email: data.email,
+							password: data.password,
+							name: data.name,
+						},
+					}),
+				catch: (error) => {
+					console.error(`Failed to create user ${data.email}:`, error);
+					return new EmailAlreadyExistsError({ email: data.email });
+				},
+			});
+
+			const userId = result.user?.id ?? null;
+			if (!userId) {
+				return yield* new EmailAlreadyExistsError({ email: data.email });
+			}
+			yield* db.update(user).set({ role: data.role }).where(eq(user.id, userId));
+			if (data.studentId) {
+				yield* db
+					.update(user)
+					.set({ studentId: data.studentId })
+					.where(eq(user.id, userId));
+			}
+
+			return yield* getUserById(userId);
+		}),
+);
 
 export const updateUser = Effect.fn("updateUser")(
 	(_actorId: string, userId: string, data: UpdateUserInput) =>
