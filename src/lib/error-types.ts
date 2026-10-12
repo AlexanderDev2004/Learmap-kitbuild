@@ -140,6 +140,13 @@ export function categorizeError(error: unknown): ErrorCategory {
 }
 
 function categorizeByMessage(message: string): ErrorCategory {
+	// Validation first: validation messages legitimately contain words that
+	// also appear in network patterns (e.g. `Connector "x" has no inbound
+	// connections` matches the broad "connection" pattern) and would otherwise
+	// be misreported as "Connection Error".
+	if (matchesPatterns(message, VALIDATION_PATTERNS)) {
+		return "validation";
+	}
 	if (matchesPatterns(message, NETWORK_ERROR_PATTERNS)) {
 		return "network";
 	}
@@ -151,9 +158,6 @@ function categorizeByMessage(message: string): ErrorCategory {
 	}
 	if (matchesPatterns(message, SERVER_ERROR_PATTERNS)) {
 		return "server";
-	}
-	if (matchesPatterns(message, VALIDATION_PATTERNS)) {
-		return "validation";
 	}
 	return "unknown";
 }
