@@ -7,6 +7,7 @@ import { Database } from "@/server/db/client";
 import { assignments, assignmentTargets, goalMaps, kits } from "@/server/db/schema/app-schema";
 
 import {
+	AssignmentAccessDeniedError,
 	AssignmentNotFoundError,
 	CreateAssignmentInput,
 	DeleteAssignmentInput,
@@ -120,6 +121,7 @@ export const createAssignment = Effect.fn("createAssignment")(function* (
 export const deleteAssignment = Effect.fn("deleteAssignment")(function* (
 	userId: string,
 	input: DeleteAssignmentInput,
+	options: { isAdmin?: boolean } = {},
 ) {
 	const db = yield* Database;
 
@@ -130,8 +132,16 @@ export const deleteAssignment = Effect.fn("deleteAssignment")(function* (
 		.limit(1);
 
 	const assignment = assignmentRows[0];
-	if (!assignment || assignment.createdBy !== userId) {
+	if (!assignment) {
 		return yield* new AssignmentNotFoundError({ assignmentId: input.id });
+	}
+	// Admins may delete any assignment (the manage page lists all of them);
+	// teachers are restricted to their own.
+	if (assignment.createdBy !== userId && !options.isAdmin) {
+		return yield* new AssignmentAccessDeniedError({
+			assignmentId: input.id,
+			userId,
+		});
 	}
 
 	yield* db

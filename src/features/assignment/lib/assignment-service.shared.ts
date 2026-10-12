@@ -35,6 +35,11 @@ export class AssignmentNotFoundError extends Data.TaggedError("AssignmentNotFoun
 	readonly assignmentId: string;
 }> {}
 
+export class AssignmentAccessDeniedError extends Data.TaggedError("AssignmentAccessDeniedError")<{
+	readonly assignmentId: string;
+	readonly userId: string;
+}> {}
+
 export class KitNotFoundError extends Data.TaggedError("KitNotFoundError")<{
 	readonly goalMapId: string;
 }> {}

@@ -70,12 +70,16 @@ export const deleteAssignmentRpc = createServerFn({ method: "POST" })
 	.inputValidator((raw) => Schema.decodeUnknownSync(DeleteAssignmentInput)(raw))
 	.handler(({ data, context }) =>
 		AppRuntime.runPromise(
-			deleteAssignment(context.user.id, data).pipe(
+			deleteAssignment(context.user.id, data, {
+				isAdmin: context.user.role === "admin",
+			}).pipe(
 				Effect.map(() => Rpc.ok(true)),
 				Effect.withSpan("deleteAssignment"),
 				Effect.tapError(logRpcError("deleteAssignment")),
 				Effect.catchTags({
 					AssignmentNotFoundError: () => Rpc.notFound("Assignment"),
+					AssignmentAccessDeniedError: (e: { assignmentId: string }) =>
+						Rpc.forbidden(`Access denied to assignment ${e.assignmentId}`),
 				}),
 				Effect.catchAll(logAndReturnError("deleteAssignment")),
 				Effect.catchAllDefect(logAndReturnDefect("deleteAssignment")),
