@@ -1,19 +1,25 @@
-import { and, count, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { Auth } from "@/lib/auth";
+import { randomString } from "@/lib/utils";
 import { Database } from "@/server/db/client";
-import { cohortMembers, user } from "@/server/db/schema/auth-schema";
+import { cohortMembers, cohorts, user } from "@/server/db/schema/auth-schema";
 
 import { getUserById } from "./user-service.queries";
 import {
 	CannotModifySelfError,
+	CohortAlreadyExistsError,
+	CohortNotFoundError,
 	EmailAlreadyExistsError,
 	LastAdminError,
 	UserNotFoundError,
 	type BanUserInput,
 	type BulkCohortAssignInput,
+	type CohortIdInput,
+	type CreateCohortInput,
 	type CreateUserInput,
+	type UpdateCohortInput,
 	type UpdateRoleInput,
 	type UpdateUserInput,
 } from "./user-service.shared";
@@ -319,3 +325,86 @@ export const bulkAssignCohort = Effect.fn("bulkAssignCohort")((input: BulkCohort
 		return { successCount: 0, failedCount: 0 };
 	}),
 );
+
+
+export const createCohort = Effect.fn("createCohort")(function* (data: CreateCohortInput) {
+	const db = yield* Database;
+
+	const existing = yield* db
+		.select({ id: cohorts.id })
+		.from(cohorts)
+		.where(and(sql`lower(${cohorts.name}) = lower(${data.name})`, isNull(cohorts.deletedAt)))
+		.limit(1);
+	if (existing.length > 0) {
+		return yield* new CohortAlreadyExistsError({ name: data.name });
+	}
+
+	const cohortId = randomString();
+	yield* db.insert(cohorts).values({
+		id: cohortId,
+		name: data.name,
+		description: data.description ?? null,
+	});
+
+	return { id: cohortId, name: data.name, description: data.description ?? null };
+});
+
+export const updateCohort = Effect.fn("updateCohort")(function* (data: UpdateCohortInput) {
+	const db = yield* Database;
+
+	const cohortRows = yield* db
+		.select()
+		.from(cohorts)
+		.where(and(eq(cohorts.id, data.cohortId), isNull(cohorts.deletedAt)))
+		.limit(1);
+	const cohort = cohortRows[0];
+	if (!cohort) {
+		return yield* new CohortNotFoundError({ cohortId: data.cohortId });
+	}
+
+	const nextName = data.name ?? cohort.name;
+	if (data.name !== undefined && data.name !== cohort.name) {
+		const duplicate = yield* db
+			.select({ id: cohorts.id })
+			.from(cohorts)
+			.where(and(sql`lower(${cohorts.name}) = lower(${data.name})`, isNull(cohorts.deletedAt)))
+			.limit(1);
+		if (duplicate.length > 0) {
+			return yield* new CohortAlreadyExistsError({ name: data.name });
+		}
+	}
+
+	yield* db
+		.update(cohorts)
+		.set({
+			name: nextName,
+			...(data.description !== undefined && { description: data.description }),
+		})
+		.where(eq(cohorts.id, data.cohortId));
+
+	return { id: data.cohortId, name: nextName, description: data.description ?? cohort.description };
+});
+
+export const deleteCohort = Effect.fn("deleteCohort")(function* (data: CohortIdInput) {
+	const db = yield* Database;
+
+	const cohortRows = yield* db
+		.select({ id: cohorts.id })
+		.from(cohorts)
+		.where(and(eq(cohorts.id, data.cohortId), isNull(cohorts.deletedAt)))
+		.limit(1);
+	if (cohortRows.length === 0) {
+		return yield* new CohortNotFoundError({ cohortId: data.cohortId });
+	}
+
+	// Soft-delete the cohort and its memberships in one go so members stop
+	// receiving assignments targeted at the deleted cohort.
+	const now = new Date();
+	yield* db.update(cohorts).set({ deletedAt: now }).where(eq(cohorts.id, data.cohortId));
+	yield* db
+		.update(cohortMembers)
+		.set({ deletedAt: now })
+		.where(and(eq(cohortMembers.cohortId, data.cohortId), isNull(cohortMembers.deletedAt)));
+
+	return true;
+});

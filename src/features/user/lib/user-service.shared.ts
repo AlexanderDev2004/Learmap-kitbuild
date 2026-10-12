@@ -53,6 +53,35 @@ export const BulkCohortAssignInput = Schema.Struct({
 
 export type BulkCohortAssignInput = typeof BulkCohortAssignInput.Type;
 
+export const CreateCohortInput = Schema.Struct({
+	name: NonEmpty("Cohort name"),
+	description: Schema.optionalWith(Schema.String, { nullable: true }),
+});
+
+export type CreateCohortInput = typeof CreateCohortInput.Type;
+
+export const UpdateCohortInput = Schema.Struct({
+	cohortId: NonEmpty("Cohort ID"),
+	name: Schema.optionalWith(NonEmpty("Cohort name"), { nullable: true }),
+	description: Schema.optionalWith(Schema.String, { nullable: true }),
+});
+
+export type UpdateCohortInput = typeof UpdateCohortInput.Type;
+
+export const CohortIdInput = Schema.Struct({
+	cohortId: NonEmpty("Cohort ID"),
+});
+
+export type CohortIdInput = typeof CohortIdInput.Type;
+
+export class CohortAlreadyExistsError extends Data.TaggedError("CohortAlreadyExistsError")<{
+	name: string;
+}> {}
+
+export class CohortNotFoundError extends Data.TaggedError("CohortNotFoundError")<{
+	cohortId: string;
+}> {}
+
 export const UpdateRoleInput = Schema.Struct({
 	userId: Schema.String,
 	role: Role,

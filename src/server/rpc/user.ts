@@ -10,12 +10,18 @@ import {
 	banUser,
 	unbanUser,
 	bulkAssignCohort,
+	createCohort,
+	updateCohort,
+	deleteCohort,
 } from "@/features/user/lib/user-service.mutations";
 import { listUsers, getUserById } from "@/features/user/lib/user-service.queries";
 import {
 	BanUserInput,
 	BulkCohortAssignInput,
+	CohortIdInput,
+	CreateCohortInput,
 	CreateUserInput,
+	UpdateCohortInput,
 	UpdateRoleInput,
 	UpdateUserInput,
 	UserFilterInput,
@@ -231,6 +237,69 @@ export const bulkAssignCohortRpc = createServerFn({ method: "POST" })
 		),
 	);
 
+export const createCohortRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(CreateCohortInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			createCohort(data).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("createCohort"),
+				Effect.tapError(logRpcError("createCohort")),
+				Effect.catchTags({
+					CohortAlreadyExistsError: () =>
+						Rpc.err(`A cohort named "${data.name}" already exists`),
+				}),
+				Effect.catchAll(logAndReturnError("createCohort")),
+				Effect.catchAllDefect(logAndReturnDefect("createCohort")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const updateCohortRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(UpdateCohortInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			updateCohort(data).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("updateCohort"),
+				Effect.tapError(logRpcError("updateCohort")),
+				Effect.catchTags({
+					CohortAlreadyExistsError: () =>
+						Rpc.err(`A cohort named "${data.name}" already exists`),
+					CohortNotFoundError: () => Rpc.notFound("Cohort"),
+				}),
+				Effect.catchAll(logAndReturnError("updateCohort")),
+				Effect.catchAllDefect(logAndReturnDefect("updateCohort")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const deleteCohortRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(CohortIdInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			deleteCohort(data).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("deleteCohort"),
+				Effect.tapError(logRpcError("deleteCohort")),
+				Effect.catchTags({
+					CohortNotFoundError: () => Rpc.notFound("Cohort"),
+				}),
+				Effect.catchAll(logAndReturnError("deleteCohort")),
+				Effect.catchAllDefect(logAndReturnDefect("deleteCohort")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
 export const UserRpc = {
 	users: () => ["users"],
 	listUsers: (filters: Partial<UserFilterInput> = {}) =>
@@ -273,6 +342,21 @@ export const UserRpc = {
 		mutationOptions({
 			mutationKey: [...UserRpc.users(), "bulkCohort"],
 			mutationFn: (data: BulkCohortAssignInput) => bulkAssignCohortRpc({ data }),
+		}),
+	createCohort: () =>
+		mutationOptions({
+			mutationKey: [...UserRpc.users(), "createCohort"],
+			mutationFn: (data: CreateCohortInput) => createCohortRpc({ data }),
+		}),
+	updateCohort: () =>
+		mutationOptions({
+			mutationKey: [...UserRpc.users(), "updateCohort"],
+			mutationFn: (data: UpdateCohortInput) => updateCohortRpc({ data }),
+		}),
+	deleteCohort: () =>
+		mutationOptions({
+			mutationKey: [...UserRpc.users(), "deleteCohort"],
+			mutationFn: (data: CohortIdInput) => deleteCohortRpc({ data }),
 		}),
 	deleteUser: () =>
 		mutationOptions({

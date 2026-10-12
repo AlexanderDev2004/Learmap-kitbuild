@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Guard } from "@/features/auth/components/Guard";
 import { BulkCohortDialog } from "@/features/user/components/bulk-cohort-dialog";
+import { CohortManager } from "@/features/user/components/cohort-manager";
 import { CreateUserDialog } from "@/features/user/components/create-user-dialog";
 import { UserDetailSheet } from "@/features/user/components/user-detail-sheet";
 import { UserFilterBar } from "@/features/user/components/user-filter-bar";
@@ -165,8 +166,9 @@ function UsersPage() {
 
 	return (
 		<Tabs defaultValue="users" className="pt-4">
-			<TabsList className="grid w-full max-w-sm grid-cols-2">
+			<TabsList className="grid w-full max-w-md grid-cols-3">
 				<TabsTrigger value="users">Users</TabsTrigger>
+				<TabsTrigger value="cohorts">Cohorts</TabsTrigger>
 				<TabsTrigger value="whitelist">Whitelist</TabsTrigger>
 			</TabsList>
 			<TabsContent value="users" className="space-y-4">
@@ -253,6 +255,9 @@ function UsersPage() {
 					onConfirm={handleBulkCohortConfirm}
 					isLoading={bulkCohortMutation.isPending}
 				/>
+			</TabsContent>
+			<TabsContent value="cohorts" className="space-y-4">
+				<CohortManager />
 			</TabsContent>
 			<TabsContent value="whitelist" className="space-y-4">
 				<PageHeader
