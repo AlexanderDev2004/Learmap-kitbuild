@@ -225,7 +225,10 @@ export const updateFormRpc = createServerFn({ method: "POST" })
 				Effect.tapError(logRpcError("updateForm")),
 				Effect.catchTags({
 					FormNotFoundError: () => Rpc.notFound("Form"),
-					FormHasResponsesError: () => Rpc.err("Cannot update form: form has responses"),
+					FormHasResponsesError: () =>
+						Rpc.err(
+							"Cannot change the form type: this form already has responses. You can still edit the title, description, and reading material.",
+						),
 					InvalidReadingMaterialSectionsError: () =>
 						Rpc.err("Invalid reading material range configuration"),
 				}),

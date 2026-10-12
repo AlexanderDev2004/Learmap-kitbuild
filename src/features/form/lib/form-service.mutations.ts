@@ -84,7 +84,13 @@ export const updateForm = Effect.fn("updateForm")(function* (
 		.from(formResponses)
 		.where(and(eq(formResponses.formId, formId), isNull(formResponses.deletedAt)));
 
-	if (responseRows.length > 0) {
+	// Metadata edits (title, description, status, reading material ranges) are
+	// always safe: answers are stored per question, so none of them change how
+	// stored responses are interpreted. Only a type change rewrites the form's
+	// semantics (which phase the answers belong to), so that alone is blocked
+	// once responses exist. The form builder always sends the full payload,
+	// so blocking on any field would reject routine metadata saves.
+	if (responseRows.length > 0 && data.type !== undefined && data.type !== form.type) {
 		return yield* new FormHasResponsesError({
 			formId,
 			responseCount: responseRows.length,
