@@ -65,6 +65,15 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 			return;
 		}
 
+		// Never submit without a target: the machine guard blocks NEXT on the
+		// last step, but the submit button must enforce it too.
+		if (
+			ctx.assignment.selectedCohorts.length === 0 &&
+			ctx.assignment.selectedUsers.length === 0
+		) {
+			return;
+		}
+
 		createMutation.mutate(
 			{
 				title: ctx.basic.title.trim(),
@@ -437,11 +446,15 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 					{snapshot.matches("basicInfo") ? "Cancel" : "Previous"}
 				</Button>
 				{!snapshot.matches("assignment") ? (
-					<Button type="button" onClick={() => send({ type: "NEXT" })}>
+					<Button key="wizard-next" type="button" onClick={() => send({ type: "NEXT" })}>
 						Next
 					</Button>
 				) : (
-					<Button type="submit" disabled={isSubmitting}>
+					<Button
+						key="wizard-submit"
+						type="submit"
+						disabled={isSubmitting}
+					>
 						{isSubmitting ? "Creating..." : "Create Assignment"}
 					</Button>
 				)}
