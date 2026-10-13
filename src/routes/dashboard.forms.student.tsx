@@ -131,6 +131,21 @@ function FormsStudentPage() {
 				) : (
 					<EmptyState icon={FileTextIcon} title="No forms available yet" />
 				)
+			) : standalone.length === 0 ? (
+				// The student only has assignment-scoped test forms (pre/post/delayed),
+				// which are intentionally hidden here. Show where to work on them
+				// instead of empty tabs that wrongly claim everything is completed.
+				<EmptyState
+					icon={BookOpenIcon}
+					title="No forms here"
+					description="Pre-tests and post-tests are part of your assignments. Open My Assignments to work on them."
+					action={
+						<Button onClick={() => navigate({ to: "/dashboard/assignments" })}>
+							<BookOpenIcon className="size-4" />
+							Go to My Assignments
+						</Button>
+					}
+				/>
 			) : (
 				<Tabs defaultValue="available">
 					<TabsList className="max-sm:w-full">
