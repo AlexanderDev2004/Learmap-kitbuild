@@ -12,7 +12,11 @@ export const exportAnalyticsData = Effect.fn("exportAnalyticsData")(function* (
 		const csvData = [
 			[
 				"UserID",
+				"UserEmail",
 				"UserName",
+				"AssignmentTitle",
+				"StudyGroup",
+				"Condition",
 				"LearnerMapID",
 				"Status",
 				"Attempt",
@@ -22,24 +26,80 @@ export const exportAnalyticsData = Effect.fn("exportAnalyticsData")(function* (
 				"Excessive",
 				"TotalGoalPropositions",
 				"SubmittedAt",
-				"AssignmentTitle",
+				"PreTestRaw",
+				"PreTestTotal",
+				"PreTestScore",
+				"PreTestDurationSeconds",
+				"PostTestRaw",
+				"PostTestTotal",
+				"PostTestScore",
+				"PostTestDurationSeconds",
 			],
 		];
 
-		for (const learner of input.analytics.learners) {
+		// One row per student per assignment: study group, condition, map
+		// diagnosis, and pre/post test results — the thesis measured variables —
+		// so the file can be analyzed directly in Excel/R/SPSS.
+		const value = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
+		const analytics = input.analytics as {
+			assignment: { title: string };
+			learners: Array<Record<string, unknown>>;
+			notStartedLearners?: Array<Record<string, unknown>> | null;
+		};
+
+		for (const learner of analytics.learners) {
 			csvData.push([
-				learner.userId,
-				learner.userName,
-				learner.learnerMapId,
-				learner.status,
-				learner.attempt.toString(),
-				learner.score?.toString() ?? "0",
-				learner.correct.toString(),
-				learner.missing.toString(),
-				learner.excessive.toString(),
-				learner.totalGoalPropositions.toString(),
-				learner.submittedAt ? new Date(learner.submittedAt).toISOString() : "",
-				input.analytics.assignment.title,
+				value(learner.userId),
+				value(learner.userEmail),
+				value(learner.userName),
+				value(analytics.assignment.title),
+				value(learner.studyGroup),
+				value(learner.condition),
+				value(learner.learnerMapId),
+				value(learner.status),
+				value(learner.attempt),
+				value(learner.score),
+				value(learner.correct),
+				value(learner.missing),
+				value(learner.excessive),
+				value(learner.totalGoalPropositions),
+				learner.submittedAt ? new Date(learner.submittedAt as number).toISOString() : "",
+				value(learner.preTestRaw),
+				value(learner.preTestTotal),
+				value(learner.preTestScore),
+				value(learner.preTestDurationSeconds),
+				value(learner.postTestRaw),
+				value(learner.postTestTotal),
+				value(learner.postTestScore),
+				value(learner.postTestDurationSeconds),
+			]);
+		}
+
+		for (const learner of analytics.notStartedLearners ?? []) {
+			csvData.push([
+				value(learner.userId),
+				value(learner.userEmail),
+				value(learner.userName),
+				value(analytics.assignment.title),
+				value(learner.studyGroup),
+				"",
+				"",
+				"not_started",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
 			]);
 		}
 
@@ -56,6 +116,7 @@ export const exportAnalyticsData = Effect.fn("exportAnalyticsData")(function* (
 		assignment: input.analytics.assignment,
 		goalMap: input.analytics.goalMap,
 		learners: input.analytics.learners,
+		notStartedLearners: input.analytics.notStartedLearners ?? [],
 		summary: input.analytics.summary,
 		exportedAt: new Date().toISOString(),
 	};

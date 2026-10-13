@@ -13,6 +13,7 @@ import { safeParseJson } from "@/lib/utils";
 import { Database } from "@/server/db/client";
 import {
 	assignments,
+	assignmentTargets,
 	diagnoses,
 	formResponses,
 	goalMaps,
@@ -20,7 +21,7 @@ import {
 	learnerMaps,
 	questions,
 } from "@/server/db/schema/app-schema";
-import { user } from "@/server/db/schema/auth-schema";
+import { cohortMembers, user } from "@/server/db/schema/auth-schema";
 
 import {
 	AssignmentNotFoundError,
@@ -261,6 +262,12 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 					userName: lm.userName,
 					userEmail: lm.userEmail,
 					learnerMapId: lm.id,
+					studyGroup:
+						lm.studyGroup === "experiment"
+							? "experiment"
+							: lm.studyGroup === "control"
+								? "control"
+								: undefined,
 					condition:
 						lm.studyGroup === "experiment"
 							? "concept_map"
@@ -288,6 +295,51 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 		),
 		{ concurrency: 10 },
 	);
+
+	// Include targeted students who never started (no learner map row) so the
+	// export covers the full participant list, not only those who began.
+	const targetRows = yield* db
+		.select({ userId: assignmentTargets.userId, cohortId: assignmentTargets.cohortId })
+		.from(assignmentTargets)
+		.where(
+			and(
+				eq(assignmentTargets.assignmentId, input.assignmentId),
+				isNull(assignmentTargets.deletedAt),
+			),
+		);
+	const cohortIds = targetRows.flatMap((t) => (t.cohortId ? [t.cohortId] : []));
+	const cohortUserIds =
+		cohortIds.length > 0
+			? yield* db
+					.select({ userId: cohortMembers.userId })
+					.from(cohortMembers)
+					.where(
+						and(
+							inArray(cohortMembers.cohortId, cohortIds),
+							isNull(cohortMembers.deletedAt),
+						),
+					)
+			: [];
+	const startedUserIds = new Set(learnerMapsData.map((lm) => lm.userId));
+	const targetUserIds = Array.from(
+		new Set([
+			...targetRows.flatMap((t) => (t.userId ? [t.userId] : [])),
+			...cohortUserIds.map((row) => row.userId),
+		]),
+	);
+	const notStartedIds = targetUserIds.filter((id) => !startedUserIds.has(id));
+	const notStartedLearners =
+		notStartedIds.length > 0
+			? yield* db
+					.select({
+						userId: user.id,
+						userName: user.name,
+						userEmail: user.email,
+						studyGroup: user.studyGroup,
+					})
+					.from(user)
+					.where(and(inArray(user.id, notStartedIds), isNull(user.deletedAt)))
+			: [];
 
 	const scores: number[] = [];
 	for (const l of finalLearners) {
@@ -324,6 +376,7 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 			direction: yield* Schema.encode(GoalMapDirectionSchema)(goalMap.direction),
 		},
 		learners: finalLearners,
+		notStartedLearners,
 		summary,
 	};
 });

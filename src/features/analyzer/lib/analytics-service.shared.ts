@@ -81,6 +81,9 @@ export const LearnerAnalyticsSchema = Schema.Struct({
 	userName: Schema.String,
 	userEmail: Schema.String,
 	learnerMapId: Schema.String,
+	studyGroup: Schema.optional(
+		Schema.Union(Schema.Literal("experiment"), Schema.Literal("control")),
+	),
 	condition: Schema.optional(
 		Schema.Union(Schema.Literal("concept_map"), Schema.Literal("summarizing")),
 	),
@@ -128,10 +131,24 @@ export const AssignmentSummarySchema = Schema.Struct({
 	lowestScore: Schema.NullOr(Schema.Number),
 });
 
+export const NotStartedLearnerSchema = Schema.Struct({
+	userId: Schema.String,
+	userName: Schema.String,
+	userEmail: Schema.String,
+	studyGroup: Schema.optional(
+		Schema.NullOr(Schema.Union(Schema.Literal("experiment"), Schema.Literal("control"))),
+	),
+});
+
+export type NotStartedLearner = typeof NotStartedLearnerSchema.Type;
+
 export const AssignmentAnalyticsSchema = Schema.Struct({
 	assignment: TeacherAssignmentSchema,
 	goalMap: GoalMapSchema,
 	learners: Schema.Array(LearnerAnalyticsSchema),
+	// Targeted students without any learner map row (never started). Kept
+	// separate so every export can cover the full participant list.
+	notStartedLearners: Schema.optional(Schema.Array(NotStartedLearnerSchema)),
 	summary: AssignmentSummarySchema,
 });
 
