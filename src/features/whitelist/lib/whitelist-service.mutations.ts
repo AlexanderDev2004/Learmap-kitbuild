@@ -54,6 +54,15 @@ export const importWhitelistCsv = Effect.fn("importWhitelistCsv")((csvText: stri
 			);
 			const name = readRowValue(row, ["name", "fullname", "full_name"]);
 			const cohortId = readRowValue(row, ["cohortid", "cohort_id", "cohort"]) || null;
+			const rawStudyGroup = readRowValue(row, [
+				"studygroup",
+				"study_group",
+				"group",
+			]).toLowerCase();
+			const studyGroup =
+				rawStudyGroup === "experiment" || rawStudyGroup === "control"
+					? rawStudyGroup
+					: null;
 
 			if (!studentId) {
 				throw new WhitelistImportFailedError({
@@ -70,6 +79,7 @@ export const importWhitelistCsv = Effect.fn("importWhitelistCsv")((csvText: stri
 				studentId,
 				name,
 				cohortId,
+				studyGroup,
 			});
 		});
 
@@ -81,12 +91,14 @@ export const importWhitelistCsv = Effect.fn("importWhitelistCsv")((csvText: stri
 					studentId: row.studentId,
 					name: row.name,
 					cohortId: row.cohortId ?? null,
+					studyGroup: row.studyGroup ?? null,
 				})
 				.onConflictDoUpdate({
 					target: whitelistEntries.studentId,
 					set: {
 						name: row.name,
 						cohortId: row.cohortId ?? null,
+						studyGroup: row.studyGroup ?? null,
 						updatedAt: new Date(),
 					},
 				});

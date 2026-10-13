@@ -125,6 +125,9 @@ export const whitelistEntries = sqliteTable(
 		studentId: text("student_id").notNull().unique(),
 		name: text("name").notNull(),
 		cohortId: text("cohort_id").references(() => cohorts.id, { onDelete: "set null" }),
+		// Experiment group assigned at whitelist import time (randomization
+		// happens before signup, not after). Null = not yet assigned.
+		studyGroup: text("study_group", { enum: ["experiment", "control"] }),
 		claimedUserId: text("claimed_user_id")
 			.references(() => user.id, { onDelete: "set null" })
 			.unique(),

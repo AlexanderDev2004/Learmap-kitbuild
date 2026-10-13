@@ -14,10 +14,16 @@ export const WhitelistImportInput = Schema.Struct({
 
 export type WhitelistImportInput = typeof WhitelistImportInput.Type;
 
+export const StudyGroupSchema = Schema.Union(
+	Schema.Literal("experiment"),
+	Schema.Literal("control"),
+);
+
 export const WhitelistCsvRow = Schema.Struct({
 	studentId: NonEmpty("Student ID"),
 	name: NonEmpty("Name"),
 	cohortId: Schema.optionalWith(Schema.String, { nullable: true }),
+	studyGroup: Schema.optionalWith(StudyGroupSchema, { nullable: true }),
 });
 
 export type WhitelistCsvRow = typeof WhitelistCsvRow.Type;
@@ -28,6 +34,7 @@ export type WhitelistEntryWithCohort = {
 	name: string;
 	cohortId: string | null;
 	cohortName: string | null;
+	studyGroup: "experiment" | "control" | null;
 	claimedUserId: string | null;
 	claimedAt: Date | null;
 	createdAt: Date;

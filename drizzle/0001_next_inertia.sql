@@ -1,0 +1,1 @@
+ALTER TABLE `whitelist_entries` ADD `study_group` text;

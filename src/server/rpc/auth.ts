@@ -113,7 +113,10 @@ export const signUpRpc = createServerFn({ method: "POST" })
 								previousJapaneseScore: data.previousJapaneseScore ?? undefined,
 								mediaConsumption: data.mediaConsumption ?? undefined,
 								motivation: data.motivation ?? undefined,
-								studyGroup: "experiment",
+								// Randomization is decided at whitelist import time;
+								// signup just carries it over. Unassigned rows (null
+								// in CSV) stay null so they can be assigned later.
+								studyGroup: whitelist.studyGroup ?? undefined,
 								consentGiven: data.consentGiven,
 							},
 						}),

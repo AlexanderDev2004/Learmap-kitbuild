@@ -63,7 +63,8 @@ export function WhitelistPanel() {
 		<div className="space-y-4">
 			<div className="flex flex-col gap-3">
 				<p className="text-sm text-muted-foreground">
-					Import CSV. Columns: studentId, name, cohortId.
+					Import CSV. Columns: studentId, name, cohortId, studyGroup (optional: experiment
+					/ control — leave empty to assign later).
 				</p>
 				<div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
 					<div className="space-y-1.5">
@@ -91,6 +92,7 @@ export function WhitelistPanel() {
 						<TableHead>Student ID</TableHead>
 						<TableHead>Name</TableHead>
 						<TableHead>Cohort</TableHead>
+						<TableHead>Group</TableHead>
 						<TableHead>Status</TableHead>
 						<TableHead>Added</TableHead>
 						<TableHead className="w-12" />
@@ -100,7 +102,7 @@ export function WhitelistPanel() {
 					{isLoading ? (
 						<TableRow>
 							<TableCell
-								colSpan={6}
+								colSpan={7}
 								className="py-8 text-center text-muted-foreground"
 							>
 								Loading whitelist…
@@ -109,7 +111,7 @@ export function WhitelistPanel() {
 					) : entries.length === 0 ? (
 						<TableRow>
 							<TableCell
-								colSpan={6}
+								colSpan={7}
 								className="py-8 text-center text-muted-foreground"
 							>
 								No unregistered whitelist entries
@@ -121,6 +123,21 @@ export function WhitelistPanel() {
 								<TableCell className="font-medium">{entry.studentId}</TableCell>
 								<TableCell>{entry.name}</TableCell>
 								<TableCell>{entry.cohortName ?? "—"}</TableCell>
+								<TableCell>
+									{entry.studyGroup === null ? (
+										<span className="text-muted-foreground">—</span>
+									) : (
+										<Badge
+											variant={
+												entry.studyGroup === "experiment"
+													? "default"
+													: "outline"
+											}
+										>
+											{entry.studyGroup}
+										</Badge>
+									)}
+								</TableCell>
 								<TableCell>
 									<Badge variant="secondary">Pending</Badge>
 								</TableCell>

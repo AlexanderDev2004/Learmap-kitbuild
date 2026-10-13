@@ -37,6 +37,30 @@ describe("WhitelistCsvRow schema", () => {
 		// nullable with optionalWith converts null to undefined
 		expect(row.cohortId).toBeUndefined();
 	});
+
+	it("should accept row with studyGroup experiment", () => {
+		const row = assertParses({ studentId: "s12345", name: "Alice", studyGroup: "experiment" });
+		expect(row.studyGroup).toBe("experiment");
+	});
+
+	it("should accept row with studyGroup control", () => {
+		const row = assertParses({ studentId: "s12345", name: "Alice", studyGroup: "control" });
+		expect(row.studyGroup).toBe("control");
+	});
+
+	it("should accept row without studyGroup", () => {
+		const row = assertParses({ studentId: "s12345", name: "Alice" });
+		expect(row.studyGroup).toBeUndefined();
+	});
+
+	it("should accept row with null studyGroup", () => {
+		const row = assertParses({ studentId: "s12345", name: "Alice", studyGroup: null });
+		expect(row.studyGroup).toBeUndefined();
+	});
+
+	it("should reject row with unknown studyGroup value", () => {
+		assertFails({ studentId: "s12345", name: "Alice", studyGroup: "banana" });
+	});
 });
 
 describe("WhitelistImportFailedError", () => {
