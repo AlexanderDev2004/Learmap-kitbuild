@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +59,22 @@ export function WhitelistPanel() {
 		importMutation.mutate({ csvText });
 	};
 
+	const handleDownloadTemplate = () => {
+		const template = [
+			"studentId,name,cohortId,studyGroup",
+			"2210001,Budi Santoso,,experiment",
+			"2210002,Siti Aminah,,control",
+			"2210003,Andi Wijaya,,",
+		].join("\n");
+		const blob = new Blob(["\uFEFF" + template], { type: "text/csv;charset=utf-8" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = "whitelist-template.csv";
+		link.click();
+		URL.revokeObjectURL(url);
+	};
+
 	return (
 		<div className="space-y-4">
 			<div className="flex flex-col gap-3">
@@ -66,7 +82,7 @@ export function WhitelistPanel() {
 					Import CSV. Columns: studentId, name, cohortId, studyGroup (optional: experiment
 					/ control — leave empty to assign later).
 				</p>
-				<div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+				<div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-start">
 					<div className="space-y-1.5">
 						<Input
 							type="file"
@@ -77,6 +93,10 @@ export function WhitelistPanel() {
 							{selectedFile ? selectedFile.name : "No file selected"}
 						</p>
 					</div>
+					<Button variant="outline" onClick={handleDownloadTemplate} className="gap-2">
+						<Download className="size-4" />
+						Download Template
+					</Button>
 					<Button
 						onClick={() => void handleImport()}
 						disabled={!selectedFile || importMutation.isPending}
