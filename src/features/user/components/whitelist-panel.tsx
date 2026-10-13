@@ -60,11 +60,12 @@ export function WhitelistPanel() {
 	};
 
 	const handleDownloadTemplate = () => {
-		// Excel picks the CSV list separator from the OS regional settings:
-		// Indonesian locale splits columns on ";" while most others use ",".
-		// Match it so the template opens as real columns instead of one
-		// jammed column. The import parser auto-detects both.
-		const separator = navigator.language?.toLowerCase().startsWith("id") ? ";" : ",";
+		// Excel splits CSV columns by the OS "list separator": Indonesian
+		// regional format uses ";" (comma is the decimal mark), so a comma
+		// template opens as one jammed column for Indonesian Excel. The app's
+		// users are Indonesian, so always ship ";" — and the import parser
+		// auto-detects both ";" and "," anyway.
+		const separator = ";";
 		const template = [
 			["Student ID", "Name", "Cohort", "Group"].join(separator),
 			["2210001", "Budi Santoso", "", "experiment"].join(separator),
@@ -84,8 +85,9 @@ export function WhitelistPanel() {
 		<div className="space-y-4">
 			<div className="flex flex-col gap-3">
 				<p className="text-sm text-muted-foreground">
-					Import CSV. Columns: studentId, name, cohortId, studyGroup (optional: experiment
-					/ control — leave empty to assign later).
+					Import CSV. Columns: Student ID, Name, Cohort, Group (optional: experiment /
+					control — leave empty to assign later). The template uses ";" separators for
+					Indonesian Excel; imports accept both ";" and ",".
 				</p>
 				<div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-start">
 					<div className="space-y-1.5">
