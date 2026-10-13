@@ -335,55 +335,55 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 							<UsersIcon className="size-5 text-muted-foreground" />
 						</CardHeader>
 						<CardContent>
-							{(assignment.assignedCohorts.length > 0 ||
-								assignment.assignedUsers.length > 0) && (
-								<div className="mb-4 space-y-3 rounded-lg border bg-muted/40 p-3">
-									<div className="space-y-1.5">
-										<p className="text-xs font-medium text-muted-foreground">
-											Targeted cohorts
+							<div className="mb-4 space-y-3 rounded-lg border bg-muted/40 p-3">
+								<div className="space-y-1.5">
+									<p className="text-xs font-medium text-muted-foreground">
+										Targeted cohorts
+									</p>
+									{assignment.assignedCohorts.length > 0 ? (
+										<div className="flex flex-wrap gap-1.5">
+											{assignment.assignedCohorts.map((c) => (
+												<Badge key={c.id} variant="secondary">
+													{c.name} · {c.memberCount} members
+												</Badge>
+											))}
+										</div>
+									) : (
+										<p className="text-sm text-muted-foreground">
+											No cohorts targeted
 										</p>
-										{assignment.assignedCohorts.length > 0 ? (
-											<div className="flex flex-wrap gap-1.5">
-												{assignment.assignedCohorts.map((c) => (
-													<Badge key={c.id} variant="secondary">
-														{c.name} · {c.memberCount} members
-													</Badge>
-												))}
-											</div>
-										) : (
-											<p className="text-sm text-muted-foreground">
-												No cohorts targeted
-											</p>
-										)}
-									</div>
-									<div className="space-y-1.5">
-										<p className="text-xs font-medium text-muted-foreground">
-											Individual students
-										</p>
-										{assignment.assignedUsers.length > 0 ? (
-											<div className="flex flex-wrap gap-1.5">
-												{assignment.assignedUsers.map((u) => (
-													<Badge key={u.id} variant="outline">
-														{u.name} · {u.email}
-													</Badge>
-												))}
-											</div>
-										) : (
-											<p className="text-sm text-muted-foreground">
-												No individual students targeted
-											</p>
-										)}
-									</div>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => setTargetsOpen(true)}
-									>
-										<UsersIcon className="size-3.5 mr-1.5" />
-										Edit Targeting
-									</Button>
+									)}
 								</div>
-							)}
+								<div className="space-y-1.5">
+									<p className="text-xs font-medium text-muted-foreground">
+										Individual students
+									</p>
+									{assignment.assignedUsers.length > 0 ? (
+										<div className="flex flex-wrap gap-1.5">
+											{assignment.assignedUsers.map((u) => (
+												<Badge key={u.id} variant="outline">
+													{u.name} · {u.email}
+												</Badge>
+											))}
+										</div>
+									) : (
+										<p className="text-sm text-muted-foreground">
+											No individual students targeted
+										</p>
+									)}
+								</div>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setTargetsOpen(true)}
+								>
+									<UsersIcon className="size-3.5 mr-1.5" />
+									{assignment.assignedCohorts.length > 0 ||
+									assignment.assignedUsers.length > 0
+										? "Edit Targeting"
+										: "Add Targeting"}
+								</Button>
+							</div>
 							{assignment.totalStudents > 0 ? (
 								<div>
 									{/* Table - desktop */}
