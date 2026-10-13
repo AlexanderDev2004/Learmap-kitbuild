@@ -1,0 +1,1 @@
+ALTER TABLE `learner_maps` ADD `first_interaction_at` integer;

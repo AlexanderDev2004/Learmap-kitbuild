@@ -164,6 +164,9 @@ export const learnerMaps = sqliteTable(
 		status: text("status", { enum: ["draft", "submitted", "graded"] })
 			.notNull()
 			.default("draft"),
+		// When the learner first modified the map (set on first save). Used to
+		// compute build duration: submittedAt - firstInteractionAt.
+		firstInteractionAt: integer("first_interaction_at", { mode: "timestamp_ms" }),
 		attempt: integer("attempt").notNull().default(1),
 		submittedAt: integer("submitted_at", { mode: "timestamp_ms" }),
 		...timestamps,

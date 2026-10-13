@@ -91,6 +91,7 @@ export const LearnerAnalyticsSchema = Schema.Struct({
 	score: Schema.NullOr(Schema.Number),
 	attempt: Schema.Number,
 	submittedAt: Schema.NullOr(Schema.Number),
+	mapBuildDurationSeconds: Schema.NullOr(Schema.Number),
 	correct: Schema.Number,
 	missing: Schema.Number,
 	excessive: Schema.Number,

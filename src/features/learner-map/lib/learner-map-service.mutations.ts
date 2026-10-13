@@ -49,7 +49,11 @@ export const saveLearnerMap = Effect.fn("saveLearnerMap")(function* (
 	yield* requireAssignmentMembership(userId, data.assignmentId);
 
 	const existingRows = yield* db
-		.select({ id: learnerMaps.id, status: learnerMaps.status })
+		.select({
+			id: learnerMaps.id,
+			status: learnerMaps.status,
+			firstInteractionAt: learnerMaps.firstInteractionAt,
+		})
 		.from(learnerMaps)
 		.where(
 			and(
@@ -74,6 +78,11 @@ export const saveLearnerMap = Effect.fn("saveLearnerMap")(function* (
 				...(data.controlText !== undefined && {
 					controlText: data.controlText,
 				}),
+				// First modification of the map: this is when building started.
+				// Later saves keep the original timestamp.
+				...(existing.firstInteractionAt === null && {
+					firstInteractionAt: new Date(),
+				}),
 			})
 			.where(and(eq(learnerMaps.id, existing.id), isNull(learnerMaps.deletedAt)));
 
@@ -91,6 +100,7 @@ export const saveLearnerMap = Effect.fn("saveLearnerMap")(function* (
 		edges: data.edges ?? null,
 		controlText: data.controlText ?? null,
 		status: "draft",
+		firstInteractionAt: new Date(),
 		attempt: 1,
 	});
 
@@ -230,6 +240,8 @@ export const startNewAttempt = Effect.fn("startNewAttempt")(function* (
 			status: "draft",
 			attempt: existing.attempt + 1,
 			submittedAt: null,
+			// New attempt measures its own build duration.
+			firstInteractionAt: null,
 		})
 		.where(and(eq(learnerMaps.id, existing.id), eq(learnerMaps.status, "submitted")));
 

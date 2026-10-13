@@ -22,6 +22,7 @@ const mockAnalytics = {
 			excessive: 0,
 			totalGoalPropositions: 5,
 			submittedAt: Date.now(),
+			mapBuildDurationSeconds: 640,
 			preTestRaw: 3,
 			preTestTotal: 5,
 			preTestScore: 60,
@@ -46,6 +47,7 @@ const mockAnalytics = {
 			excessive: 1,
 			totalGoalPropositions: 5,
 			submittedAt: Date.now(),
+			mapBuildDurationSeconds: null,
 			preTestRaw: null,
 			preTestTotal: null,
 			preTestScore: null,
@@ -94,6 +96,9 @@ describe("exportAnalyticsData", () => {
 		// Pre/post test columns carry the measured scores.
 		expect(result.data).toContain("60");
 		expect(result.data).toContain("100");
+		// Build duration column: 640s for Alice, empty for Bob (no edits tracked).
+		expect(result.data).toContain("MapBuildDurationSeconds");
+		expect(result.data).toContain(",640,");
 		// Targeted students who never started still get a row.
 		expect(result.data).toContain("u3");
 		expect(result.data).toContain("not_started");

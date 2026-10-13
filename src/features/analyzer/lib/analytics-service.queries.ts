@@ -151,6 +151,7 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 			status: learnerMaps.status,
 			attempt: learnerMaps.attempt,
 			submittedAt: learnerMaps.submittedAt,
+			firstInteractionAt: learnerMaps.firstInteractionAt,
 			score: diagnoses.score,
 			perLink: diagnoses.perLink,
 			userName: user.name,
@@ -257,6 +258,16 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 					totalGoalPropositions = parsed.totalGoalPropositions ?? 0;
 				}
 
+				// Build duration: first modification until submit. Null when the
+				// learner never edited (imported rows) or the condition is
+				// summarizing (no map to build).
+				const mapBuildDurationSeconds =
+					lm.submittedAt !== null && lm.firstInteractionAt !== null
+						? Math.round(
+								(lm.submittedAt.getTime() - lm.firstInteractionAt.getTime()) / 1000,
+							)
+						: null;
+
 				return yield* Schema.encode(LearnerAnalyticsSchema)({
 					userId: lm.userId,
 					userName: lm.userName,
@@ -278,6 +289,7 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 					score: lm.score,
 					attempt: lm.attempt,
 					submittedAt: lm.submittedAt?.getTime() ?? null,
+					mapBuildDurationSeconds,
 					correct,
 					missing,
 					excessive,

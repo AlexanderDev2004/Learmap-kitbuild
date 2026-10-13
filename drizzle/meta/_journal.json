@@ -15,6 +15,13 @@
 			"when": 1791882073353,
 			"tag": "0001_next_inertia",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1791885007721,
+			"tag": "0002_cooing_thunderbird",
+			"breakpoints": true
 		}
 	]
 }
