@@ -87,10 +87,7 @@ export function GoalMapCard({
 						<span className="sr-only">Edit</span>
 					</Link>
 				</Button>
-				<AlertDialog
-						open={isDeleteConfirmOpen}
-						onOpenChange={onDeleteDialogOpenChange}
-					>
+				<AlertDialog open={isDeleteConfirmOpen} onOpenChange={onDeleteDialogOpenChange}>
 					<AlertDialogTrigger asChild>
 						<Button
 							variant="secondary"

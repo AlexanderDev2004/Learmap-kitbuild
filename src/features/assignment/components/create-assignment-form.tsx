@@ -294,7 +294,8 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 							<UsersIcon className="size-4" />
 							Assign to Cohorts
 							<span className="text-xs font-normal text-muted-foreground">
-								({ctx.assignment.selectedCohorts.length}/{formOptions.cohorts.length})
+								({ctx.assignment.selectedCohorts.length}/
+								{formOptions.cohorts.length})
 							</span>
 							{formOptions.cohorts.length > 0 && (
 								<Button
@@ -313,7 +314,8 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 										})
 									}
 								>
-									{ctx.assignment.selectedCohorts.length === formOptions.cohorts.length
+									{ctx.assignment.selectedCohorts.length ===
+									formOptions.cohorts.length
 										? "Deselect all"
 										: "Select all"}
 								</Button>
@@ -378,7 +380,8 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 										})
 									}
 								>
-									{ctx.assignment.selectedUsers.length === formOptions.users.length
+									{ctx.assignment.selectedUsers.length ===
+									formOptions.users.length
 										? "Deselect all"
 										: "Select all"}
 								</Button>
@@ -450,11 +453,7 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 						Next
 					</Button>
 				) : (
-					<Button
-						key="wizard-submit"
-						type="submit"
-						disabled={isSubmitting}
-					>
+					<Button key="wizard-submit" type="submit" disabled={isSubmitting}>
 						{isSubmitting ? "Creating..." : "Create Assignment"}
 					</Button>
 				)}

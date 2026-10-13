@@ -1,5 +1,5 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { MapIcon, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -149,7 +149,9 @@ function DashboardPage() {
 											topic={topic}
 											isEditOpen={topicEditId === topic.id}
 											isDeleteOpen={topicDeleteId === topic.id}
-											onEditOpenChange={(open) => setTopicEditId(open ? topic.id : null)}
+											onEditOpenChange={(open) =>
+												setTopicEditId(open ? topic.id : null)
+											}
 											onDeleteOpenChange={(open) =>
 												setTopicDeleteId(open ? topic.id : null)
 											}
@@ -262,7 +264,7 @@ function DashboardPage() {
 								onDeleteClick={handleDelete}
 								onConfirmDelete={confirmDelete}
 								onDeleteDialogOpenChange={setDeleteConfirmOpen}
-								/>
+							/>
 						))}
 					</div>
 				)}

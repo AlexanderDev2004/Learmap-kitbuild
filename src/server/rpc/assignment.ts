@@ -93,9 +93,7 @@ export const deleteAssignmentRpc = createServerFn({ method: "POST" })
 
 export const updateAssignmentTargetsRpc = createServerFn({ method: "POST" })
 	.middleware([requireRoleMiddleware("teacher", "admin")])
-	.inputValidator((raw) =>
-		Schema.decodeUnknownSync(UpdateAssignmentTargetsInput)(raw),
-	)
+	.inputValidator((raw) => Schema.decodeUnknownSync(UpdateAssignmentTargetsInput)(raw))
 	.handler(({ data, context }) =>
 		AppRuntime.runPromise(
 			updateAssignmentTargets(context.user.id, data, {
@@ -109,10 +107,7 @@ export const updateAssignmentTargetsRpc = createServerFn({ method: "POST" })
 					AssignmentAccessDeniedError: (e: { assignmentId: string }) =>
 						Rpc.forbidden(`Access denied to assignment ${e.assignmentId}`),
 					AssignmentTargetsEmptyError: () =>
-						Rpc.err(
-							"Select at least one cohort or student to assign",
-							"VALIDATION",
-						),
+						Rpc.err("Select at least one cohort or student to assign", "VALIDATION"),
 				}),
 				Effect.catchAll(logAndReturnError("updateAssignmentTargets")),
 				Effect.catchAllDefect(logAndReturnDefect("updateAssignmentTargets")),

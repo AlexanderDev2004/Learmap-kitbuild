@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { useRpcMutation } from "@/hooks/use-rpc-query";
 import { MinLength } from "@/lib/validation-schemas";
 import { TopicRpc } from "@/server/rpc/topic";
+
 import type { Topic } from "../lib/topic-service";
 
 const TopicFormSchema = Schema.Struct({
@@ -159,7 +160,9 @@ export function TopicActions({
 							<form.Field name="description">
 								{(field) => (
 									<div className="grid gap-2">
-										<Label htmlFor={`topic-description-${topic.id}`}>Description</Label>
+										<Label htmlFor={`topic-description-${topic.id}`}>
+											Description
+										</Label>
 										<Input
 											id={`topic-description-${topic.id}`}
 											placeholder="Topic description"
@@ -206,8 +209,8 @@ export function TopicActions({
 					<AlertDialogHeader>
 						<AlertDialogTitle>Delete topic "{topic.title}"?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will hide the topic and its goal maps from the dashboard. This action
-							cannot be undone from the interface.
+							This will hide the topic and its goal maps from the dashboard. This
+							action cannot be undone from the interface.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

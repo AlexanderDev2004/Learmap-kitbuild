@@ -32,15 +32,21 @@ export function CohortManager() {
 	const { data: cohorts, isLoading } = useRpcQuery(AssignmentRpc.getAvailableCohorts());
 
 	const [createOpen, setCreateOpen] = useState(false);
-	const [editing, setEditing] = useState<{ id: string; name: string; description: string } | null>(
-		null,
-	);
-	const [deleting, setDeleting] = useState<{ id: string; name: string; memberCount: number } | null>(
-		null,
-	);
+	const [editing, setEditing] = useState<{
+		id: string;
+		name: string;
+		description: string;
+	} | null>(null);
+	const [deleting, setDeleting] = useState<{
+		id: string;
+		name: string;
+		memberCount: number;
+	} | null>(null);
 
 	const invalidateCohorts = () => {
-		void queryClient.invalidateQueries({ queryKey: AssignmentRpc.getAvailableCohorts().queryKey });
+		void queryClient.invalidateQueries({
+			queryKey: AssignmentRpc.getAvailableCohorts().queryKey,
+		});
 	};
 
 	const createMutation = useRpcMutation(UserRpc.createCohort(), {
@@ -73,7 +79,8 @@ export function CohortManager() {
 		},
 	});
 
-	const isPending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+	const isPending =
+		createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
 	return (
 		<div className="space-y-4">
@@ -179,7 +186,9 @@ export function CohortManager() {
 						>
 							<DialogHeader>
 								<DialogTitle>Edit Cohort</DialogTitle>
-								<DialogDescription>Rename the cohort or update its description.</DialogDescription>
+								<DialogDescription>
+									Rename the cohort or update its description.
+								</DialogDescription>
 							</DialogHeader>
 							<div className="grid gap-4 py-4">
 								<div className="grid gap-2">
@@ -188,7 +197,9 @@ export function CohortManager() {
 										id="edit-cohort-name"
 										value={editing.name}
 										onChange={(e) =>
-											setEditing((prev) => (prev ? { ...prev, name: e.target.value } : prev))
+											setEditing((prev) =>
+												prev ? { ...prev, name: e.target.value } : prev,
+											)
 										}
 										required
 									/>
@@ -200,14 +211,20 @@ export function CohortManager() {
 										value={editing.description}
 										onChange={(e) =>
 											setEditing((prev) =>
-												prev ? { ...prev, description: e.target.value } : prev,
+												prev
+													? { ...prev, description: e.target.value }
+													: prev,
 											)
 										}
 									/>
 								</div>
 							</div>
 							<DialogFooter>
-								<Button type="button" variant="outline" onClick={() => setEditing(null)}>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setEditing(null)}
+								>
 									Cancel
 								</Button>
 								<Button type="submit" disabled={isPending || !editing.name.trim()}>
@@ -238,8 +255,9 @@ export function CohortManager() {
 										<>
 											{" "}
 											Its {deleting.memberCount} member
-											{deleting.memberCount > 1 ? "s" : ""} will be removed from it and will
-											no longer see assignments targeted at this cohort.
+											{deleting.memberCount > 1 ? "s" : ""} will be removed
+											from it and will no longer see assignments targeted at
+											this cohort.
 										</>
 									)}{" "}
 									Existing assignments are not deleted.
@@ -279,7 +297,12 @@ interface CreateCohortDialogProps {
 	onSubmit: (name: string, description: string | undefined) => void;
 }
 
-function CreateCohortDialog({ open, onOpenChange, isSubmitting, onSubmit }: CreateCohortDialogProps) {
+function CreateCohortDialog({
+	open,
+	onOpenChange,
+	isSubmitting,
+	onSubmit,
+}: CreateCohortDialogProps) {
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 

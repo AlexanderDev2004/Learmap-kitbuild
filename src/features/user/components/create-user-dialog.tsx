@@ -100,8 +100,8 @@ export function CreateUserDialog({ isAdmin }: CreateUserDialogProps) {
 					<DialogHeader>
 						<DialogTitle>Add New User</DialogTitle>
 						<DialogDescription>
-							Create an account manually. Share the email and password with the user so
-							they can sign in.
+							Create an account manually. Share the email and password with the user
+							so they can sign in.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
@@ -171,7 +171,9 @@ export function CreateUserDialog({ isAdmin }: CreateUserDialogProps) {
 									<Select
 										value={field.state.value}
 										onValueChange={(value) =>
-											field.handleChange(value as "student" | "teacher" | "admin")
+											field.handleChange(
+												value as "student" | "teacher" | "admin",
+											)
 										}
 									>
 										<SelectTrigger id="new-user-role">
@@ -194,7 +196,8 @@ export function CreateUserDialog({ isAdmin }: CreateUserDialogProps) {
 							{(field) => (
 								<div className="grid gap-2">
 									<Label htmlFor="new-user-student-id">
-										Student ID <span className="text-muted-foreground">(optional)</span>
+										Student ID{" "}
+										<span className="text-muted-foreground">(optional)</span>
 									</Label>
 									<Input
 										id="new-user-student-id"

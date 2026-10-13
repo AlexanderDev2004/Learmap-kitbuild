@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import {
 	ArrowUpRightIcon,
@@ -110,11 +110,7 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 					<p className="text-sm text-muted-foreground">Created {timeAgo}</p>
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => setTargetsOpen(true)}
-					>
+					<Button variant="outline" size="sm" onClick={() => setTargetsOpen(true)}>
 						<UsersIcon className="size-4 mr-1.5" />
 						Edit Targeting
 					</Button>

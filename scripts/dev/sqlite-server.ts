@@ -79,7 +79,9 @@ function encodeValue(v: unknown): HranaValue {
 	if (v === null || v === undefined) return { type: "null" };
 	if (typeof v === "bigint") return { type: "integer", value: v.toString() };
 	if (typeof v === "number") {
-		return Number.isInteger(v) ? { type: "integer", value: String(v) } : { type: "float", value: v };
+		return Number.isInteger(v)
+			? { type: "integer", value: String(v) }
+			: { type: "float", value: v };
 	}
 	if (typeof v === "string") return { type: "text", value: v };
 	if (v instanceof Uint8Array) return { type: "blob", base64: Buffer.from(v).toString("base64") };
@@ -114,7 +116,8 @@ function getBaton(id: string | undefined): { id: string; baton: Baton } {
 		return { id, baton };
 	}
 	// Reuse the client-provided id when given, otherwise mint one.
-	const newId = id ?? `baton-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+	const newId =
+		id ?? `baton-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 	return { id: newId, baton: openBaton(newId) };
 }
 
@@ -226,12 +229,12 @@ function runStmt(baton: Baton, stmt: HranaStmt): StmtResult {
 	const cols = stmtCols(prepared);
 
 	if (prepared.reader) {
-		const rows = (prepared.all(...(Array.isArray(params) ? params : [params])) as unknown[]).map(
-			(row) => {
-				const record = row as Record<string, unknown>;
-				return cols.map((c) => encodeValue(record[c.name ?? ""]));
-			},
-		);
+		const rows = (
+			prepared.all(...(Array.isArray(params) ? params : [params])) as unknown[]
+		).map((row) => {
+			const record = row as Record<string, unknown>;
+			return cols.map((c) => encodeValue(record[c.name ?? ""]));
+		});
 		return { cols, rows, affected_row_count: 0 };
 	}
 
@@ -258,10 +261,7 @@ interface BatchStep {
 	stmt: HranaStmt;
 }
 
-function evalCond(
-	cond: BatchCond,
-	stepOk: (i: number) => boolean | undefined,
-): boolean {
+function evalCond(cond: BatchCond, stepOk: (i: number) => boolean | undefined): boolean {
 	switch (cond.type) {
 		case "ok":
 			return stepOk(cond.step) === true;
@@ -300,7 +300,8 @@ function handleRequest(baton: Baton, req: PipelineRequest): PipelineResult {
 			return { type: "ok", response: { type: "execute", result: runStmt(baton, req.stmt) } };
 		}
 		case "sequence": {
-			const sql = typeof req.sql === "string" ? req.sql : resolveSql(baton, { sql_id: req.sql_id });
+			const sql =
+				typeof req.sql === "string" ? req.sql : resolveSql(baton, { sql_id: req.sql_id });
 			baton.db.exec(sql);
 			return { type: "ok", response: { type: "sequence" } };
 		}
@@ -309,7 +310,8 @@ function handleRequest(baton: Baton, req: PipelineRequest): PipelineResult {
 			const stepErrors: ({ message: string; code?: string } | null)[] = [];
 			const outcome = new Map<number, boolean>();
 			req.batch.steps.forEach((step, i) => {
-				const shouldRun = step.condition === undefined || evalCond(step.condition, (j) => outcome.get(j));
+				const shouldRun =
+					step.condition === undefined || evalCond(step.condition, (j) => outcome.get(j));
 				if (!shouldRun) {
 					stepResults.push(null);
 					stepErrors.push(null);
@@ -408,7 +410,9 @@ const server = createServer((req, res) => {
 
 		const { id, baton } = getBaton(body.baton);
 		if (process.env.SQLD_LITE_LOG === "1") {
-			console.log(`[db:server] pipeline baton=${body.baton ?? "(new)"}: ${(body.requests ?? []).map((r) => r.type).join(",")}`);
+			console.log(
+				`[db:server] pipeline baton=${body.baton ?? "(new)"}: ${(body.requests ?? []).map((r) => r.type).join(",")}`,
+			);
 		}
 		const results: PipelineResult[] = [];
 		let clientClosed = false;
@@ -424,7 +428,10 @@ const server = createServer((req, res) => {
 				const err = error as { message?: string; code?: string };
 				results.push({
 					type: "error",
-					error: { message: err.message ?? String(error), code: err.code ?? "SQLITE_ERROR" },
+					error: {
+						message: err.message ?? String(error),
+						code: err.code ?? "SQLITE_ERROR",
+					},
 				});
 			}
 		}

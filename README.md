@@ -125,17 +125,17 @@ Visit http://localhost:5173
 
 ### Demo accounts (after `pnpm run db:seed`)
 
-| Role     | Email                  | Password    |
-| -------- | ---------------------- | ----------- |
-| Admin    | admin@kitbuild.mail    | admin12345  |
-| Admin    | bagas@kitbuild.mail    | bagas12345  |
-| Admin    | citra@kitbuild.mail    | citra12345  |
-| Teacher  | banni@kitbuild.mail    | banni12345  |
-| Teacher  | helmy@kitbuild.mail    | helmy12345  |
-| Teacher  | alex@kitbuild.mail     | alex12345   |
-| Student  | tanaka@kitbuild.mail   | demo12345   |
-| Student  | sari@kitbuild.mail     | demo12345   |
-| Student  | rudi@kitbuild.mail     | demo12345   |
+| Role    | Email                | Password   |
+| ------- | -------------------- | ---------- |
+| Admin   | admin@kitbuild.mail  | admin12345 |
+| Admin   | bagas@kitbuild.mail  | bagas12345 |
+| Admin   | citra@kitbuild.mail  | citra12345 |
+| Teacher | banni@kitbuild.mail  | banni12345 |
+| Teacher | helmy@kitbuild.mail  | helmy12345 |
+| Teacher | alex@kitbuild.mail   | alex12345  |
+| Student | tanaka@kitbuild.mail | demo12345  |
+| Student | sari@kitbuild.mail   | demo12345  |
+| Student | rudi@kitbuild.mail   | demo12345  |
 
 `db:seed:fotosintesis` additionally loads the photosynthesis experiment kit
 (two segmentation models in one goal map: Kelompok A = Segmen Paragraf, Kelompok

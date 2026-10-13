@@ -30,52 +30,48 @@ import {
 // stay consistent. Crucially it does NOT create a session — signUpEmail would
 // write a session cookie for the new user via tanstackStartCookies() and
 // silently replace the acting admin's session.
-export const createUserByAdmin = Effect.fn("createUserByAdmin")(
-	(data: CreateUserInput) =>
-		Effect.gen(function* () {
-			const db = yield* Database;
-			const authService = yield* Auth;
+export const createUserByAdmin = Effect.fn("createUserByAdmin")((data: CreateUserInput) =>
+	Effect.gen(function* () {
+		const db = yield* Database;
+		const authService = yield* Auth;
 
-			const existing = yield* db
-				.select({ id: user.id })
-				.from(user)
-				.where(eq(user.email, data.email))
-				.limit(1);
-			if (existing.length > 0) {
-				return yield* new EmailAlreadyExistsError({ email: data.email });
-			}
+		const existing = yield* db
+			.select({ id: user.id })
+			.from(user)
+			.where(eq(user.email, data.email))
+			.limit(1);
+		if (existing.length > 0) {
+			return yield* new EmailAlreadyExistsError({ email: data.email });
+		}
 
-			const result = yield* Effect.tryPromise({
-				try: () =>
-					authService.api.createUser({
-						body: {
-							email: data.email,
-							password: data.password,
-							name: data.name,
-							role: data.role,
-							...(data.studentId ? { data: { studentId: data.studentId } } : {}),
-						},
-					}),
-				catch: (error) => {
-					console.error(`Failed to create user ${data.email}:`, error);
-					return new EmailAlreadyExistsError({ email: data.email });
-				},
-			});
+		const result = yield* Effect.tryPromise({
+			try: () =>
+				authService.api.createUser({
+					body: {
+						email: data.email,
+						password: data.password,
+						name: data.name,
+						role: data.role,
+						...(data.studentId ? { data: { studentId: data.studentId } } : {}),
+					},
+				}),
+			catch: (error) => {
+				console.error(`Failed to create user ${data.email}:`, error);
+				return new EmailAlreadyExistsError({ email: data.email });
+			},
+		});
 
-			const userId = result?.user?.id ?? null;
-			if (!userId) {
-				return yield* new EmailAlreadyExistsError({ email: data.email });
-			}
-			yield* db.update(user).set({ role: data.role }).where(eq(user.id, userId));
-			if (data.studentId) {
-				yield* db
-					.update(user)
-					.set({ studentId: data.studentId })
-					.where(eq(user.id, userId));
-			}
+		const userId = result?.user?.id ?? null;
+		if (!userId) {
+			return yield* new EmailAlreadyExistsError({ email: data.email });
+		}
+		yield* db.update(user).set({ role: data.role }).where(eq(user.id, userId));
+		if (data.studentId) {
+			yield* db.update(user).set({ studentId: data.studentId }).where(eq(user.id, userId));
+		}
 
-			return yield* getUserById(userId);
-		}),
+		return yield* getUserById(userId);
+	}),
 );
 
 export const updateUser = Effect.fn("updateUser")(
@@ -366,7 +362,6 @@ export const bulkAssignCohort = Effect.fn("bulkAssignCohort")((input: BulkCohort
 	}),
 );
 
-
 export const createCohort = Effect.fn("createCohort")(function* (data: CreateCohortInput) {
 	const db = yield* Database;
 
@@ -407,7 +402,9 @@ export const updateCohort = Effect.fn("updateCohort")(function* (data: UpdateCoh
 		const duplicate = yield* db
 			.select({ id: cohorts.id })
 			.from(cohorts)
-			.where(and(sql`lower(${cohorts.name}) = lower(${data.name})`, isNull(cohorts.deletedAt)))
+			.where(
+				and(sql`lower(${cohorts.name}) = lower(${data.name})`, isNull(cohorts.deletedAt)),
+			)
 			.limit(1);
 		if (duplicate.length > 0) {
 			return yield* new CohortAlreadyExistsError({ name: data.name });
@@ -422,7 +419,11 @@ export const updateCohort = Effect.fn("updateCohort")(function* (data: UpdateCoh
 		})
 		.where(eq(cohorts.id, data.cohortId));
 
-	return { id: data.cohortId, name: nextName, description: data.description ?? cohort.description };
+	return {
+		id: data.cohortId,
+		name: nextName,
+		description: data.description ?? cohort.description,
+	};
 });
 
 export const deleteCohort = Effect.fn("deleteCohort")(function* (data: CohortIdInput) {

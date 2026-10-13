@@ -46,7 +46,9 @@ async function main() {
 	const endpoint = localDbEndpoint();
 	if (endpoint) {
 		if (await isReachable(endpoint.host, endpoint.port)) {
-			console.log(`[dev] reusing DB server already listening at ${endpoint.host}:${endpoint.port}`);
+			console.log(
+				`[dev] reusing DB server already listening at ${endpoint.host}:${endpoint.port}`,
+			);
 		} else {
 			console.log("[dev] starting local DB server (scripts/dev/sqlite-server.ts)...");
 			// The shim starts listening as an import side effect; it shares this

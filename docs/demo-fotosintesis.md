@@ -10,7 +10,7 @@ membandingkan **dua model segmentasi** pada Kit-Build Concept Map (bukan memberi
 > Model segmentasi mana yang lebih efektif pada Kit-Build Concept Map:
 > **Segmen berdasarkan Paragraf** atau **Segmen berdasarkan Depth Topik**?
 
-- **Teori dasar**: Schneider et al. (2021) menerapkan *Segmenting Principle* (Mayer) pada peta
+- **Teori dasar**: Schneider et al. (2021) menerapkan _Segmenting Principle_ (Mayer) pada peta
   konsep — segmentasi yang bermakna dan koheren menurunkan beban kognitif dan meningkatkan
   hasil belajar.
 - **Desain**: satu goal map yang SAMA, dua partisi BERBEDA (bukan dua map berbeda), sehingga
@@ -23,18 +23,18 @@ membandingkan **dua model segmentasi** pada Kit-Build Concept Map (bukan memberi
 - **Topik**: Fotosintesis (Biologi SMA) — 4 paragraf: (1) pengertian & letak, (2) syarat,
   (3) proses reaksi terang/gelap, (4) hasil & manfaat.
 - **Goal map**: 13 konsep + 14 proposisi (konsep–kata penghubung–konsep), misalnya
-  *Kloroplas —mengandung→ Klorofil*, *Reaksi Terang —menghasilkan→ Oksigen*.
+  _Kloroplas —mengandung→ Klorofil_, _Reaksi Terang —menghasilkan→ Oksigen_.
 
 ## 3. Dua model segmentasi (treatment)
 
-| | Kelompok A — Segmen Paragraf | Kelompok B — Segmen Depth Topik |
-|---|---|---|
-| Sumber potongan | Struktur paragraf teks bacaan | Kedalaman hierarki topik (umum → spesifik) |
-| Segmen 1 (merah) | P1: pengertian & letak (3 proposisi) | Level 0–1: konsep inti (4 proposisi) |
-| Segmen 2 (kuning) | P2: syarat fotosintesis (4 proposisi) | Level 2: konsep menengah (4 proposisi) |
-| Segmen 3 (biru) | P3: proses (4 proposisi) | Level 3: konsep rincian (4 proposisi) |
-| Segmen 4 (hijau) | P4: hasil (3 proposisi) | Level 4: paling spesifik (2 proposisi) |
-| Total | 14 proposisi | 14 proposisi |
+|                   | Kelompok A — Segmen Paragraf          | Kelompok B — Segmen Depth Topik            |
+| ----------------- | ------------------------------------- | ------------------------------------------ |
+| Sumber potongan   | Struktur paragraf teks bacaan         | Kedalaman hierarki topik (umum → spesifik) |
+| Segmen 1 (merah)  | P1: pengertian & letak (3 proposisi)  | Level 0–1: konsep inti (4 proposisi)       |
+| Segmen 2 (kuning) | P2: syarat fotosintesis (4 proposisi) | Level 2: konsep menengah (4 proposisi)     |
+| Segmen 3 (biru)   | P3: proses (4 proposisi)              | Level 3: konsep rincian (4 proposisi)      |
+| Segmen 4 (hijau)  | P4: hasil (3 proposisi)               | Level 4: paling spesifik (2 proposisi)     |
+| Total             | 14 proposisi                          | 14 proposisi                               |
 
 - Jumlah proposisi kedua kelompok **sama (14)** — kontrol beban target.
 - Warna node pada kit memvisualisasikan segmen: **merah/kuning/biru/hijau**.
@@ -44,12 +44,12 @@ membandingkan **dua model segmentasi** pada Kit-Build Concept Map (bukan memberi
 
 ## 4. Akun demo
 
-| Peran | Akun | Password | Keterangan |
-|---|---|---|---|
-| Peneliti/guru | alex@kitbuild.mail | alex12345 | Pemilik materi & assignment |
-| Siswa Kelompok A | sari@kitbuild.mail | demo12345 | experiment — Segmen Paragraf |
-| Siswa Kelompok B | rudi@kitbuild.mail | demo12345 | control — Segmen Depth Topik |
-| Siswa (demo JP) | tanaka@kitbuild.mail | demo12345 | Data demo bawaan |
+| Peran            | Akun                 | Password  | Keterangan                   |
+| ---------------- | -------------------- | --------- | ---------------------------- |
+| Peneliti/guru    | alex@kitbuild.mail   | alex12345 | Pemilik materi & assignment  |
+| Siswa Kelompok A | sari@kitbuild.mail   | demo12345 | experiment — Segmen Paragraf |
+| Siswa Kelompok B | rudi@kitbuild.mail   | demo12345 | control — Segmen Depth Topik |
+| Siswa (demo JP)  | tanaka@kitbuild.mail | demo12345 | Data demo bawaan             |
 
 - Sari hanya melihat **Kelompok A**, Rudi hanya melihat **Kelompok B** (target per-user,
   dikunci server — pratinjau mekanisme randomisasi riset).
@@ -58,7 +58,7 @@ membandingkan **dua model segmentasi** pada Kit-Build Concept Map (bukan memberi
 
 ## 5. Alur demo ke dosen (± 10 menit)
 
-1. **Login peneliti** (alex) → buka *Static Analyzer* → pilih assignment
+1. **Login peneliti** (alex) → buka _Static Analyzer_ → pilih assignment
    "Fotosintesis — Kelompok A (Segmen Paragraf)" → tunjukkan kanvas diagnosis
    (hijau = benar, kuning putus-putus = kurang, merah = keliru) + ringkasan skor.
 2. Ganti ke "Kelompok B (Segmen Depth Topik)" → tunjukkan bahwa peta & siswa berbeda

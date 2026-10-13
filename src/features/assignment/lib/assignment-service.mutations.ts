@@ -149,9 +149,7 @@ export const updateAssignmentTargets = Effect.fn("updateAssignmentTargets")(func
 	}
 
 	// Replace the target list: delete existing rows, then insert the new set.
-	yield* db
-		.delete(assignmentTargets)
-		.where(eq(assignmentTargets.assignmentId, input.id));
+	yield* db.delete(assignmentTargets).where(eq(assignmentTargets.assignmentId, input.id));
 
 	const targets: Array<{
 		id: string;

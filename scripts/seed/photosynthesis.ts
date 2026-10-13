@@ -111,10 +111,7 @@ function mcq(
 	};
 }
 
-function question(
-	questionText: string,
-	q: ReturnType<typeof mcq>,
-): SeedQuestion {
+function question(questionText: string, q: ReturnType<typeof mcq>): SeedQuestion {
 	return { questionText, options: q.options, correctOptionId: q.correctOptionId };
 }
 
@@ -227,11 +224,7 @@ function ensureUser(input: {
 		const db = yield* Database;
 		const authService = yield* Auth;
 
-		const existing = yield* db
-			.select()
-			.from(user)
-			.where(eq(user.email, input.email))
-			.limit(1);
+		const existing = yield* db.select().from(user).where(eq(user.email, input.email)).limit(1);
 
 		let userId: string;
 		if (existing[0]) {
@@ -351,7 +344,10 @@ function upsertForm(input: {
 			};
 			const existingQuestion = existingQuestions[index];
 			if (existingQuestion) {
-				yield* db.update(questions).set(values).where(eq(questions.id, existingQuestion.id));
+				yield* db
+					.update(questions)
+					.set(values)
+					.where(eq(questions.id, existingQuestion.id));
 			} else {
 				yield* db.insert(questions).values({ id: randomString(), ...values });
 			}
@@ -569,8 +565,7 @@ const program = Effect.gen(function* () {
 
 	const preTestFormId = yield* upsertForm({
 		title: "Fotosintesis Pre-Test",
-		description:
-			"10 soal pilihan ganda tentang bacaan Fotosintesis (4 opsi) — Bloom L1–L2.",
+		description: "10 soal pilihan ganda tentang bacaan Fotosintesis (4 opsi) — Bloom L1–L2.",
 		type: "pre_test",
 		teacherId,
 		readingMaterialContent: material.content,
@@ -658,9 +653,7 @@ const program = Effect.gen(function* () {
 		// Target this assignment DIRECTLY to its demo student so each group
 		// only sees its own segmentation variant:
 		//   Kelompok A (paragraf) → Sari, Kelompok B (depth) → Rudi.
-		yield* db
-			.delete(assignmentTargets)
-			.where(eq(assignmentTargets.assignmentId, assignmentId));
+		yield* db.delete(assignmentTargets).where(eq(assignmentTargets.assignmentId, assignmentId));
 		yield* db.insert(assignmentTargets).values({
 			id: randomString(),
 			assignmentId,
@@ -781,7 +774,9 @@ const program = Effect.gen(function* () {
 				answers[row.id] =
 					score === 1
 						? (correctIds[0] ?? options[0]?.id ?? "")
-						: (options.find((o) => !correctIds.includes(o.id))?.id ?? options[0]?.id ?? "");
+						: (options.find((o) => !correctIds.includes(o.id))?.id ??
+							options[0]?.id ??
+							"");
 			}
 
 			const submittedAt = new Date(Date.now() - 20 * 60 * 60 * 1000);

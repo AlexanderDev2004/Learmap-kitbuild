@@ -114,8 +114,7 @@ export function UserDetailSheet({
 		}
 	};
 
-	const passwordValid =
-		newPassword.length >= 8 && newPassword === confirmPassword;
+	const passwordValid = newPassword.length >= 8 && newPassword === confirmPassword;
 
 	const handleSetPassword = () => {
 		if (!passwordValid) return;

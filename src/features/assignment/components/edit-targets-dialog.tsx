@@ -36,8 +36,7 @@ export function EditTargetsDialog({
 	const cohorts = cohortsData ?? [];
 	const students = (usersData ?? []).filter((u) => u.role === "student");
 
-	const [selectedCohortIds, setSelectedCohortIds] =
-		useState<string[]>(currentCohortIds);
+	const [selectedCohortIds, setSelectedCohortIds] = useState<string[]>(currentCohortIds);
 	const [selectedUserIds, setSelectedUserIds] = useState<string[]>(currentUserIds);
 
 	useEffect(() => {
@@ -57,17 +56,10 @@ export function EditTargetsDialog({
 		},
 	});
 
-	const nothingSelected =
-		selectedCohortIds.length === 0 && selectedUserIds.length === 0;
+	const nothingSelected = selectedCohortIds.length === 0 && selectedUserIds.length === 0;
 
-	const toggle = (
-		list: string[],
-		id: string,
-		setList: (ids: string[]) => void,
-	) => {
-		setList(
-			list.includes(id) ? list.filter((x) => x !== id) : [...list, id],
-		);
+	const toggle = (list: string[], id: string, setList: (ids: string[]) => void) => {
+		setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 	};
 
 	return (
@@ -76,8 +68,8 @@ export function EditTargetsDialog({
 				<DialogHeader>
 					<DialogTitle>Edit Targets</DialogTitle>
 					<DialogDescription>
-						Choose which cohorts and students are assigned to this assignment.
-						Saving replaces the current target list.
+						Choose which cohorts and students are assigned to this assignment. Saving
+						replaces the current target list.
 					</DialogDescription>
 				</DialogHeader>
 

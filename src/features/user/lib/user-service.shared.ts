@@ -93,7 +93,6 @@ export const SetUserPasswordInput = Schema.Struct({
 
 export type SetUserPasswordInput = typeof SetUserPasswordInput.Type;
 
-
 export const UpdateRoleInput = Schema.Struct({
 	userId: Schema.String,
 	role: Role,
