@@ -60,11 +60,16 @@ export function WhitelistPanel() {
 	};
 
 	const handleDownloadTemplate = () => {
+		// Excel picks the CSV list separator from the OS regional settings:
+		// Indonesian locale splits columns on ";" while most others use ",".
+		// Match it so the template opens as real columns instead of one
+		// jammed column. The import parser auto-detects both.
+		const separator = navigator.language?.toLowerCase().startsWith("id") ? ";" : ",";
 		const template = [
-			"studentId,name,cohortId,studyGroup",
-			"2210001,Budi Santoso,,experiment",
-			"2210002,Siti Aminah,,control",
-			"2210003,Andi Wijaya,,",
+			["Student ID", "Name", "Cohort", "Group"].join(separator),
+			["2210001", "Budi Santoso", "", "experiment"].join(separator),
+			["2210002", "Siti Aminah", "", "control"].join(separator),
+			["2210003", "Andi Wijaya", "", ""].join(separator),
 		].join("\n");
 		const blob = new Blob(["\uFEFF" + template], { type: "text/csv;charset=utf-8" });
 		const url = URL.createObjectURL(blob);

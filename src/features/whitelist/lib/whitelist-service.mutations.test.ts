@@ -1,6 +1,8 @@
 import { Schema } from "effect";
+import Papa from "papaparse";
 import { describe, expect, it } from "vite-plus/test";
 
+import { whitelistCsvParseOptions } from "./whitelist-service.mutations";
 import { WhitelistCsvRow, WhitelistImportFailedError } from "./whitelist-service.shared";
 
 function assertParses(value: unknown) {
@@ -60,6 +62,34 @@ describe("WhitelistCsvRow schema", () => {
 
 	it("should reject row with unknown studyGroup value", () => {
 		assertFails({ studentId: "s12345", name: "Alice", studyGroup: "banana" });
+	});
+});
+
+describe("whitelistCsvParseOptions", () => {
+	it("should parse semicolon-separated CSV (Excel Indonesian locale)", () => {
+		const csv = [
+			"Student ID;Name;Cohort;Group",
+			"2210001;Budi Santoso;;experiment",
+			"2210002;Siti Aminah;;control",
+			"2210003;Andi Wijaya;;",
+		].join("\n");
+
+		const parsed = Papa.parse<Record<string, unknown>>(csv, whitelistCsvParseOptions);
+		expect(parsed.errors).toHaveLength(0);
+		expect(parsed.data).toHaveLength(3);
+		expect(parsed.data[0]?.["studentid"]).toBe("2210001");
+		expect(parsed.data[0]?.["name"]).toBe("Budi Santoso");
+		expect(parsed.data[0]?.["group"]).toBe("experiment");
+		expect(parsed.data[2]?.["group"]).toBe("");
+	});
+
+	it("should parse comma-separated CSV (other locales)", () => {
+		const csv = ["Student ID,Name,Cohort,Group", "2210001,Budi Santoso,,experiment"].join("\n");
+
+		const parsed = Papa.parse<Record<string, unknown>>(csv, whitelistCsvParseOptions);
+		expect(parsed.errors).toHaveLength(0);
+		expect(parsed.data[0]?.["studentid"]).toBe("2210001");
+		expect(parsed.data[0]?.["group"]).toBe("experiment");
 	});
 });
 

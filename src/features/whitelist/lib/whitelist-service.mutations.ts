@@ -27,15 +27,21 @@ function readRowValue(row: Record<string, unknown>, keys: string[]) {
 	return "";
 }
 
+// Shared with tests: Excel in Indonesian locale saves CSV with ";"
+// separators, most other locales with ","; empty delimiter = Papa
+// auto-detects, so both import correctly.
+export const whitelistCsvParseOptions = {
+	header: true,
+	skipEmptyLines: true,
+	delimiter: "",
+	transformHeader: (header: string) => header.trim().toLowerCase().replace(/\s+/g, ""),
+} satisfies Papa.ParseConfig;
+
 export const importWhitelistCsv = Effect.fn("importWhitelistCsv")((csvText: string) =>
 	Effect.gen(function* () {
 		const db = yield* Database;
 
-		const parsed = Papa.parse<Record<string, unknown>>(csvText, {
-			header: true,
-			skipEmptyLines: true,
-			transformHeader: (header) => header.trim().toLowerCase().replace(/\s+/g, ""),
-		});
+		const parsed = Papa.parse<Record<string, unknown>>(csvText, whitelistCsvParseOptions);
 
 		if (parsed.errors.length > 0) {
 			return yield* new WhitelistImportFailedError({
