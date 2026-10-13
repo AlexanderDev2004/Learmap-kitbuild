@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { PerLinkDiagnosisSchema } from "@/features/analyzer/lib/analytics-service.shared";
@@ -49,7 +49,7 @@ export const listStudentAssignments = Effect.fn("listStudentAssignments")(functi
 			postTestFormId: assignments.postTestFormId,
 			delayedPostTestFormId: assignments.delayedPostTestFormId,
 			createdAt: assignments.createdAt,
-			goalMapTitle: goalMaps.title,
+			goalMapTitle: sql<string | null>`goal_maps.title`.as("goal_map_title"),
 			learnerMapStatus: learnerMaps.status,
 			learnerMapAttempt: learnerMaps.attempt,
 			learnerMapUpdatedAt: learnerMaps.updatedAt,
@@ -167,18 +167,24 @@ export const getAssignmentForStudent = Effect.fn("getAssignmentForStudent")(func
 				delayedPostTestDelayDays: assignments.delayedPostTestDelayDays,
 			},
 			kit: {
-				id: kits.id,
+				// Alias joined columns: unaliased, kits.id / learner_maps.id both
+				// produce a result column named "id" which overwrites assignments.id
+				// when the driver keys rows by column name. With no learner map row
+				// (a first attempt) the overwritten values are null, drizzle maps
+				// the whole nested kit object to null, and the student's canvas
+				// gets stuck on "Loading assignment…".
+				id: sql<string>`kits.id`.as("kit_row_id"),
 				nodes: kits.nodes,
 				edges: kits.edges,
 				textId: kits.textId,
 			},
 			goalMap: {
-				textId: goalMaps.textId,
+				textId: sql<string | null>`goal_maps.text_id`.as("goal_map_text_id"),
 			},
 			learnerMap: {
-				id: learnerMaps.id,
-				nodes: learnerMaps.nodes,
-				edges: learnerMaps.edges,
+				id: sql<string>`learner_maps.id`.as("learner_map_id"),
+				nodes: sql<string | null>`learner_maps.nodes`.as("learner_map_nodes"),
+				edges: sql<string | null>`learner_maps.edges`.as("learner_map_edges"),
 				status: learnerMaps.status,
 				attempt: learnerMaps.attempt,
 				controlText: learnerMaps.controlText,
@@ -275,7 +281,9 @@ export const getDiagnosis = Effect.fn("getDiagnosis")(function* (
 				postTestFormId: assignments.postTestFormId,
 			},
 			diagnosis: {
-				id: diagnoses.id,
+				// Alias: diagnoses.id would otherwise overwrite learnerMaps.id
+				// (both map to a result column named "id").
+				id: sql<string>`diagnoses.id`.as("diagnosis_id"),
 				summary: diagnoses.summary,
 				score: diagnoses.score,
 				perLink: diagnoses.perLink,
