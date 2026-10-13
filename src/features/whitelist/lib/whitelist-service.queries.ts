@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { normalizeStudentId } from "@/lib/student-id-auth";
@@ -19,7 +19,9 @@ export const getWhitelistEntryByStudentId = Effect.fn("getWhitelistEntryByStuden
 					studentId: whitelistEntries.studentId,
 					name: whitelistEntries.name,
 					cohortId: whitelistEntries.cohortId,
-					cohortName: cohorts.name,
+					// Aliased: LibSQL HTTP responses drop values of columns that share
+					// a name (cohorts.name would overwrite whitelist_entries.name).
+					cohortName: sql<string | null>`${cohorts.name}`.as("cohort_name"),
 					studyGroup: whitelistEntries.studyGroup,
 					claimedUserId: whitelistEntries.claimedUserId,
 					claimedAt: whitelistEntries.claimedAt,
@@ -53,7 +55,9 @@ export const listUnregisteredWhitelistEntries = Effect.fn("listUnregisteredWhite
 				studentId: whitelistEntries.studentId,
 				name: whitelistEntries.name,
 				cohortId: whitelistEntries.cohortId,
-				cohortName: cohorts.name,
+				// Aliased: LibSQL HTTP responses drop values of columns that share
+				// a name (cohorts.name would overwrite whitelist_entries.name).
+				cohortName: sql<string | null>`${cohorts.name}`.as("cohort_name"),
 				studyGroup: whitelistEntries.studyGroup,
 				claimedUserId: whitelistEntries.claimedUserId,
 				claimedAt: whitelistEntries.claimedAt,

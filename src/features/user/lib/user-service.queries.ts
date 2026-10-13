@@ -74,7 +74,9 @@ export const listUsers = Effect.fn("listUsers")((input: UserFilterInput) =>
 				motivation: user.motivation,
 				studyGroup: user.studyGroup,
 				cohortId: cohortMembers.cohortId,
-				cohortName: cohorts.name,
+				// Aliased: LibSQL HTTP responses drop values of columns that share
+				// a name (cohorts.name would overwrite user.name).
+				cohortName: sql<string | null>`${cohorts.name}`.as("cohort_name"),
 			})
 			.from(user)
 			.leftJoin(cohortMembers, eq(user.id, cohortMembers.userId))
