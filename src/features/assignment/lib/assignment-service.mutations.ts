@@ -59,8 +59,8 @@ export const createAssignment = Effect.fn("createAssignment")(function* (
 			goalMapId: data.goalMapId,
 			teacherId: gm.teacherId ?? userId,
 			layout: data.layout ?? "random",
-			nodes: JSON.stringify(kitNodes),
-			edges: "[]",
+			nodes: kitNodes,
+			edges: [],
 			textId: gm.textId,
 		});
 		kit = { id: kitId, teacherId: gm.teacherId ?? userId };

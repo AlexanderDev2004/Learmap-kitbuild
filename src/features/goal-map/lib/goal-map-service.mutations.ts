@@ -71,7 +71,7 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 					content: data.materialText || "",
 					images:
 						data.materialImages && data.materialImages.length > 0
-							? JSON.stringify(data.materialImages)
+							? data.materialImages
 							: null,
 					updatedAt: new Date(),
 				})
@@ -84,7 +84,7 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 				content: data.materialText || "",
 				images:
 					data.materialImages && data.materialImages.length > 0
-						? JSON.stringify(data.materialImages)
+						? data.materialImages
 						: null,
 			});
 		}
@@ -95,8 +95,8 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 		goalMapId: data.goalMapId,
 		title: data.title,
 		description: data.description ?? null,
-		nodes: JSON.stringify(data.nodes ?? []),
-		edges: JSON.stringify(data.edges ?? []),
+		nodes: data.nodes ?? [],
+		edges: data.edges ?? [],
 		updatedAt: new Date(),
 		teacherId: ownerId,
 		topicId: data.topicId ?? null,
@@ -131,8 +131,8 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 				goalMapId: data.goalMapId,
 				teacherId: ownerId,
 				layout,
-				nodes: JSON.stringify(kitNodes),
-				edges: JSON.stringify([]),
+				nodes: kitNodes,
+				edges: [],
 				textId,
 			};
 
@@ -238,7 +238,7 @@ export const updateMaterial = Effect.fn("updateMaterial")(function* (
 					content: input.materialText || "",
 					images:
 						input.materialImages && input.materialImages.length > 0
-							? JSON.stringify(input.materialImages)
+							? input.materialImages
 							: null,
 					updatedAt: new Date(),
 				})
@@ -251,7 +251,7 @@ export const updateMaterial = Effect.fn("updateMaterial")(function* (
 				content: input.materialText || "",
 				images:
 					input.materialImages && input.materialImages.length > 0
-						? JSON.stringify(input.materialImages)
+						? input.materialImages
 						: null,
 			});
 

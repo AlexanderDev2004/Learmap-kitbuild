@@ -168,8 +168,8 @@ export const generateKit = Effect.fn("generateKit")(function* (input: GenerateKi
 		goalMapId: input.goalMapId,
 		teacherId: gm.teacherId ?? "",
 		layout: input.layout ?? "preset",
-		nodes: JSON.stringify(kitNodes),
-		edges: JSON.stringify(kitEdges),
+		nodes: kitNodes,
+		edges: kitEdges,
 		textId: gm.textId,
 	};
 

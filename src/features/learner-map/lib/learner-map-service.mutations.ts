@@ -48,6 +48,22 @@ export const saveLearnerMap = Effect.fn("saveLearnerMap")(function* (
 
 	yield* requireAssignmentMembership(userId, data.assignmentId);
 
+	// nodes/edges arrive as JSON strings over the wire, but the columns are
+	// drizzle mode:"json" which serializes on its own — storing the string
+	// as-is would double-encode the value. Parse to arrays before writing.
+	const nodesValue =
+		data.nodes === undefined
+			? undefined
+			: data.nodes === null
+				? null
+				: yield* safeParseJson(data.nodes, [], Schema.Array(Schema.Any));
+	const edgesValue =
+		data.edges === undefined
+			? undefined
+			: data.edges === null
+				? null
+				: yield* safeParseJson(data.edges, [], Schema.Array(Schema.Any));
+
 	const existingRows = yield* db
 		.select({
 			id: learnerMaps.id,
@@ -73,8 +89,8 @@ export const saveLearnerMap = Effect.fn("saveLearnerMap")(function* (
 		yield* db
 			.update(learnerMaps)
 			.set({
-				...(data.nodes !== undefined && { nodes: data.nodes }),
-				...(data.edges !== undefined && { edges: data.edges }),
+				...(nodesValue !== undefined && { nodes: nodesValue }),
+				...(edgesValue !== undefined && { edges: edgesValue }),
 				...(data.controlText !== undefined && {
 					controlText: data.controlText,
 				}),
@@ -96,8 +112,8 @@ export const saveLearnerMap = Effect.fn("saveLearnerMap")(function* (
 		goalMapId: assignment.goalMapId,
 		kitId: assignment.kitId,
 		userId,
-		nodes: data.nodes ?? null,
-		edges: data.edges ?? null,
+		nodes: nodesValue ?? null,
+		edges: edgesValue ?? null,
 		controlText: data.controlText ?? null,
 		status: "draft",
 		firstInteractionAt: new Date(),
@@ -196,7 +212,7 @@ export const submitLearnerMap = Effect.fn("submitLearnerMap")(function* (
 		goalMapId: learnerMap.goalMapId,
 		learnerMapId: learnerMap.id,
 		summary: `Correct: ${diagnosis.correct.length}, Missing: ${diagnosis.missing.length}, Excessive: ${diagnosis.excessive.length}`,
-		perLink: JSON.stringify(diagnosis),
+		perLink: diagnosis,
 		score: diagnosis.score,
 		rubricVersion: "1.0",
 	});

@@ -36,6 +36,18 @@ export function parseJson(
 				try: () => JSON.parse(input),
 				catch: () => new ParseJsonError({ message: "Invalid JSON string" }),
 			});
+			// Some columns are mode:"json" but historically received
+			// pre-stringified strings, so values were stored double-encoded
+			// (a JSON string containing JSON). Unwrap nested strings until a
+			// non-string value is reached; a non-JSON string stays as-is.
+			for (let depth = 0; typeof parsed === "string" && depth < 3; depth++) {
+				const next = yield* Effect.try({
+					try: () => JSON.parse(parsed as string),
+					catch: () => undefined,
+				});
+				if (next === undefined) break;
+				parsed = next;
+			}
 		} else {
 			parsed = input;
 		}
