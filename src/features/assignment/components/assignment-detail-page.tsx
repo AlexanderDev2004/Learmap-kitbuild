@@ -55,9 +55,11 @@ export interface AssignmentDetailPageProps {
 		preTestFormId: string | null;
 		postTestFormId: string | null;
 		delayedPostTestFormId: string | null;
+		questionnaireFormId: string | null;
 		preTestForm: FormInfo | null;
 		postTestForm: FormInfo | null;
 		delayedPostTestForm: FormInfo | null;
+		questionnaireForm: FormInfo | null;
 		delayedPostTestDelayDays: number | null;
 		createdAt: Date;
 		updatedAt: Date;
@@ -69,6 +71,7 @@ export interface AssignmentDetailPageProps {
 		preTestSubmitted: number | null;
 		postTestSubmitted: number | null;
 		delayedPostTestSubmitted: number | null;
+		questionnaireSubmitted: number | null;
 	};
 }
 
@@ -318,9 +321,19 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 										)}
 									</FormCard>
 								)}
+								{assignment.questionnaireForm && (
+									<FormCard
+										form={assignment.questionnaireForm}
+										label="Kuesioner"
+										variant="secondary"
+										submitted={assignment.questionnaireSubmitted}
+										total={assignment.totalStudents}
+									/>
+								)}
 								{!assignment.preTestForm &&
 									!assignment.postTestForm &&
-									!assignment.delayedPostTestForm && (
+									!assignment.delayedPostTestForm &&
+									!assignment.questionnaireForm && (
 										<p className="text-sm text-muted-foreground md:col-span-2">
 											No forms attached to this assignment
 										</p>
@@ -602,6 +615,7 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 				currentPreTestFormId={assignment.preTestFormId}
 				currentPostTestFormId={assignment.postTestFormId}
 				currentDelayedPostTestFormId={assignment.delayedPostTestFormId}
+				currentQuestionnaireFormId={assignment.questionnaireFormId}
 				currentDelayedPostTestDelayDays={assignment.delayedPostTestDelayDays}
 				onSaved={() => {
 					void queryClient.invalidateQueries({ queryKey: ["assignments"] });

@@ -29,12 +29,19 @@ type EditFormsDialogProps = {
 	currentPreTestFormId: string | null;
 	currentPostTestFormId: string | null;
 	currentDelayedPostTestFormId: string | null;
+	currentQuestionnaireFormId: string | null;
 	currentDelayedPostTestDelayDays: number | null;
 	onSaved: () => void;
 };
 
+type FormSlotKey =
+	| "preTestFormId"
+	| "postTestFormId"
+	| "delayedPostTestFormId"
+	| "questionnaireFormId";
+
 type FormSlot = {
-	key: "preTestFormId" | "postTestFormId" | "delayedPostTestFormId";
+	key: FormSlotKey;
 	label: string;
 	description: string;
 };
@@ -55,6 +62,12 @@ const FORM_SLOTS: FormSlot[] = [
 		label: "Delayed Post-Test",
 		description: "Optional retention test unlocked after a delay",
 	},
+	{
+		key: "questionnaireFormId",
+		label: "Kuesioner",
+		description:
+			"Perception questionnaire attached to this assignment; students fill it from My Forms",
+	},
 ];
 
 export function EditFormsDialog({
@@ -64,19 +77,19 @@ export function EditFormsDialog({
 	currentPreTestFormId,
 	currentPostTestFormId,
 	currentDelayedPostTestFormId,
+	currentQuestionnaireFormId,
 	currentDelayedPostTestDelayDays,
 	onSaved,
 }: EditFormsDialogProps) {
 	const { data: formsData } = useRpcQuery(FormRpc.listForms());
 	const forms = formsData ?? [];
 
-	const [selectedForms, setSelectedForms] = useState<Record<FormSlot["key"], string | undefined>>(
-		{
-			preTestFormId: currentPreTestFormId ?? undefined,
-			postTestFormId: currentPostTestFormId ?? undefined,
-			delayedPostTestFormId: currentDelayedPostTestFormId ?? undefined,
-		},
-	);
+	const [selectedForms, setSelectedForms] = useState<Record<FormSlotKey, string | undefined>>({
+		preTestFormId: currentPreTestFormId ?? undefined,
+		postTestFormId: currentPostTestFormId ?? undefined,
+		delayedPostTestFormId: currentDelayedPostTestFormId ?? undefined,
+		questionnaireFormId: currentQuestionnaireFormId ?? undefined,
+	});
 	const [delayDays, setDelayDays] = useState(
 		currentDelayedPostTestDelayDays != null ? String(currentDelayedPostTestDelayDays) : "",
 	);
@@ -87,6 +100,7 @@ export function EditFormsDialog({
 				preTestFormId: currentPreTestFormId ?? undefined,
 				postTestFormId: currentPostTestFormId ?? undefined,
 				delayedPostTestFormId: currentDelayedPostTestFormId ?? undefined,
+				questionnaireFormId: currentQuestionnaireFormId ?? undefined,
 			});
 			setDelayDays(
 				currentDelayedPostTestDelayDays != null
@@ -99,6 +113,7 @@ export function EditFormsDialog({
 		currentPreTestFormId,
 		currentPostTestFormId,
 		currentDelayedPostTestFormId,
+		currentQuestionnaireFormId,
 		currentDelayedPostTestDelayDays,
 	]);
 
@@ -112,7 +127,7 @@ export function EditFormsDialog({
 		},
 	});
 
-	const selectForm = (key: FormSlot["key"], value: string) => {
+	const selectForm = (key: FormSlotKey, value: string) => {
 		setSelectedForms((prev) => ({
 			...prev,
 			[key]: value === "none" ? undefined : value,
@@ -133,6 +148,7 @@ export function EditFormsDialog({
 			preTestFormId: selectedForms.preTestFormId,
 			postTestFormId: selectedForms.postTestFormId,
 			delayedPostTestFormId: selectedForms.delayedPostTestFormId,
+			questionnaireFormId: selectedForms.questionnaireFormId,
 			delayedPostTestDelayDays: validDelayDays,
 		});
 	};

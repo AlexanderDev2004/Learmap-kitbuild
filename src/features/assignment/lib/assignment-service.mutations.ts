@@ -213,9 +213,12 @@ export const updateAssignmentForms = Effect.fn("updateAssignmentForms")(function
 		});
 	}
 
-	const formIds = [input.preTestFormId, input.postTestFormId, input.delayedPostTestFormId].filter(
-		(id): id is string => typeof id === "string" && id.length > 0,
-	);
+	const formIds = [
+		input.preTestFormId,
+		input.postTestFormId,
+		input.delayedPostTestFormId,
+		input.questionnaireFormId,
+	].filter((id): id is string => typeof id === "string" && id.length > 0);
 
 	if (formIds.length > 0) {
 		const formRows = yield* db
@@ -235,6 +238,7 @@ export const updateAssignmentForms = Effect.fn("updateAssignmentForms")(function
 			preTestFormId: input.preTestFormId ?? null,
 			postTestFormId: input.postTestFormId ?? null,
 			delayedPostTestFormId: input.delayedPostTestFormId ?? null,
+			questionnaireFormId: input.questionnaireFormId ?? null,
 			delayedPostTestDelayDays: input.delayedPostTestDelayDays ?? null,
 		})
 		.where(and(eq(assignments.id, input.id), isNull(assignments.deletedAt)));

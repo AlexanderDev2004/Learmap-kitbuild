@@ -1,0 +1,1 @@
+ALTER TABLE `assignments` ADD `questionnaire_form_id` text REFERENCES forms(id);

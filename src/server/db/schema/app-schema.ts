@@ -112,6 +112,9 @@ export const assignments = sqliteTable(
 			onDelete: "set null",
 		}),
 		tamFormId: text("tam_form_id").references(() => forms.id, { onDelete: "set null" }),
+		questionnaireFormId: text("questionnaire_form_id").references(() => forms.id, {
+			onDelete: "set null",
+		}),
 		delayedPostTestDelayDays: integer("delayed_post_test_delay_days").default(7),
 		createdBy: text("created_by").notNull(),
 		...timestamps,
