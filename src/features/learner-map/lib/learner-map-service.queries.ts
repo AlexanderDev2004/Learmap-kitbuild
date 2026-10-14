@@ -9,6 +9,7 @@ import {
 	assignmentTargets,
 	diagnoses,
 	formProgress,
+	forms,
 	goalMaps,
 	kits,
 	learnerMaps,
@@ -48,6 +49,7 @@ export const listStudentAssignments = Effect.fn("listStudentAssignments")(functi
 			preTestFormId: assignments.preTestFormId,
 			postTestFormId: assignments.postTestFormId,
 			delayedPostTestFormId: assignments.delayedPostTestFormId,
+			questionnaireFormId: assignments.questionnaireFormId,
 			createdAt: assignments.createdAt,
 			goalMapTitle: sql<string | null>`goal_maps.title`.as("goal_map_title"),
 			learnerMapStatus: learnerMaps.status,
@@ -81,7 +83,9 @@ export const listStudentAssignments = Effect.fn("listStudentAssignments")(functi
 		.orderBy(desc(assignments.createdAt));
 
 	const formIds = assignmentsData.flatMap((a) =>
-		[a.preTestFormId, a.postTestFormId].filter((id): id is string => id !== null),
+		[a.preTestFormId, a.postTestFormId, a.questionnaireFormId].filter(
+			(id): id is string => id !== null,
+		),
 	);
 
 	const progressRows: Array<typeof formProgress.$inferSelect> =
@@ -100,6 +104,28 @@ export const listStudentAssignments = Effect.fn("listStudentAssignments")(functi
 
 	const progressByFormId = new Map(progressRows.map((p) => [p.formId, p]));
 
+	// A questionnaire that is still a draft (not yet published) must not appear
+	// in the student flow: the teacher may still be editing it.
+	const questionnaireFormIds = Array.from(
+		new Set(
+			assignmentsData
+				.map((a) => a.questionnaireFormId)
+				.filter((id): id is string => id !== null),
+		),
+	);
+	const publishedQuestionnaireIds = new Set<string>();
+	if (questionnaireFormIds.length > 0) {
+		const questionnaireRows = yield* db
+			.select({ id: forms.id, status: forms.status })
+			.from(forms)
+			.where(and(inArray(forms.id, questionnaireFormIds), isNull(forms.deletedAt)));
+		for (const row of questionnaireRows) {
+			if (row.status === "published") {
+				publishedQuestionnaireIds.add(row.id);
+			}
+		}
+	}
+
 	const uniqueAssignments = new Map(
 		assignmentsData.map((row) => [
 			row.id,
@@ -112,6 +138,11 @@ export const listStudentAssignments = Effect.fn("listStudentAssignments")(functi
 				preTestFormId: row.preTestFormId,
 				postTestFormId: row.postTestFormId,
 				delayedPostTestFormId: row.delayedPostTestFormId,
+				questionnaireFormId:
+					row.questionnaireFormId &&
+					publishedQuestionnaireIds.has(row.questionnaireFormId)
+						? row.questionnaireFormId
+						: null,
 				goalMapTitle: row.goalMapTitle,
 				dueAt: row.dueAt?.getTime(),
 				createdAt: row.createdAt?.getTime(),
@@ -128,6 +159,10 @@ export const listStudentAssignments = Effect.fn("listStudentAssignments")(functi
 				postTestCompleted:
 					!row.postTestFormId ||
 					progressByFormId.get(row.postTestFormId)?.status === "completed",
+				questionnaireCompleted:
+					!row.questionnaireFormId ||
+					publishedQuestionnaireIds.has(row.questionnaireFormId) === false ||
+					progressByFormId.get(row.questionnaireFormId)?.status === "completed",
 			},
 		]),
 	);

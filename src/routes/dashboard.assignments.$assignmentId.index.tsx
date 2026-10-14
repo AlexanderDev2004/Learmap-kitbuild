@@ -3,6 +3,7 @@ import {
 	ArrowLeftIcon,
 	CheckCircle2Icon,
 	ChevronRightIcon,
+	ClipboardListIcon,
 	FileTextIcon,
 	FlaskConicalIcon,
 	MapIcon,
@@ -44,6 +45,8 @@ type AssignmentData = {
 	preTestCompleted: boolean;
 	postTestFormId: string | null;
 	postTestCompleted: boolean;
+	questionnaireFormId: string | null;
+	questionnaireCompleted: boolean;
 	status: string;
 };
 
@@ -84,6 +87,14 @@ function getPhases(
 		if (!assignment.postTestFormId) return "skipped";
 		if (assignment.status !== "submitted") return "locked";
 		if (assignment.postTestCompleted) return "completed";
+		return "active";
+	}
+
+	function questionnaireStatus() {
+		// Optional phase: hidden entirely when the teacher has not attached a
+		// published questionnaire yet, and it never blocks completion.
+		if (!assignment.questionnaireFormId) return "skipped";
+		if (assignment.questionnaireCompleted) return "completed";
 		return "active";
 	}
 
@@ -129,6 +140,17 @@ function getPhases(
 		);
 	}
 
+	function questionnaireAction() {
+		if (!assignment.questionnaireFormId) return null;
+		return makeFormAction(
+			assignment.questionnaireFormId,
+			assignment.questionnaireCompleted,
+			"Fill Questionnaire",
+			backToFlow,
+			navigate,
+		);
+	}
+
 	return [
 		{
 			id: "pre-test",
@@ -153,6 +175,14 @@ function getPhases(
 			icon: FileTextIcon,
 			status: postTestStatus(),
 			action: postTestAction(),
+		},
+		{
+			id: "questionnaire",
+			label: "Kuesioner",
+			description: "Optional perception survey — fill it when your teacher announces it",
+			icon: ClipboardListIcon,
+			status: questionnaireStatus(),
+			action: questionnaireAction(),
 		},
 	];
 }
