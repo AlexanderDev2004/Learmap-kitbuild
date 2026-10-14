@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EditFormsDialog } from "@/features/assignment/components/edit-forms-dialog";
 import { EditTargetsDialog } from "@/features/assignment/components/edit-targets-dialog";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +75,7 @@ export interface AssignmentDetailPageProps {
 export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) {
 	const queryClient = useQueryClient();
 	const [targetsOpen, setTargetsOpen] = useState(false);
+	const [formsOpen, setFormsOpen] = useState(false);
 
 	const formattedStartDate = assignment.startDate
 		? new Date(assignment.startDate).toLocaleDateString()
@@ -266,9 +268,19 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 
 				<TabsContent value="forms" className="space-y-4">
 					<Card>
-						<CardHeader>
-							<CardTitle>Associated Forms</CardTitle>
-							<CardDescription>Forms linked to this assignment</CardDescription>
+						<CardHeader className="flex flex-row items-start justify-between space-y-0">
+							<div>
+								<CardTitle>Associated Forms</CardTitle>
+								<CardDescription>Forms linked to this assignment</CardDescription>
+							</div>
+							<Button variant="outline" size="sm" onClick={() => setFormsOpen(true)}>
+								<FileTextIcon className="size-4 mr-1.5" />
+								{assignment.preTestForm ||
+								assignment.postTestForm ||
+								assignment.delayedPostTestForm
+									? "Edit Forms"
+									: "Add Forms"}
+							</Button>
 						</CardHeader>
 						<CardContent>
 							<div className="grid gap-4 md:grid-cols-2">
@@ -578,6 +590,19 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 				onOpenChange={setTargetsOpen}
 				currentCohortIds={assignment.assignedCohorts.map((c) => c.id)}
 				currentUserIds={assignment.assignedUsers.map((u) => u.id)}
+				onSaved={() => {
+					void queryClient.invalidateQueries({ queryKey: ["assignments"] });
+				}}
+			/>
+
+			<EditFormsDialog
+				assignmentId={assignment.id}
+				open={formsOpen}
+				onOpenChange={setFormsOpen}
+				currentPreTestFormId={assignment.preTestFormId}
+				currentPostTestFormId={assignment.postTestFormId}
+				currentDelayedPostTestFormId={assignment.delayedPostTestFormId}
+				currentDelayedPostTestDelayDays={assignment.delayedPostTestDelayDays}
 				onSaved={() => {
 					void queryClient.invalidateQueries({ queryKey: ["assignments"] });
 				}}

@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+import { ParseError } from "effect/ParseResult";
 import Papa from "papaparse";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -10,7 +11,7 @@ function assertParses(value: unknown) {
 }
 
 function assertFails(value: unknown) {
-	expect(() => Schema.decodeUnknownSync(WhitelistCsvRow)(value)).toThrow();
+	expect(() => Schema.decodeUnknownSync(WhitelistCsvRow)(value)).toThrow(ParseError);
 }
 
 describe("WhitelistCsvRow schema", () => {

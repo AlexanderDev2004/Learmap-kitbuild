@@ -137,10 +137,8 @@ describe("normalizeAndValidateReadingMaterialSections", () => {
 			]),
 		);
 		expect(result).not.toBeNull();
-		if (result) {
-			expect(result[0].title).toBe("My Section");
-			expect(result[0].content).toBe("Some text");
-		}
+		expect(result![0].title).toBe("My Section");
+		expect(result![0].content).toBe("Some text");
 	});
 
 	it("should sort by startQuestion then endQuestion", () => {
@@ -151,10 +149,8 @@ describe("normalizeAndValidateReadingMaterialSections", () => {
 			]),
 		);
 		expect(result).not.toBeNull();
-		if (result) {
-			expect(result[0].id).toBe("s1");
-			expect(result[1].id).toBe("s2");
-		}
+		expect(result![0].id).toBe("s1");
+		expect(result![1].id).toBe("s2");
 	});
 
 	it("should reject startQuestion < 1", () => {
@@ -202,9 +198,7 @@ describe("normalizeAndValidateReadingMaterialSections", () => {
 			]),
 		);
 		expect(result).not.toBeNull();
-		if (result) {
-			expect(result).toHaveLength(2);
-		}
+		expect(result).toHaveLength(2);
 	});
 
 	it("should handle section with nullish title", () => {
@@ -220,8 +214,6 @@ describe("normalizeAndValidateReadingMaterialSections", () => {
 			]),
 		);
 		expect(result).not.toBeNull();
-		if (result) {
-			expect(result[0].title).toBeUndefined();
-		}
+		expect(result![0].title).toBeUndefined();
 	});
 });

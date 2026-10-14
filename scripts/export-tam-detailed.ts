@@ -104,7 +104,7 @@ async function main() {
 	});
 	console.log(`\n=== FEEDBACK QUESTIONS ===`);
 	for (const q of fbQuestions.rows) {
-		console.log(`  ${q.order_index}. ${q.question_text}`);
+		console.log(`  ${Number(q.order_index)}. ${q.question_text}`);
 	}
 
 	const fbResponses = await db.execute({

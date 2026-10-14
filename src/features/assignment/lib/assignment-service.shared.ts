@@ -39,6 +39,16 @@ export const UpdateAssignmentTargetsInput = Schema.Struct({
 
 export type UpdateAssignmentTargetsInput = typeof UpdateAssignmentTargetsInput.Type;
 
+export const UpdateAssignmentFormsInput = Schema.Struct({
+	id: NonEmpty("Assignment ID"),
+	preTestFormId: Schema.optionalWith(Schema.String, { nullable: true }),
+	postTestFormId: Schema.optionalWith(Schema.String, { nullable: true }),
+	delayedPostTestFormId: Schema.optionalWith(Schema.String, { nullable: true }),
+	delayedPostTestDelayDays: Schema.optionalWith(Schema.Number, { nullable: true }),
+});
+
+export type UpdateAssignmentFormsInput = typeof UpdateAssignmentFormsInput.Type;
+
 export class AssignmentNotFoundError extends Data.TaggedError("AssignmentNotFoundError")<{
 	readonly assignmentId: string;
 }> {}
@@ -55,3 +65,7 @@ export class KitNotFoundError extends Data.TaggedError("KitNotFoundError")<{
 export class AssignmentTargetsEmptyError extends Data.TaggedError(
 	"AssignmentTargetsEmptyError",
 )<{}> {}
+
+export class AssignmentFormNotFoundError extends Data.TaggedError("AssignmentFormNotFoundError")<{
+	readonly formId: string;
+}> {}

@@ -1,17 +1,25 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { GoalMapNotFoundError } from "@/lib/errors";
 import { randomString, safeParseJson } from "@/lib/utils";
 import { Database } from "@/server/db/client";
-import { assignments, assignmentTargets, goalMaps, kits } from "@/server/db/schema/app-schema";
+import {
+	assignments,
+	assignmentTargets,
+	forms,
+	goalMaps,
+	kits,
+} from "@/server/db/schema/app-schema";
 
 import {
 	AssignmentAccessDeniedError,
+	AssignmentFormNotFoundError,
 	AssignmentNotFoundError,
 	AssignmentTargetsEmptyError,
 	CreateAssignmentInput,
 	DeleteAssignmentInput,
+	UpdateAssignmentFormsInput,
 	UpdateAssignmentTargetsInput,
 } from "./assignment-service.shared";
 
@@ -177,6 +185,59 @@ export const updateAssignmentTargets = Effect.fn("updateAssignmentTargets")(func
 	if (targets.length > 0) {
 		yield* db.insert(assignmentTargets).values(targets);
 	}
+
+	return true;
+});
+
+export const updateAssignmentForms = Effect.fn("updateAssignmentForms")(function* (
+	userId: string,
+	input: UpdateAssignmentFormsInput,
+	options: { isAdmin?: boolean } = {},
+) {
+	const db = yield* Database;
+
+	const assignmentRows = yield* db
+		.select({ createdBy: assignments.createdBy })
+		.from(assignments)
+		.where(and(eq(assignments.id, input.id), isNull(assignments.deletedAt)))
+		.limit(1);
+
+	const assignment = assignmentRows[0];
+	if (!assignment) {
+		return yield* new AssignmentNotFoundError({ assignmentId: input.id });
+	}
+	if (assignment.createdBy !== userId && !options.isAdmin) {
+		return yield* new AssignmentAccessDeniedError({
+			assignmentId: input.id,
+			userId,
+		});
+	}
+
+	const formIds = [input.preTestFormId, input.postTestFormId, input.delayedPostTestFormId].filter(
+		(id): id is string => typeof id === "string" && id.length > 0,
+	);
+
+	if (formIds.length > 0) {
+		const formRows = yield* db
+			.select({ id: forms.id })
+			.from(forms)
+			.where(and(inArray(forms.id, formIds), isNull(forms.deletedAt)));
+		const found = new Set(formRows.map((f) => f.id));
+		const missing = formIds.find((id) => !found.has(id));
+		if (missing) {
+			return yield* new AssignmentFormNotFoundError({ formId: missing });
+		}
+	}
+
+	yield* db
+		.update(assignments)
+		.set({
+			preTestFormId: input.preTestFormId ?? null,
+			postTestFormId: input.postTestFormId ?? null,
+			delayedPostTestFormId: input.delayedPostTestFormId ?? null,
+			delayedPostTestDelayDays: input.delayedPostTestDelayDays ?? null,
+		})
+		.where(and(eq(assignments.id, input.id), isNull(assignments.deletedAt)));
 
 	return true;
 });

@@ -5,6 +5,7 @@ import { Effect, Schema } from "effect";
 import {
 	createAssignment,
 	deleteAssignment,
+	updateAssignmentForms,
 	updateAssignmentTargets,
 } from "@/features/assignment/lib/assignment-service.mutations";
 import {
@@ -18,6 +19,7 @@ import {
 import {
 	CreateAssignmentInput,
 	DeleteAssignmentInput,
+	UpdateAssignmentFormsInput,
 	UpdateAssignmentTargetsInput,
 } from "@/features/assignment/lib/assignment-service.shared";
 import { requireRoleMiddleware } from "@/middlewares/auth";
@@ -111,6 +113,32 @@ export const updateAssignmentTargetsRpc = createServerFn({ method: "POST" })
 				}),
 				Effect.catchAll(logAndReturnError("updateAssignmentTargets")),
 				Effect.catchAllDefect(logAndReturnDefect("updateAssignmentTargets")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const updateAssignmentFormsRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(UpdateAssignmentFormsInput)(raw))
+	.handler(({ data, context }) =>
+		AppRuntime.runPromise(
+			updateAssignmentForms(context.user.id, data, {
+				isAdmin: context.user.role === "admin",
+			}).pipe(
+				Effect.map(() => Rpc.ok(true)),
+				Effect.withSpan("updateAssignmentForms"),
+				Effect.tapError(logRpcError("updateAssignmentForms")),
+				Effect.catchTags({
+					AssignmentNotFoundError: () => Rpc.notFound("Assignment"),
+					AssignmentAccessDeniedError: (e: { assignmentId: string }) =>
+						Rpc.forbidden(`Access denied to assignment ${e.assignmentId}`),
+					AssignmentFormNotFoundError: (e: { formId: string }) =>
+						Rpc.err(`Form not found: ${e.formId}`, "VALIDATION"),
+				}),
+				Effect.catchAll(logAndReturnError("updateAssignmentForms")),
+				Effect.catchAllDefect(logAndReturnDefect("updateAssignmentForms")),
 				Effect.timeout(TIMEOUT_DURATION),
 				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
 			),
@@ -228,6 +256,11 @@ export const AssignmentRpc = {
 			mutationKey: [...AssignmentRpc.assignments(), "updateTargets"],
 			mutationFn: (data: UpdateAssignmentTargetsInput) =>
 				updateAssignmentTargetsRpc({ data }),
+		}),
+	updateAssignmentForms: () =>
+		mutationOptions({
+			mutationKey: [...AssignmentRpc.assignments(), "updateForms"],
+			mutationFn: (data: UpdateAssignmentFormsInput) => updateAssignmentFormsRpc({ data }),
 		}),
 	getAvailableCohorts: () =>
 		queryOptions({
