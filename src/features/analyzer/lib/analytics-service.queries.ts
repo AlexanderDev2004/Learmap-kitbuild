@@ -41,7 +41,10 @@ export type LearnerMapResult = Awaited<
 	Effect.Effect.Success<ReturnType<typeof getLearnerMapForAnalytics>>
 >;
 
-export const getTeacherAssignments = Effect.fn("getTeacherAssignments")(function* (userId: string) {
+export const getTeacherAssignments = Effect.fn("getTeacherAssignments")(function* (
+	userId: string,
+	opts: { isAdmin?: boolean } = {},
+) {
 	const db = yield* Database;
 
 	const assignmentsWithStats = yield* db
@@ -66,7 +69,14 @@ export const getTeacherAssignments = Effect.fn("getTeacherAssignments")(function
 			and(eq(learnerMaps.assignmentId, assignments.id), isNull(learnerMaps.deletedAt)),
 		)
 		.leftJoin(diagnoses, eq(diagnoses.learnerMapId, learnerMaps.id))
-		.where(and(eq(assignments.createdBy, userId), isNull(assignments.deletedAt)))
+		.where(
+			and(
+				// Admins oversee every class, so they get all assignments; teachers
+				// only see the ones they created themselves.
+				...(opts.isAdmin ? [] : [eq(assignments.createdBy, userId)]),
+				isNull(assignments.deletedAt),
+			),
+		)
 		.groupBy(assignments.id, goalMaps.title, kits.id, assignments.createdAt, assignments.dueAt)
 		.orderBy(desc(assignments.createdAt));
 
@@ -86,6 +96,7 @@ export const getTeacherAssignments = Effect.fn("getTeacherAssignments")(function
 export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(function* (
 	userId: string,
 	input: GetAnalyticsForAssignmentInput,
+	opts: { isAdmin?: boolean } = {},
 ) {
 	const db = yield* Database;
 
@@ -103,8 +114,10 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 		.from(assignments)
 		.where(
 			and(
+				// Keep in sync with getTeacherAssignments: admins can inspect any
+				// assignment, teachers only their own.
+				...(opts.isAdmin ? [] : [eq(assignments.createdBy, userId)]),
 				eq(assignments.id, input.assignmentId),
-				eq(assignments.createdBy, userId),
 				isNull(assignments.deletedAt),
 			),
 		)

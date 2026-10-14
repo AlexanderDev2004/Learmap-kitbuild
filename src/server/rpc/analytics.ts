@@ -32,7 +32,9 @@ export const getTeacherAssignmentsRpc = createServerFn()
 	.middleware([requireRoleMiddleware("teacher", "admin")])
 	.handler(({ context }) =>
 		AppRuntime.runPromise(
-			getTeacherAssignments(context.user.id).pipe(
+			getTeacherAssignments(context.user.id, {
+				isAdmin: context.user.role === "admin",
+			}).pipe(
 				Effect.map(Rpc.ok),
 				Effect.withSpan("getTeacherAssignments"),
 				Effect.tapError(logRpcError("getTeacherAssignments")),
@@ -49,7 +51,9 @@ export const getAnalyticsForAssignmentRpc = createServerFn()
 	.inputValidator((raw) => Schema.decodeUnknownSync(GetAnalyticsForAssignmentInput)(raw))
 	.handler(({ data, context }) =>
 		AppRuntime.runPromise(
-			getAnalyticsForAssignment(context.user.id, data).pipe(
+			getAnalyticsForAssignment(context.user.id, data, {
+				isAdmin: context.user.role === "admin",
+			}).pipe(
 				Effect.map(Rpc.ok),
 				Effect.withSpan("getAnalyticsForAssignment"),
 				Effect.tapError(logRpcError("getAnalyticsForAssignment")),
