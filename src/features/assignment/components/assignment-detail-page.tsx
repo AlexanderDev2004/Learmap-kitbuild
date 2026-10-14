@@ -66,7 +66,12 @@ export interface AssignmentDetailPageProps {
 		totalStudents: number;
 		submittedStudents: number;
 		assignedCohorts: CohortInfo[];
-		assignedUsers: Array<{ id: string; name: string; email: string }>;
+		assignedUsers: Array<{
+			id: string;
+			name: string;
+			email: string;
+			cohortName: string | null;
+		}>;
 		learnerMaps: LearnerMapInfo[];
 		preTestSubmitted: number | null;
 		postTestSubmitted: number | null;
@@ -438,8 +443,18 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 																className="border-b last:border-0"
 															>
 																<td className="py-2.5 pr-4">
-																	<div className="truncate max-w-[200px]">
-																		{u.name}
+																	<div className="flex items-center gap-2">
+																		<div className="truncate max-w-[200px]">
+																			{u.name}
+																		</div>
+																		{u.cohortName && (
+																			<Badge
+																				variant="secondary"
+																				className="text-[10px] h-4 px-1.5 shrink-0"
+																			>
+																				{u.cohortName}
+																			</Badge>
+																		)}
 																	</div>
 																</td>
 																<td className="py-2.5 px-4">
@@ -515,6 +530,11 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 															<p className="text-sm font-medium truncate">
 																{u.name}
 															</p>
+															{u.cohortName && (
+																<p className="text-[10px] text-muted-foreground truncate">
+																	{u.cohortName}
+																</p>
+															)}
 															<div className="flex flex-wrap gap-1 mt-1">
 																{assignment.preTestForm && (
 																	<Badge

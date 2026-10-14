@@ -491,7 +491,37 @@ export const getAssignmentById = Effect.fn("getAssignmentById")(function* (assig
 		}
 	}
 
-	const assignedUsers = directUserRows;
+	const cohortOnlyUserIds = Array.from(assignedUserIds).filter(
+		(id) => !directUserRows.some((u) => u.id === id),
+	);
+	const cohortOnlyUserRows =
+		cohortOnlyUserIds.length > 0
+			? yield* db
+					.select({ id: user.id, name: user.name, email: user.email })
+					.from(user)
+					.where(and(inArray(user.id, cohortOnlyUserIds), isNull(user.deletedAt)))
+			: [];
+
+	const cohortNameByUserId = new Map<string, string>();
+	for (const target of targets) {
+		if (!target.cohortId) continue;
+		const cohort = cohortRows.find((c) => c.id === target.cohortId);
+		const members = membersByCohort.get(target.cohortId);
+		if (!cohort || !members) continue;
+		for (const memberId of members) {
+			if (!cohortNameByUserId.has(memberId)) {
+				cohortNameByUserId.set(memberId, cohort.name);
+			}
+		}
+	}
+
+	const allAssignedUsers = [
+		...directUserRows.map((u) => ({ ...u, cohortName: null })),
+		...cohortOnlyUserRows.map((u) => ({
+			...u,
+			cohortName: cohortNameByUserId.get(u.id) ?? null,
+		})),
+	].sort((a, b) => a.name.localeCompare(b.name));
 
 	const learnerMapRows = yield* db
 		.select({
@@ -559,7 +589,7 @@ export const getAssignmentById = Effect.fn("getAssignmentById")(function* (assig
 		totalStudents,
 		submittedStudents,
 		assignedCohorts,
-		assignedUsers,
+		assignedUsers: allAssignedUsers,
 		learnerMaps: learnerMapRows.map((lm) => ({
 			userId: lm.userId,
 			status: lm.status,
