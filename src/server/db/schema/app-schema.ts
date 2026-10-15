@@ -370,6 +370,7 @@ export const forms = sqliteTable(
 		status: text("status", { enum: ["draft", "published"] })
 			.notNull()
 			.default("draft"),
+		showAnswers: integer("show_answers", { mode: "boolean" }).notNull().default(false),
 		readingMaterialSections: text("reading_material_sections", { mode: "json" }),
 		unlockConditions: text("unlock_conditions"),
 		createdBy: text("created_by").notNull(),

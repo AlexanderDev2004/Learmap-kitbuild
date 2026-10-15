@@ -218,6 +218,7 @@ export const updateFormRpc = createServerFn({ method: "POST" })
 				description: data.description,
 				type: data.type,
 				status: data.status,
+				showAnswers: data.showAnswers,
 				readingMaterialSections: data.readingMaterialSections,
 			}).pipe(
 				Effect.map(Rpc.ok),

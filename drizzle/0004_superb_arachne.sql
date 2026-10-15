@@ -1,0 +1,1 @@
+ALTER TABLE `forms` ADD `show_answers` integer DEFAULT false NOT NULL;

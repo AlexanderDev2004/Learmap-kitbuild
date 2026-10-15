@@ -48,6 +48,7 @@ export const createForm = Effect.fn("createForm")(function* (
 		type,
 		audience,
 		status: "draft",
+		showAnswers: data.showAnswers,
 		readingMaterialSections,
 		createdBy: userId,
 	});
@@ -63,6 +64,7 @@ export const updateForm = Effect.fn("updateForm")(function* (
 		type: FormType;
 		audience: FormAudience;
 		status: "draft" | "published";
+		showAnswers: boolean;
 		readingMaterialSections: ReadonlyArray<ReadingMaterialSection> | null;
 	}>,
 ) {
@@ -116,6 +118,7 @@ export const updateForm = Effect.fn("updateForm")(function* (
 				audience: nextAudience,
 			}),
 			...(data.status !== undefined && { status: data.status }),
+			...(data.showAnswers !== undefined && { showAnswers: data.showAnswers }),
 			...(normalizedReadingMaterialSections !== undefined && {
 				readingMaterialSections: normalizedReadingMaterialSections,
 			}),

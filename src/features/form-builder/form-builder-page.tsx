@@ -87,6 +87,7 @@ export function FormBuilderPage() {
 				type: existingForm.form.type as FormMetadata["type"],
 				audience: existingForm.form.audience as FormMetadata["audience"],
 				status: existingForm.form.status,
+				showAnswers: existingForm.form.showAnswers,
 			});
 			setQuestions([...(existingForm.questions ?? [])] as unknown as QuestionWithOptions[]);
 			setReadingMaterialSections(
@@ -328,6 +329,7 @@ export function FormBuilderPage() {
 				type: metadata.type,
 				audience: metadata.audience,
 				status: metadata.status,
+				showAnswers: metadata.showAnswers,
 				readingMaterialSections: normalizedReadingMaterialSections,
 			});
 		} else {
@@ -336,6 +338,7 @@ export function FormBuilderPage() {
 				description: metadata.description ?? undefined,
 				type: metadata.type,
 				audience: metadata.audience,
+				showAnswers: metadata.showAnswers,
 				readingMaterialSections: normalizedReadingMaterialSections,
 			});
 		}

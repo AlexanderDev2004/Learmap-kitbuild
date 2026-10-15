@@ -9,6 +9,7 @@ const mockForm = {
 	description: null,
 	type: "pre_test" as const,
 	status: "published" as const,
+	showAnswers: false,
 	audience: "all" as const,
 	readingMaterialSections: null,
 	createdBy: "teacher-1",

@@ -64,6 +64,7 @@ export const getFormById = Effect.fn("getFormById")(function* (formId: string) {
 		description: formRow.description,
 		type: formRow.type,
 		status: formRow.status,
+		showAnswers: formRow.showAnswers,
 		audience: formRow.audience,
 		readingMaterialSections,
 		createdBy: formRow.createdBy,
@@ -237,6 +238,7 @@ export const getStudentFormById = Effect.fn("getStudentFormById")(function* (
 		description: formRow.description,
 		type: formRow.type,
 		status: formRow.status,
+		showAnswers: formRow.showAnswers,
 		audience: formRow.audience,
 		readingMaterialSections,
 		createdBy: formRow.createdBy,
@@ -248,7 +250,7 @@ export const getStudentFormById = Effect.fn("getStudentFormById")(function* (
 	let scoredQuestionCount = 0;
 
 	// Map questions and strip correctOptionIds for MCQ
-	const mappedQuestions = yield* Effect.all(
+	const mappedWithReview = yield* Effect.all(
 		questionRows.map((q) =>
 			Effect.gen(function* () {
 				const parsedOptions = yield* safeParseJson(
@@ -277,6 +279,14 @@ export const getStudentFormById = Effect.fn("getStudentFormById")(function* (
 					}
 				}
 
+				const correctAnswerText =
+					parsedOptions?.type === "mcq" && parsedOptions.correctOptionIds.length > 0
+						? parsedOptions.options
+								.filter((opt) => parsedOptions.correctOptionIds.includes(opt.id))
+								.map((opt) => opt.text)
+								.join(", ") || null
+						: null;
+
 				// Strip correctOptionIds from MCQ options for student view
 				const studentOptions =
 					parsedOptions?.type === "mcq"
@@ -289,19 +299,30 @@ export const getStudentFormById = Effect.fn("getStudentFormById")(function* (
 						: parsedOptions;
 
 				return {
-					id: q.id,
-					formId: q.formId,
-					type: q.type,
-					questionText: q.questionText,
-					options: studentOptions,
-					orderIndex: q.orderIndex,
-					required: q.required,
-					createdAt: q.createdAt.getTime(),
-					updatedAt: q.updatedAt.getTime(),
+					question: {
+						id: q.id,
+						formId: q.formId,
+						type: q.type,
+						questionText: q.questionText,
+						options: studentOptions,
+						orderIndex: q.orderIndex,
+						required: q.required,
+						createdAt: q.createdAt.getTime(),
+						updatedAt: q.updatedAt.getTime(),
+					},
+					review: {
+						questionId: q.id,
+						isCorrect,
+						correctAnswerText,
+					},
 				};
 			}),
 		),
 	);
+
+	const mappedQuestions = mappedWithReview.map((item) => item.question);
+	const review =
+		formRow.showAnswers && responseRow ? mappedWithReview.map((item) => item.review) : null;
 
 	const submission = responseRow
 		? {
@@ -311,6 +332,7 @@ export const getStudentFormById = Effect.fn("getStudentFormById")(function* (
 				correctCount,
 				totalQuestions: scoredQuestionCount,
 				answers: responseAnswers ?? {},
+				...(review && { review }),
 			}
 		: null;
 

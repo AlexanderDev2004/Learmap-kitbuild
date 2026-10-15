@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeftIcon, CheckCircle2Icon } from "lucide-react";
+import { ArrowLeftIcon, CheckCircle2Icon, XCircleIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,20 +109,48 @@ export function SubmissionReview({
 					</div>
 					<div className="mt-4 space-y-3">
 						<h3 className="font-semibold">Your answers</h3>
-						{questions.map((question, index) => (
-							<div key={question.id} className="rounded-lg border p-3">
-								<p className="text-sm text-muted-foreground">
-									Question {index + 1}
-								</p>
-								<p className="font-medium">{question.questionText}</p>
-								<p className="mt-1 text-sm">
-									{getSubmittedAnswerText(
-										question,
-										submission.answers[question.id],
+						{questions.map((question, index) => {
+							const review = submission.review?.find(
+								(item) => item.questionId === question.id,
+							);
+							return (
+								<div key={question.id} className="rounded-lg border p-3">
+									<div className="flex items-center justify-between gap-2">
+										<p className="text-sm text-muted-foreground">
+											Question {index + 1}
+										</p>
+										{review?.isCorrect != null && (
+											<Badge
+												className={
+													review.isCorrect
+														? "bg-success text-primary-foreground text-xs gap-1"
+														: "bg-destructive text-primary-foreground text-xs gap-1"
+												}
+											>
+												{review.isCorrect ? (
+													<CheckCircle2Icon className="size-3" />
+												) : (
+													<XCircleIcon className="size-3" />
+												)}
+												{review.isCorrect ? "Correct" : "Incorrect"}
+											</Badge>
+										)}
+									</div>
+									<p className="font-medium">{question.questionText}</p>
+									<p className="mt-1 text-sm">
+										{getSubmittedAnswerText(
+											question,
+											submission.answers[question.id],
+										)}
+									</p>
+									{review?.isCorrect === false && review.correctAnswerText && (
+										<p className="mt-1.5 rounded-md bg-muted/50 px-2 py-1.5 text-sm text-success">
+											Correct answer: {review.correctAnswerText}
+										</p>
 									)}
-								</p>
-							</div>
-						))}
+								</div>
+							);
+						})}
 					</div>
 					<Button asChild className="w-full mt-4">
 						<Link to={backTo}>

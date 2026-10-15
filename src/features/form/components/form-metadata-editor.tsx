@@ -9,6 +9,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 export type FormType = "pre_test" | "post_test" | "delayed_test" | "registration" | "questionnaire";
@@ -21,6 +22,7 @@ export interface FormMetadata {
 	type: FormType;
 	audience: FormAudience;
 	status: FormStatus;
+	showAnswers: boolean;
 }
 
 interface FormMetadataEditorProps {
@@ -89,6 +91,10 @@ export function FormMetadataEditor({
 
 	const handleStatusChange = (value: string) => {
 		onChange({ ...metadata, status: value as FormStatus });
+	};
+
+	const handleShowAnswersChange = (checked: boolean) => {
+		onChange({ ...metadata, showAnswers: checked });
 	};
 
 	return (
@@ -209,6 +215,23 @@ export function FormMetadataEditor({
 						</SelectItem>
 					</SelectContent>
 				</Select>
+			</div>
+
+			<div className="space-y-2">
+				<div className="flex items-center justify-between">
+					<Label htmlFor="form-show-answers">Show Answer</Label>
+					<Switch
+						id="form-show-answers"
+						data-testid="form-show-answers-switch"
+						checked={metadata.showAnswers}
+						onCheckedChange={handleShowAnswersChange}
+						disabled={disabled}
+					/>
+				</div>
+				<p className="text-xs text-muted-foreground">
+					When enabled, students see which of their answers are wrong and the correct
+					answer after submitting. When disabled, they only see their own answers.
+				</p>
 			</div>
 		</div>
 	);

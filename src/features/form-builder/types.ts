@@ -27,6 +27,7 @@ export const defaultMetadata: FormMetadata = {
 	type: "registration",
 	audience: "all",
 	status: "draft",
+	showAnswers: false,
 };
 
 export interface EditorContentProps {

@@ -286,6 +286,7 @@ export const UpdateFormInput = Schema.Struct({
 		Schema.Union(Schema.Literal("draft"), Schema.Literal("published")),
 		{ nullable: true },
 	),
+	showAnswers: Schema.optionalWith(Schema.Boolean, { nullable: true }),
 	readingMaterialSections: Schema.optionalWith(ReadingMaterialSections, { nullable: true }),
 });
 
@@ -304,6 +305,7 @@ export const CreateFormInput = Schema.Struct({
 	}),
 	type: Schema.optionalWith(FormTypeSchema, { nullable: true }),
 	audience: Schema.optionalWith(FormAudienceSchema, { default: () => "all" }),
+	showAnswers: Schema.optionalWith(Schema.Boolean, { default: () => false }),
 	readingMaterialSections: Schema.optionalWith(ReadingMaterialSections, { nullable: true }),
 });
 
@@ -426,6 +428,8 @@ export const FormOutputSchema = Schema.Struct({
 	),
 	audience: FormAudienceSchema,
 	status: Schema.Union(Schema.Literal("draft"), Schema.Literal("published")),
+	/** When true, students see per-question correctness and correct answers after submitting. */
+	showAnswers: Schema.Boolean,
 	readingMaterialSections: Schema.NullOr(ReadingMaterialSections),
 	createdBy: Schema.String,
 	createdAt: Schema.Number,
@@ -457,6 +461,15 @@ export const StudentQuestionOutputSchema = Schema.Struct({
 	updatedAt: Schema.Number,
 });
 
+export const SubmissionQuestionReview = Schema.Struct({
+	questionId: Schema.String,
+	isCorrect: Schema.NullOr(Schema.Boolean),
+	/** Text of the correct option(s); null when not scorable (likert/text). */
+	correctAnswerText: Schema.NullOr(Schema.String),
+});
+
+export type SubmissionQuestionReview = typeof SubmissionQuestionReview.Type;
+
 export const StudentFormSubmissionSchema = Schema.Struct({
 	submittedAt: Schema.NullOr(Schema.Number),
 	timeSpentSeconds: Schema.NullOr(Schema.Number),
@@ -464,6 +477,8 @@ export const StudentFormSubmissionSchema = Schema.Struct({
 	correctCount: Schema.Number,
 	totalQuestions: Schema.Number,
 	answers: Schema.Record({ key: Schema.String, value: Schema.Any }),
+	/** Per-question review, present only when the form's showAnswers is enabled. */
+	review: Schema.optionalWith(Schema.Array(SubmissionQuestionReview), { nullable: true }),
 });
 
 export const GetStudentFormByIdOutputSchema = Schema.Struct({
