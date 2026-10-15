@@ -1,4 +1,7 @@
+import { CheckCircle2Icon } from "lucide-react";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { isCorrectMcqAnswer } from "@/features/form/lib/form-scoring";
 import type {
 	FormResponseOutput as FormResponse,
 	QuestionOutput as ResponseQuestion,
@@ -84,6 +87,28 @@ export function ResponseDetailModal({
 		}
 	};
 
+	const getCorrectAnswerText = (question: ResponseQuestion): string | null => {
+		if (question.type !== "mcq") return null;
+		const options = question.options as {
+			type?: "mcq";
+			options?: Array<{ id: string; text: string }>;
+			correctOptionIds?: string[];
+		} | null;
+		if (!options?.options || !options.correctOptionIds?.length) return null;
+		const correct = options.options.filter((opt) => options.correctOptionIds?.includes(opt.id));
+		return correct.map((opt) => opt.text).join(", ") || null;
+	};
+
+	const isQuestionCorrect = (question: ResponseQuestion, answer: unknown): boolean | null => {
+		if (question.type !== "mcq") return null;
+		const options = question.options as { type?: "mcq"; correctOptionIds?: string[] } | null;
+		if (!options?.correctOptionIds?.length) return null;
+		return isCorrectMcqAnswer(
+			{ type: "mcq", correctOptionIds: options.correctOptionIds },
+			answer,
+		);
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -124,6 +149,9 @@ export function ResponseDetailModal({
 					<div className="space-y-6">
 						{sortedQuestions.map((question, index) => {
 							const answer = response.answers?.[question.id];
+							const isCorrect = isQuestionCorrect(question, answer);
+							const correctAnswerText =
+								isCorrect === false ? getCorrectAnswerText(question) : null;
 							return (
 								<div
 									key={question.id}
@@ -143,6 +171,12 @@ export function ResponseDetailModal({
 											<div className="mt-1 text-sm">
 												{getAnswerDisplay(question, answer)}
 											</div>
+											{correctAnswerText && (
+												<div className="mt-2 flex items-center gap-2 rounded-md bg-muted/50 px-2.5 py-1.5 text-sm text-success">
+													<CheckCircle2Icon className="size-3.5 shrink-0" />
+													Correct answer: {correctAnswerText}
+												</div>
+											)}
 										</div>
 									</div>
 								</div>
