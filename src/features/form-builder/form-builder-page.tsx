@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
 import type { FormMetadata } from "@/features/form/components/form-metadata-editor";
+import type { AikenParseResult } from "@/features/form/lib/form-aiken";
 import type {
 	CreateQuestionInput,
 	ReadingMaterialSection,
@@ -390,6 +391,52 @@ export function FormBuilderPage() {
 		handleCloseAddDialog();
 	};
 
+	const handleImportAiken = async (parsed: AikenParseResult) => {
+		if (parsed.questions.length === 0) {
+			toast.error("Tidak ada soal yang bisa diimpor", {
+				description:
+					parsed.errors.slice(0, 2).join(" ") ||
+					"Pastikan file mengikuti format Aiken: teks soal, opsi (A. / B. / ...), lalu baris ANSWER: X.",
+			});
+			return;
+		}
+
+		if (formId && !isDraftId(formId)) {
+			for (const question of parsed.questions) {
+				await createQuestionMutation.mutateAsync({
+					formId,
+					type: "mcq",
+					questionText: question.questionText,
+					options: question.options as CreateQuestionInput["options"],
+					required: true,
+				});
+			}
+		} else {
+			const drafts = parsed.questions.map(
+				(question, index): QuestionWithOptions => ({
+					id: generateDraftId(),
+					formId: formId ?? generateDraftId(),
+					type: "mcq",
+					questionText: question.questionText,
+					options: question.options,
+					required: true,
+					orderIndex: questions.length + index,
+					createdAt: new Date(),
+					updatedAt: new Date(),
+				}),
+			);
+			setQuestions((prev) => [...prev, ...drafts]);
+		}
+
+		setHasUnsavedChanges(true);
+		toast.success(`${parsed.questions.length} soal diimpor dari file Aiken`, {
+			description:
+				parsed.errors.length > 0
+					? `${parsed.errors.length} blok dilewati: ${parsed.errors[0]}`
+					: undefined,
+		});
+	};
+
 	const handleDeleteQuestion = async (questionId: string) => {
 		if (isDraftId(questionId)) {
 			setQuestions((prev) => prev.filter((q) => q.id !== questionId));
@@ -492,6 +539,7 @@ export function FormBuilderPage() {
 				hasUnsavedChanges={hasUnsavedChanges}
 				questionsCount={questions.length}
 				questions={questions}
+				onImportAiken={(parsed) => void handleImportAiken(parsed)}
 				isPending={isPending}
 				createMutation={createFormMutation}
 				updateMutation={updateFormMutation}

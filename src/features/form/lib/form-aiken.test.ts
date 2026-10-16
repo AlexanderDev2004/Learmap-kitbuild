@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { toAikenFormat } from "@/features/form/lib/form-aiken";
+import { fromAikenFormat, toAikenFormat } from "@/features/form/lib/form-aiken";
 import type { QuestionOutput } from "@/features/form/lib/form-service.shared";
 
 function mcq(overrides: Partial<QuestionOutput> = {}): QuestionOutput {
@@ -136,5 +136,102 @@ describe("toAikenFormat", () => {
 
 	it("returns empty string when there are no MCQ questions", () => {
 		expect(toAikenFormat([])).toBe("");
+	});
+});
+
+describe("fromAikenFormat", () => {
+	const SAMPLE = [
+		"Siapa yang mengembangkan Java?",
+		"A. James Gosling",
+		"B. Dennis Ritchie",
+		"C. Guido van Rossum",
+		"ANSWER: A",
+		"",
+		"Hasil kompilasi Java berupa ...",
+		"A. Bytecode (.class)",
+		"B. Machine code (.exe)",
+		"ANSWER: B",
+	].join("\n");
+
+	it("parses multiple blocks into MCQ questions with correct answers", () => {
+		const result = fromAikenFormat(SAMPLE);
+		expect(result.questions).toHaveLength(2);
+		expect(result.errors).toEqual([]);
+		expect(result.questions[0].questionText).toBe("Siapa yang mengembangkan Java?");
+		expect(result.questions[0].options.type).toBe("mcq");
+		expect(result.questions[0].options.options).toHaveLength(3);
+		expect(result.questions[0].options.correctOptionIds[0]).toBe(
+			result.questions[0].options.options[0].id,
+		);
+		expect(result.questions[1].options.correctOptionIds[0]).toBe(
+			result.questions[1].options.options[1].id,
+		);
+	});
+
+	it("skips blocks without ANSWER and reports why", () => {
+		const result = fromAikenFormat(
+			[
+				"Soal tanpa kunci?",
+				"A. Satu",
+				"B. Dua",
+				"",
+				"Soal lengkap?",
+				"A. Ya",
+				"B. Tidak",
+				"ANSWER: B",
+			].join("\n"),
+		);
+		expect(result.questions).toHaveLength(1);
+		expect(result.questions[0].questionText).toBe("Soal lengkap?");
+		expect(result.errors[0]).toContain("tidak ada baris ANSWER");
+	});
+
+	it("skips blocks whose ANSWER letter is outside the option range", () => {
+		const result = fromAikenFormat(["Soal?", "A. Satu", "B. Dua", "ANSWER: D"].join("\n"));
+		expect(result.questions).toHaveLength(0);
+		expect(result.errors[0]).toContain("ANSWER: D");
+	});
+
+	it("accepts A) style prefixes and lowercase answer letters", () => {
+		const result = fromAikenFormat(["Soal?", "A) Satu", "B) Dua", "answer: b"].join("\n"));
+		expect(result.questions).toHaveLength(1);
+		expect(result.questions[0].options.correctOptionIds[0]).toBe(
+			result.questions[0].options.options[1].id,
+		);
+	});
+
+	it("round-trips output of toAikenFormat back into equivalent questions", () => {
+		const questions = [
+			mcq(),
+			mcq({
+				id: "q2",
+				orderIndex: 1,
+				questionText: "Hasil kompilasi Java berupa ...",
+				options: {
+					type: "mcq",
+					options: [
+						{ id: "a", text: "Bytecode (.class)" },
+						{ id: "b", text: "Machine code (.exe)" },
+					],
+					correctOptionIds: ["a"],
+					shuffle: false,
+				},
+			} as Partial<QuestionOutput>),
+		];
+		const result = fromAikenFormat(toAikenFormat(questions));
+		expect(result.questions).toHaveLength(2);
+		expect(result.errors).toEqual([]);
+		expect(result.questions[0].questionText).toBe(questions[0].questionText);
+		expect(result.questions[0].options.options.map((o) => o.text)).toEqual([
+			"James Gosling",
+			"Dennis Ritchie",
+			"Guido van Rossum",
+		]);
+	});
+
+	it("returns empty result for empty input", () => {
+		const result = fromAikenFormat("");
+		expect(result.questions).toHaveLength(0);
+		expect(result.errors).toHaveLength(0);
 	});
 });

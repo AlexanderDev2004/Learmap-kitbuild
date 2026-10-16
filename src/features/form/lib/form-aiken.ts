@@ -1,3 +1,5 @@
+import type { McqOptions } from "./form-service.shared";
+
 /** Minimal shape needed for Aiken export — accepts QuestionOutput or builder drafts. */
 export type AikenSourceQuestion = {
 	type: string;
@@ -63,6 +65,116 @@ export function toAikenFormat(questions: ReadonlyArray<unknown>): string {
 
 function flatten(text: string): string {
 	return text.replace(/\s*\r?\n\s*/g, " ").trim();
+}
+
+/** A parsed MCQ question ready to be appended to the builder. */
+export type AikenImportedQuestion = {
+	questionText: string;
+	options: McqOptions;
+};
+
+export type AikenParseResult = {
+	questions: AikenImportedQuestion[];
+	/** Human-readable reasons why some blocks were skipped, shown after import. */
+	errors: string[];
+};
+
+const OPTION_LINE = /^([A-Za-z])[.)-]\s+(.+)$/;
+const ANSWER_LINE = /^ANSWER\s*:\s*([A-Za-z])\s*$/i;
+
+/**
+ * Parse a Moodle Aiken file into MCQ questions for the form builder.
+ *
+ * Blocks are separated by blank lines. Each block needs a question line,
+ * at least two option lines ("A. text", "B. text", ...) and an
+ * "ANSWER: X" line. Blocks that violate this are skipped and reported in
+ * `errors` so the teacher knows what was left out. "A- text" style option
+ * prefixes are also accepted so files exported by `toAikenFormat` can be
+ * re-imported unchanged.
+ */
+export function fromAikenFormat(content: string): AikenParseResult {
+	const questions: AikenImportedQuestion[] = [];
+	const errors: string[] = [];
+
+	type Block = {
+		questionText: string;
+		options: Array<{ id: string; text: string }>;
+		answer?: string;
+	};
+
+	const blocks: Block[] = [];
+	let current: Block | null = null;
+
+	const closeBlock = () => {
+		if (current) blocks.push(current);
+		current = null;
+	};
+
+	for (const rawLine of content.split(/\r?\n/)) {
+		const line = rawLine.trim();
+		if (!line) {
+			closeBlock();
+			continue;
+		}
+		const answerMatch = ANSWER_LINE.exec(line);
+		const optionMatch = OPTION_LINE.exec(line);
+		if (answerMatch) {
+			if (!current) {
+				errors.push(`Baris "${line}" dilewati karena muncul sebelum teks soal.`);
+				continue;
+			}
+			current.answer = answerMatch[1].toUpperCase();
+		} else if (optionMatch) {
+			if (!current) current = { questionText: "", options: [] };
+			current.options.push({
+				id: `opt-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+				text: optionMatch[2].trim(),
+			});
+		} else {
+			if (current && current.options.length > 0) closeBlock();
+			if (!current) current = { questionText: "", options: [] };
+			current.questionText = current.questionText ? `${current.questionText} ${line}` : line;
+		}
+	}
+	closeBlock();
+
+	for (const block of blocks) {
+		const label = truncate(block.questionText || "(tanpa teks soal)");
+		if (!block.questionText.trim()) {
+			errors.push(`Soal "${label}" dilewati: teks soal kosong.`);
+			continue;
+		}
+		if (block.options.length < 2) {
+			errors.push(`Soal "${label}" dilewati: butuh minimal 2 opsi jawaban.`);
+			continue;
+		}
+		if (!block.answer) {
+			errors.push(`Soal "${label}" dilewati: tidak ada baris ANSWER.`);
+			continue;
+		}
+		const correctIndex = block.answer.charCodeAt(0) - 65;
+		if (correctIndex < 0 || correctIndex >= block.options.length) {
+			errors.push(
+				`Soal "${label}" dilewati: ANSWER: ${block.answer} tidak cocok dengan opsi yang ada.`,
+			);
+			continue;
+		}
+		questions.push({
+			questionText: block.questionText,
+			options: {
+				type: "mcq",
+				options: block.options,
+				correctOptionIds: [block.options[correctIndex].id],
+				shuffle: false,
+			},
+		});
+	}
+
+	return { questions, errors };
+}
+
+function truncate(text: string): string {
+	return text.length > 40 ? `${text.slice(0, 40)}…` : text;
 }
 
 export function downloadAikenFile(input: { formTitle: string; content: string }) {

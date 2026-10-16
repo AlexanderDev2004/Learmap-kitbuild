@@ -7,9 +7,11 @@ import {
 	ArrowLeft,
 	RotateCcw,
 	Download,
+	Upload,
+	FileText,
 	ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +22,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { QuestionWithOptions } from "@/features/form-builder/types";
 import type { FormStatus } from "@/features/form/components/form-metadata-editor";
-import { downloadAikenFile, toAikenFormat } from "@/features/form/lib/form-aiken";
+import {
+	downloadAikenFile,
+	fromAikenFormat,
+	toAikenFormat,
+	type AikenParseResult,
+} from "@/features/form/lib/form-aiken";
 
 type MutationState = {
 	isPending: boolean;
@@ -46,6 +53,7 @@ interface FormBuilderHeaderProps {
 	onPublish: () => void;
 	onUnpublish: () => void;
 	onClearDraft: () => void;
+	onImportAiken: (parsed: AikenParseResult) => void;
 }
 
 export function FormBuilderHeader({
@@ -64,8 +72,11 @@ export function FormBuilderHeader({
 	onPublish,
 	onUnpublish,
 	onClearDraft,
+	onImportAiken,
 }: FormBuilderHeaderProps) {
 	const [moreOpen, setMoreOpen] = useState(false);
+	const [aikenOpen, setAikenOpen] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 	const hasMcq = questions.some((q) => q.type === "mcq");
 
@@ -75,6 +86,11 @@ export function FormBuilderHeader({
 			content: toAikenFormat(questions),
 		});
 		setMoreOpen(false);
+		setAikenOpen(false);
+	};
+
+	const handleImportAikenFile = async (file: File) => {
+		onImportAiken(fromAikenFormat(await file.text()));
 	};
 
 	const actionButtons = (
@@ -109,15 +125,48 @@ export function FormBuilderHeader({
 					Unpublish
 				</Button>
 			)}
-			<Button
-				variant="outline"
-				onClick={handleExportAiken}
-				disabled={!hasMcq}
-				title="Export questions in Moodle Aiken format (.txt)"
-			>
-				<Download className="mr-2 size-4" />
-				Export Aiken
-			</Button>
+			<DropdownMenu open={aikenOpen} onOpenChange={setAikenOpen}>
+				<DropdownMenuTrigger asChild>
+					<Button
+						variant="outline"
+						title="Export / Import soal dalam format Moodle Aiken (.txt)"
+					>
+						<FileText className="mr-2 size-4" />
+						Aiken
+						<ChevronDown className="ml-1 size-4" />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end">
+					<DropdownMenuItem
+						onClick={handleExportAiken}
+						disabled={!hasMcq}
+						title="Unduh semua soal pilihan ganda sebagai file Aiken"
+					>
+						<Download className="size-4 mr-2" />
+						Export Aiken
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							fileInputRef.current?.click();
+							setAikenOpen(false);
+						}}
+					>
+						<Upload className="size-4 mr-2" />
+						Import Aiken
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept=".txt,text/plain"
+				className="hidden"
+				onChange={(event) => {
+					const file = event.target.files?.[0];
+					event.target.value = "";
+					if (file) void handleImportAikenFile(file);
+				}}
+			/>
 			<Button onClick={onSave} disabled={isPending || !metadata.title.trim()}>
 				{createMutation.isPending || updateMutation.isPending ? (
 					<Loader2 className="mr-2 size-4 animate-spin" />
@@ -176,6 +225,15 @@ export function FormBuilderHeader({
 					<DropdownMenuItem onClick={handleExportAiken} disabled={!hasMcq}>
 						<Download className="size-4 mr-2" />
 						Export Aiken
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							fileInputRef.current?.click();
+							setMoreOpen(false);
+						}}
+					>
+						<Upload className="size-4 mr-2" />
+						Import Aiken
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						onClick={() => {
