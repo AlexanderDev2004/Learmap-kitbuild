@@ -491,6 +491,7 @@ export function FormBuilderPage() {
 				metadata={metadata}
 				hasUnsavedChanges={hasUnsavedChanges}
 				questionsCount={questions.length}
+				questions={questions}
 				isPending={isPending}
 				createMutation={createFormMutation}
 				updateMutation={updateFormMutation}

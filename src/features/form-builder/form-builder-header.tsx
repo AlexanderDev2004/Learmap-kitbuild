@@ -6,6 +6,7 @@ import {
 	EyeOff,
 	ArrowLeft,
 	RotateCcw,
+	Download,
 	ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
@@ -17,7 +18,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { QuestionWithOptions } from "@/features/form-builder/types";
 import type { FormStatus } from "@/features/form/components/form-metadata-editor";
+import { downloadAikenFile, toAikenFormat } from "@/features/form/lib/form-aiken";
 
 type MutationState = {
 	isPending: boolean;
@@ -32,6 +35,8 @@ interface FormBuilderHeaderProps {
 	hasUnsavedChanges: boolean;
 	questionsCount: number;
 	isPending: boolean;
+	/** Full questions (with correct answers) for Aiken export. */
+	questions: QuestionWithOptions[];
 	createMutation: MutationState;
 	updateMutation: MutationState;
 	publishMutation: MutationState;
@@ -49,6 +54,7 @@ export function FormBuilderHeader({
 	hasUnsavedChanges,
 	questionsCount,
 	isPending,
+	questions,
 	createMutation,
 	updateMutation,
 	publishMutation,
@@ -60,6 +66,16 @@ export function FormBuilderHeader({
 	onClearDraft,
 }: FormBuilderHeaderProps) {
 	const [moreOpen, setMoreOpen] = useState(false);
+
+	const hasMcq = questions.some((q) => q.type === "mcq");
+
+	const handleExportAiken = () => {
+		downloadAikenFile({
+			formTitle: metadata.title || "form",
+			content: toAikenFormat(questions),
+		});
+		setMoreOpen(false);
+	};
 
 	const actionButtons = (
 		<div className="hidden sm:flex items-center gap-2">
@@ -93,6 +109,15 @@ export function FormBuilderHeader({
 					Unpublish
 				</Button>
 			)}
+			<Button
+				variant="outline"
+				onClick={handleExportAiken}
+				disabled={!hasMcq}
+				title="Export questions in Moodle Aiken format (.txt)"
+			>
+				<Download className="mr-2 size-4" />
+				Export Aiken
+			</Button>
 			<Button onClick={onSave} disabled={isPending || !metadata.title.trim()}>
 				{createMutation.isPending || updateMutation.isPending ? (
 					<Loader2 className="mr-2 size-4 animate-spin" />
@@ -148,6 +173,10 @@ export function FormBuilderHeader({
 							Unpublish
 						</DropdownMenuItem>
 					)}
+					<DropdownMenuItem onClick={handleExportAiken} disabled={!hasMcq}>
+						<Download className="size-4 mr-2" />
+						Export Aiken
+					</DropdownMenuItem>
 					<DropdownMenuItem
 						onClick={() => {
 							onSave();
