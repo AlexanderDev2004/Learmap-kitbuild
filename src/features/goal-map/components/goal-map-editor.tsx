@@ -384,7 +384,7 @@ export function GoalMapEditor() {
 				width: maxX - minX + PADDING * 2,
 				height: maxY - minY + PADDING * 2 + HEADER,
 			},
-			data: { label: `Group ${groupCount + 1}`, color },
+			data: { label: `Frame ${groupCount + 1}`, color },
 			deletable: false,
 		};
 
@@ -405,7 +405,7 @@ export function GoalMapEditor() {
 		];
 		send({ type: "SET_NODES", nodes: nextNodes });
 		setSelectedIdSet(new Set());
-		toast.success("Group created");
+		toast.success("Frame created");
 	}, [selectedIdSet, stableNodes, getNodes, send]);
 
 	const ungroupSelected = useCallback(() => {

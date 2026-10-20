@@ -22,7 +22,7 @@ function GroupNodeComponent({ id, data, selected }: Partial<NodeProps<Node<Group
 	const [draftLabel, setDraftLabel] = useState(data?.label ?? "");
 
 	const color = data?.color ?? "#64748b";
-	const label = data?.label ?? "Group";
+	const label = data?.label ?? "Frame";
 
 	const commitRename = () => {
 		const trimmed = draftLabel.trim();

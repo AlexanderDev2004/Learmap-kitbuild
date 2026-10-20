@@ -240,10 +240,10 @@ function EditorToolbarImpl({
 						disabled={isNewMap || !canCreateGroup}
 					>
 						<Group className="size-4" />
-						Group
+						Frame
 					</Button>
 				}
-				payload="Wrap the selected nodes into a named, colored group that moves together (like Blueprint groups)"
+				payload="Wrap the selected nodes into a named, colored frame that moves together — visual grouping only, does not create kit segments"
 			/>
 
 			<TooltipTrigger
@@ -256,10 +256,10 @@ function EditorToolbarImpl({
 						disabled={isNewMap || !canUngroup}
 					>
 						<Ungroup className="size-4" />
-						Ungroup
+						Unframe
 					</Button>
 				}
-				payload="Dissolve the selected group and release its nodes"
+				payload="Dissolve the selected frame and release its nodes"
 			/>
 
 			<TooltipTrigger
