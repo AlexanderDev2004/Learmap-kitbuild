@@ -33,6 +33,7 @@ import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { useStableSerializedValue } from "@/hooks/use-stable-serialized-value";
 import { toast } from "@/lib/error-toast";
 import { areNodesConnected, isValidConnection } from "@/lib/react-flow-types";
+import { cn } from "@/lib/utils";
 import { learnerMapMachine } from "@/machines/learner-map.machine";
 import type { Condition } from "@/machines/learner-map.machine";
 import { LearnerMapRpc } from "@/server/rpc/learner-map";
@@ -83,6 +84,43 @@ export function LearnerMapEditor() {
 	const edges = useStableSerializedValue(context.edges);
 
 	const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+	// Segmented reconstruction: when the teacher defined segments for this
+	// goal map, the student works one segment at a time — only the concepts
+	// of the active segment (plus connectors) are shown on the canvas. The
+	// full map is still saved/scored, so hiding is purely presentational.
+	const segments = (assignmentData?.segments ?? []) as Array<{
+		id: string;
+		name: string;
+		type: "paragraph" | "depth-topic";
+		orderIndex: number;
+		nodeIds: string[];
+	}>;
+	type SegmentSelection = { kind: "auto" } | { kind: "segment"; id: string } | { kind: "all" };
+	const [selection, setSelection] = useState<SegmentSelection>({ kind: "auto" });
+	const activeSegment =
+		selection.kind === "auto"
+			? (segments[0] ?? null)
+			: selection.kind === "all"
+				? null
+				: (segments.find((s) => s.id === selection.id) ?? null);
+
+	const hiddenConceptIds = new Set<string>();
+	if (segments.length > 0 && activeSegment && !isSubmitted) {
+		const activeIds = new Set(activeSegment.nodeIds);
+		for (const segment of segments) {
+			for (const nodeId of segment.nodeIds) {
+				if (!activeIds.has(nodeId)) hiddenConceptIds.add(nodeId);
+			}
+		}
+	}
+	const visibleNodes =
+		hiddenConceptIds.size === 0 ? nodes : nodes.filter((n) => !hiddenConceptIds.has(n.id));
+	const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
+	const visibleEdges =
+		hiddenConceptIds.size === 0
+			? edges
+			: edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
 
 	useEffect(() => {
 		if (assignmentData && condition === "concept_map" && !isSubmitted) {
@@ -381,9 +419,42 @@ export function LearnerMapEditor() {
 				</AlertDialogContent>
 			</AlertDialog>
 			<div className="bg-card relative h-full overflow-hidden -mx-4">
+				{segments.length > 0 && condition === "concept_map" && !isSubmitted && (
+					<div className="absolute top-3 left-1/2 z-20 flex max-w-[92%] -translate-x-1/2 flex-wrap justify-center gap-1.5 rounded-xl border bg-white/90 p-1.5 shadow-lg backdrop-blur-sm">
+						{segments.map((segment, index) => (
+							<button
+								key={segment.id}
+								type="button"
+								onClick={() => setSelection({ kind: "segment", id: segment.id })}
+								className={cn(
+									"rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
+									activeSegment?.id === segment.id
+										? "bg-primary text-primary-foreground"
+										: "text-muted-foreground hover:bg-muted",
+								)}
+								title="Reconstruct the concepts of this segment"
+							>
+								{index + 1}. {segment.name}
+							</button>
+						))}
+						<button
+							type="button"
+							onClick={() => setSelection({ kind: "all" })}
+							className={cn(
+								"rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
+								activeSegment === null
+									? "bg-primary text-primary-foreground"
+									: "text-muted-foreground hover:bg-muted",
+							)}
+							title="Show all segments"
+						>
+							Semua
+						</button>
+					</div>
+				)}
 				<ConceptMapCanvas
-					nodes={nodes}
-					edges={edges}
+					nodes={visibleNodes}
+					edges={visibleEdges}
 					onNodesChange={onNodesChange}
 					onEdgesChange={onEdgesChange}
 					onConnect={onConnect}

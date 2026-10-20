@@ -67,6 +67,7 @@ export type EditorToolbarProps = {
 	isNewMap: boolean;
 	goalMapId?: string;
 	onDeleted?: () => void;
+	onOpenSegments?: () => void;
 };
 
 const tooltipHandle = createTooltipHandle();
@@ -87,6 +88,7 @@ function EditorToolbarImpl({
 	isNewMap,
 	goalMapId,
 	onDeleted,
+	onOpenSegments,
 }: EditorToolbarProps) {
 	const queryClient = useQueryClient();
 	const setConceptDialogOpen = useSetAtom(conceptDialogOpenAtom);
@@ -201,6 +203,22 @@ function EditorToolbarImpl({
 			/>
 
 			<Separator orientation="vertical" className="h-5! mx-1" />
+
+			<TooltipTrigger
+				handle={tooltipHandle}
+				render={
+					<Button
+						size="sm"
+						variant="outline"
+						onClick={onOpenSegments}
+						disabled={isNewMap}
+					>
+						<Grid3X3 className="size-4" />
+						Segments
+					</Button>
+				}
+				payload="Group/segment the concept map for step-by-step reconstruction"
+			/>
 
 			<TooltipTrigger
 				handle={tooltipHandle}

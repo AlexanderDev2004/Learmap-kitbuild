@@ -147,6 +147,28 @@ export const assignmentTargets = sqliteTable(
 	],
 );
 
+export const mapSegments = sqliteTable(
+	"map_segments",
+	{
+		id: text("id").primaryKey(),
+		goalMapId: text("goal_map_id")
+			.notNull()
+			.references(() => goalMaps.id, { onDelete: "cascade" }),
+		name: text("name").notNull(),
+		// "paragraph": teacher groups concepts manually following the reading
+		// text structure. "depth-topic": concepts grouped by hierarchy depth
+		// from the general (root) concepts to the specific ones.
+		type: text("type", { enum: ["paragraph", "depth-topic"] })
+			.notNull()
+			.default("paragraph"),
+		orderIndex: integer("order_index").notNull().default(0),
+		// Concept (text node) ids from the goal map that belong to this segment.
+		nodeIds: text("node_ids", { mode: "json" }).notNull().default("[]"),
+		...timestamps,
+	},
+	(table) => [index("map_segments_goalMapId_idx").on(table.goalMapId)],
+);
+
 export const learnerMaps = sqliteTable(
 	"learner_maps",
 	{

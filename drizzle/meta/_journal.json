@@ -36,6 +36,13 @@
 			"when": 1792036582243,
 			"tag": "0004_superb_arachne",
 			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "6",
+			"when": 1792148000000,
+			"tag": "0005_map_segments",
+			"breakpoints": true
 		}
 	]
 }

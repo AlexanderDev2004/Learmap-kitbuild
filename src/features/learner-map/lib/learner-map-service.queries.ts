@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { PerLinkDiagnosisSchema } from "@/features/analyzer/lib/analytics-service.shared";
@@ -13,6 +13,7 @@ import {
 	goalMaps,
 	kits,
 	learnerMaps,
+	mapSegments,
 	texts,
 } from "@/server/db/schema/app-schema";
 import { cohortMembers, user } from "@/server/db/schema/auth-schema";
@@ -243,29 +244,57 @@ export const getAssignmentForStudent = Effect.fn("getAssignmentForStudent")(func
 	if (!result || !result.kit) return null;
 
 	const textId = result.kit.textId || result.goalMap?.textId;
-	const [kitNodes, kitEdges, learnerMapNodes, learnerMapEdges, materialText] = yield* Effect.all(
-		[
-			safeParseJson(result.kit.nodes, [], Schema.Array(NodeSchema)),
-			safeParseJson(result.kit.edges, [], Schema.Array(EdgeSchema)),
-			result.learnerMap
-				? safeParseJson(result.learnerMap.nodes, [], Schema.Array(NodeSchema))
-				: Effect.succeed([]),
-			result.learnerMap
-				? safeParseJson(result.learnerMap.edges, [], Schema.Array(EdgeSchema))
-				: Effect.succeed([]),
-			textId
-				? Effect.promise(() =>
-						db
-							.select({ content: texts.content })
-							.from(texts)
-							.where(and(eq(texts.id, textId), isNull(texts.deletedAt)))
-							.limit(1)
-							.then((rows) => rows[0]?.content ?? null),
-					)
-				: Effect.succeed(null),
-		],
-		{ concurrency: 10 },
-	);
+	const [kitNodes, kitEdges, learnerMapNodes, learnerMapEdges, materialText, segments] =
+		yield* Effect.all(
+			[
+				safeParseJson(result.kit.nodes, [], Schema.Array(NodeSchema)),
+				safeParseJson(result.kit.edges, [], Schema.Array(EdgeSchema)),
+				result.learnerMap
+					? safeParseJson(result.learnerMap.nodes, [], Schema.Array(NodeSchema))
+					: Effect.succeed([]),
+				result.learnerMap
+					? safeParseJson(result.learnerMap.edges, [], Schema.Array(EdgeSchema))
+					: Effect.succeed([]),
+				textId
+					? Effect.promise(() =>
+							db
+								.select({ content: texts.content })
+								.from(texts)
+								.where(and(eq(texts.id, textId), isNull(texts.deletedAt)))
+								.limit(1)
+								.then((rows) => rows[0]?.content ?? null),
+						)
+					: Effect.succeed(null),
+				Effect.promise(() =>
+					db
+						.select({
+							id: mapSegments.id,
+							name: mapSegments.name,
+							type: mapSegments.type,
+							orderIndex: mapSegments.orderIndex,
+							nodeIds: mapSegments.nodeIds,
+						})
+						.from(mapSegments)
+						.where(
+							and(
+								eq(mapSegments.goalMapId, result.assignment.goalMapId),
+								isNull(mapSegments.deletedAt),
+							),
+						)
+						.orderBy(asc(mapSegments.orderIndex))
+						.then((rows) =>
+							rows.map((row) => ({
+								id: row.id,
+								name: row.name,
+								type: row.type as "paragraph" | "depth-topic",
+								orderIndex: row.orderIndex,
+								nodeIds: Array.isArray(row.nodeIds) ? row.nodeIds : [],
+							})),
+						),
+				),
+			],
+			{ concurrency: 10 },
+		);
 
 	return {
 		studyGroup,
@@ -279,6 +308,7 @@ export const getAssignmentForStudent = Effect.fn("getAssignmentForStudent")(func
 			edges: kitEdges,
 		},
 		materialText: result.assignment.readingMaterial || materialText || null,
+		segments,
 		learnerMap: result.learnerMap
 			? {
 					id: result.learnerMap.id,

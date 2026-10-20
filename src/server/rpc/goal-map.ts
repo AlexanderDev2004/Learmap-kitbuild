@@ -19,7 +19,17 @@ import {
 	SaveGoalMapInput,
 	UpdateMaterialInput,
 } from "@/features/goal-map/lib/goal-map-service.shared";
-import { authMiddleware } from "@/middlewares/auth";
+import {
+	AutoSegmentInput,
+	DeleteSegmentInput,
+	ListSegmentsInput,
+	SaveSegmentInput,
+	autoSegmentByDepth,
+	deleteSegment,
+	listSegments,
+	saveSegment,
+} from "@/features/goal-map/lib/map-segment-service";
+import { authMiddleware, requireRoleMiddleware } from "@/middlewares/auth";
 
 import { AppRuntime } from "../app-runtime";
 import {
@@ -147,6 +157,80 @@ export const updateMaterialRpc = createServerFn({ method: "POST" })
 		),
 	);
 
+export const listSegmentsRpc = createServerFn()
+	.middleware([authMiddleware])
+	.inputValidator((raw) => Schema.decodeUnknownSync(ListSegmentsInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			listSegments(data).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("listSegments"),
+				Effect.tapError(logRpcError("listSegments")),
+				Effect.catchAll(logAndReturnError("listSegments")),
+				Effect.catchAllDefect(logAndReturnDefect("listSegments")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const saveSegmentRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(SaveSegmentInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			saveSegment(data).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("saveSegment"),
+				Effect.tapError(logRpcError("saveSegment")),
+				Effect.catchTags({
+					GoalMapNotFoundError: () => Rpc.notFound("Goal map"),
+				}),
+				Effect.catchAll(logAndReturnError("saveSegment")),
+				Effect.catchAllDefect(logAndReturnDefect("saveSegment")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const deleteSegmentRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(DeleteSegmentInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			deleteSegment(data).pipe(
+				Effect.map(() => Rpc.ok(true)),
+				Effect.withSpan("deleteSegment"),
+				Effect.tapError(logRpcError("deleteSegment")),
+				Effect.catchAll(logAndReturnError("deleteSegment")),
+				Effect.catchAllDefect(logAndReturnDefect("deleteSegment")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
+export const autoSegmentByDepthRpc = createServerFn({ method: "POST" })
+	.middleware([requireRoleMiddleware("teacher", "admin")])
+	.inputValidator((raw) => Schema.decodeUnknownSync(AutoSegmentInput)(raw))
+	.handler(({ data }) =>
+		AppRuntime.runPromise(
+			autoSegmentByDepth(data).pipe(
+				Effect.map(Rpc.ok),
+				Effect.withSpan("autoSegmentByDepth"),
+				Effect.tapError(logRpcError("autoSegmentByDepth")),
+				Effect.catchTags({
+					GoalMapNotFoundError: () => Rpc.notFound("Goal map"),
+				}),
+				Effect.catchAll(logAndReturnError("autoSegmentByDepth")),
+				Effect.catchAllDefect(logAndReturnDefect("autoSegmentByDepth")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
 export const GoalMapRpc = {
 	goalMap: () => ["goal-map"],
 	getGoalMap: (data: GetGoalMapInput) =>
@@ -178,5 +262,26 @@ export const GoalMapRpc = {
 		mutationOptions({
 			mutationKey: [...GoalMapRpc.goalMap(), "material"],
 			mutationFn: (data: UpdateMaterialInput) => updateMaterialRpc({ data }),
+		}),
+	segments: () => [...GoalMapRpc.goalMap(), "segments"],
+	listSegments: (data: ListSegmentsInput) =>
+		queryOptions({
+			queryKey: [...GoalMapRpc.segments(), data.goalMapId],
+			queryFn: () => listSegmentsRpc({ data }),
+		}),
+	saveSegment: () =>
+		mutationOptions({
+			mutationKey: [...GoalMapRpc.segments()],
+			mutationFn: (data: SaveSegmentInput) => saveSegmentRpc({ data }),
+		}),
+	deleteSegment: () =>
+		mutationOptions({
+			mutationKey: [...GoalMapRpc.segments()],
+			mutationFn: (data: DeleteSegmentInput) => deleteSegmentRpc({ data }),
+		}),
+	autoSegmentByDepth: () =>
+		mutationOptions({
+			mutationKey: [...GoalMapRpc.segments(), "auto-depth"],
+			mutationFn: (data: AutoSegmentInput) => autoSegmentByDepthRpc({ data }),
 		}),
 };

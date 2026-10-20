@@ -3,13 +3,14 @@ import { useMachine } from "@xstate/react";
 import type { Connection, NodeMouseHandler } from "@xyflow/react";
 import { applyEdgeChanges, applyNodeChanges, ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { Suspense, useCallback, useEffect, lazy } from "react";
+import { Suspense, useCallback, useEffect, useState, lazy } from "react";
 
 import "@xyflow/react/dist/style.css";
 import { AddConceptDialog } from "@/features/goal-map/components/add-concept-dialog";
 import { AddLinkDialog } from "@/features/goal-map/components/add-link-dialog";
 import { EditorToolbar } from "@/features/goal-map/components/editor-toolbar";
 import { SaveDialog, WarningsPanel } from "@/features/goal-map/components/save-dialog";
+import { SegmentManagerDialog } from "@/features/goal-map/components/segment-manager-dialog";
 import { useSaveDialog } from "@/features/goal-map/hooks/use-save-dialog";
 import {
 	conceptDialogOpenAtom,
@@ -69,6 +70,8 @@ export function GoalMapEditor() {
 		...KitRpc.getKitStatus(goalMapId),
 		enabled: !isNewMap,
 	});
+
+	const [segmentsOpen, setSegmentsOpen] = useState(false);
 
 	// ── Simple UI state (local) ──────────────────────────────
 	const [conceptDialogOpen, setConceptDialogOpen] = useAtom(conceptDialogOpenAtom);
@@ -543,6 +546,15 @@ export function GoalMapEditor() {
 				onConfirm={handleSaveAs}
 			/>
 
+			{!isNewMap && (
+				<SegmentManagerDialog
+					isOpen={segmentsOpen}
+					onOpenChange={setSegmentsOpen}
+					goalMapId={goalMapId}
+					nodes={nodes}
+				/>
+			)}
+
 			<div className="absolute top-20 left-4 z-20 max-w-md">
 				<WarningsPanel warnings={saveWarnings} onClear={clearWarnings} />
 				{saveError ? (
@@ -592,6 +604,7 @@ export function GoalMapEditor() {
 					isNewMap={isNewMap}
 					goalMapId={goalMapId}
 					onDeleted={() => void navigate({ to: "/dashboard/goal-map", replace: true })}
+					onOpenSegments={() => setSegmentsOpen(true)}
 				/>
 			</div>
 		</div>
