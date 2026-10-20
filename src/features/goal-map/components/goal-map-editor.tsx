@@ -332,7 +332,10 @@ export function GoalMapEditor() {
 			if (!node) continue;
 			if (node.type === "group") {
 				hasGroup = true;
-			} else if ((node.type === "text" || node.type === "connector") && !node.parentId) {
+			} else if (
+				(node.type === "text" || node.type === "image" || node.type === "connector") &&
+				!node.parentId
+			) {
 				concepts++;
 			}
 		}
@@ -356,9 +359,9 @@ export function GoalMapEditor() {
 			(n) =>
 				selectedIdSet.has(n.id) &&
 				!n.parentId &&
-				(n.type === "text" || n.type === "connector"),
+				(n.type === "text" || n.type === "image" || n.type === "connector"),
 		);
-		if (selected.length < 2) return;
+		if (selected.length < 1) return;
 
 		const rfNodes = getNodes();
 		const measured = (id: string) => {
@@ -757,7 +760,7 @@ export function GoalMapEditor() {
 					goalMapId={goalMapId}
 					onDeleted={() => void navigate({ to: "/dashboard/goal-map", replace: true })}
 					onOpenSegments={() => setSegmentsOpen(true)}
-					canCreateGroup={groupSelection.concepts >= 2}
+					canCreateGroup={groupSelection.concepts >= 1}
 					onCreateGroup={createGroupFromSelection}
 					canUngroup={groupSelection.hasGroup}
 					onUngroup={ungroupSelected}

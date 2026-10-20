@@ -237,29 +237,24 @@ function EditorToolbarImpl({
 						size="sm"
 						variant="outline"
 						onClick={onCreateGroup}
-						disabled={isNewMap || !canCreateGroup}
+						disabled={!canCreateGroup}
 					>
 						<Group className="size-4" />
 						Frame
 					</Button>
 				}
-				payload="Wrap the selected nodes into a named, colored frame that moves together — visual grouping only, does not create kit segments"
+				payload="Select nodes first (click, Ctrl+click to add more, or Shift+drag a box), then Frame wraps them into a named, colored frame that moves together — visual grouping only, does not create kit segments"
 			/>
 
 			<TooltipTrigger
 				handle={tooltipHandle}
 				render={
-					<Button
-						size="sm"
-						variant="outline"
-						onClick={onUngroup}
-						disabled={isNewMap || !canUngroup}
-					>
+					<Button size="sm" variant="outline" onClick={onUngroup} disabled={!canUngroup}>
 						<Ungroup className="size-4" />
 						Unframe
 					</Button>
 				}
-				payload="Dissolve the selected frame and release its nodes"
+				payload="Select a frame, then Unframe dissolves it and releases its nodes"
 			/>
 
 			<TooltipTrigger
