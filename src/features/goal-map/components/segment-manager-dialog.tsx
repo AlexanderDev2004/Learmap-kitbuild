@@ -30,6 +30,13 @@ import { GoalMapRpc } from "@/server/rpc/goal-map";
 
 type SegmentType = "paragraph" | "depth-topic";
 
+interface FrameInfo {
+	id: string;
+	name: string;
+	color: string;
+	nodeIds: string[];
+}
+
 interface SegmentManagerDialogProps {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -150,6 +157,39 @@ export function SegmentManagerDialog({
 		const node = nodes.find((n) => n.id === nodeId);
 		const label = (node?.data as { label?: string } | undefined)?.label;
 		return typeof label === "string" && label ? label : nodeId;
+	};
+
+	// Frames drawn on the canvas (Blueprint-style grouping) can be imported
+	// directly as segments: the frame label becomes the segment name, its
+	// color is reused, and its member nodes become the segment's concepts.
+	// Nested frames are excluded from membership so a frame inside a frame
+	// only contributes its own concepts to the parent.
+	const frames: FrameInfo[] = nodes
+		.filter((n) => n.type === "group")
+		.map((frame, index) => ({
+			id: frame.id,
+			name: (frame.data as { label?: string }).label?.trim() || `Frame ${index + 1}`,
+			color: (frame.data as { color?: string }).color ?? SEGMENT_COLOR_PALETTE[0],
+			nodeIds: nodes
+				.filter(
+					(n) =>
+						n.parentId === frame.id &&
+						n.type !== "group" &&
+						(n.type === "text" || n.type === "image" || n.type === "connector"),
+				)
+				.map((n) => n.id),
+		}));
+	const importedFrameNames = new Set((segments ?? []).map((s) => s.name.trim().toLowerCase()));
+
+	const importFrame = (frame: FrameInfo) => {
+		saveMutation.mutate({
+			goalMapId,
+			name: frame.name,
+			type: "paragraph",
+			orderIndex: segments?.length ?? 0,
+			color: frame.color,
+			nodeIds: frame.nodeIds,
+		});
 	};
 
 	return (
@@ -335,6 +375,72 @@ export function SegmentManagerDialog({
 								</div>
 							))}
 						</div>
+
+						{frames.length > 0 && (
+							<div className="space-y-2">
+								<div className="flex items-center gap-2">
+									<span className="text-sm font-medium">Frame di canvas</span>
+									<Badge variant="outline" className="text-xs">
+										{frames.length} frame
+									</Badge>
+								</div>
+								<p className="text-muted-foreground text-xs">
+									Frame yang kamu buat dengan tombol Frame di editor bisa
+									dijadikan segmen langsung: nama, warna, dan konsep di dalamnya
+									ikut otomatis.
+								</p>
+								<div className="max-h-44 space-y-1 overflow-y-auto rounded-md border p-2">
+									{frames.map((frame) => {
+										const imported = importedFrameNames.has(
+											frame.name.toLowerCase(),
+										);
+										return (
+											<div
+												key={frame.id}
+												className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm"
+											>
+												<div className="flex min-w-0 items-center gap-2">
+													<span
+														className="size-3 shrink-0 rounded-full border"
+														style={{ backgroundColor: frame.color }}
+													/>
+													<span className="truncate">{frame.name}</span>
+													<span className="text-muted-foreground shrink-0 text-xs">
+														{frame.nodeIds.length} konsep
+													</span>
+												</div>
+												{imported ? (
+													<Badge
+														variant="secondary"
+														className="shrink-0 text-xs"
+													>
+														Terimpor
+													</Badge>
+												) : (
+													<Button
+														variant="ghost"
+														size="sm"
+														className="shrink-0"
+														onClick={() => importFrame(frame)}
+														disabled={
+															saveMutation.isPending ||
+															frame.nodeIds.length === 0
+														}
+														title={
+															frame.nodeIds.length === 0
+																? "Frame ini belum berisi konsep"
+																: `Jadikan segmen "${frame.name}"`
+														}
+													>
+														Jadikan Segmen
+													</Button>
+												)}
+											</div>
+										);
+									})}
+								</div>
+							</div>
+						)}
 
 						<Separator />
 

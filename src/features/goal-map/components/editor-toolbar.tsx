@@ -243,7 +243,7 @@ function EditorToolbarImpl({
 						Frame
 					</Button>
 				}
-				payload="Select nodes first (click, Ctrl+click to add more, or Shift+drag a box), then Frame wraps them into a named, colored frame that moves together — visual grouping only, does not create kit segments"
+				payload="Select nodes first (click, Ctrl+click to add more, or Shift+drag a box), then Frame wraps them into a named, colored frame that moves together. Open Segments to turn frames into segments"
 			/>
 
 			<TooltipTrigger
