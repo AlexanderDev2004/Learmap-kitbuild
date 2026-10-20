@@ -272,6 +272,7 @@ export const getAssignmentForStudent = Effect.fn("getAssignmentForStudent")(func
 							name: mapSegments.name,
 							type: mapSegments.type,
 							orderIndex: mapSegments.orderIndex,
+							color: mapSegments.color,
 							nodeIds: mapSegments.nodeIds,
 						})
 						.from(mapSegments)
@@ -288,6 +289,7 @@ export const getAssignmentForStudent = Effect.fn("getAssignmentForStudent")(func
 								name: row.name,
 								type: row.type as "paragraph" | "depth-topic",
 								orderIndex: row.orderIndex,
+								color: row.color,
 								nodeIds: Array.isArray(row.nodeIds) ? row.nodeIds : [],
 							})),
 						),

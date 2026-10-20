@@ -214,7 +214,7 @@ function EditorToolbarImpl({
 						disabled={isNewMap}
 					>
 						<Grid3X3 className="size-4" />
-						Segments
+						Group
 					</Button>
 				}
 				payload="Group/segment the concept map for step-by-step reconstruction"

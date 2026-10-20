@@ -18,6 +18,8 @@ export const SaveSegmentInput = Schema.Struct({
 	name: NonEmpty("Segment name"),
 	type: Schema.Union(Schema.Literal("paragraph"), Schema.Literal("depth-topic")),
 	orderIndex: Schema.Int,
+	// Optional group color as a hex string (e.g. "#2563eb").
+	color: Schema.optional(Schema.Union(Schema.Null, NonEmpty("Segment color"))),
 	nodeIds: Schema.Array(Schema.String),
 });
 export type SaveSegmentInput = typeof SaveSegmentInput.Type;
@@ -38,8 +40,21 @@ export type MapSegmentOutput = {
 	name: string;
 	type: "paragraph" | "depth-topic";
 	orderIndex: number;
+	color: string | null;
 	nodeIds: string[];
 };
+
+/** Default group colors used when none is chosen (auto depth-topic levels). */
+export const SEGMENT_COLOR_PALETTE = [
+	"#2563eb",
+	"#16a34a",
+	"#d97706",
+	"#9333ea",
+	"#dc2626",
+	"#0891b2",
+	"#65a30d",
+	"#db2777",
+] as const;
 
 export const listSegments = Effect.fn("listSegments")(function* (input: ListSegmentsInput) {
 	const db = yield* Database;
@@ -55,6 +70,7 @@ export const listSegments = Effect.fn("listSegments")(function* (input: ListSegm
 		name: row.name,
 		type: row.type as "paragraph" | "depth-topic",
 		orderIndex: row.orderIndex,
+		color: row.color,
 		nodeIds: Array.isArray(row.nodeIds) ? row.nodeIds : [],
 	}));
 });
@@ -76,6 +92,7 @@ export const saveSegment = Effect.fn("saveSegment")(function* (input: SaveSegmen
 		name: input.name,
 		type: input.type,
 		orderIndex: input.orderIndex,
+		color: input.color ?? null,
 		nodeIds: input.nodeIds,
 	};
 
@@ -133,23 +150,27 @@ export const replaceDepthSegments = Effect.fn("replaceDepthSegments")(function* 
 	const created: MapSegmentOutput[] = [];
 	for (const [index, nodeIds] of nodeIdGroups.entries()) {
 		if (nodeIds.length === 0) continue;
+		const name = `Depth Level ${index + 1}`;
+		const color = SEGMENT_COLOR_PALETTE[index % SEGMENT_COLOR_PALETTE.length];
 		const [row] = yield* db
 			.insert(mapSegments)
 			.values({
 				id: crypto.randomUUID(),
 				goalMapId: input.goalMapId,
-				name: `Depth Level ${index + 1}`,
+				name,
 				type: "depth-topic",
 				orderIndex: index,
+				color,
 				nodeIds,
 			})
 			.returning({ id: mapSegments.id });
 		created.push({
 			id: row.id,
 			goalMapId: input.goalMapId,
-			name: `Depth Level ${index + 1}`,
+			name,
 			type: "depth-topic",
 			orderIndex: index,
+			color,
 			nodeIds,
 		});
 	}

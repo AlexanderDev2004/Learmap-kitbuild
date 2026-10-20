@@ -162,6 +162,9 @@ export const mapSegments = sqliteTable(
 			.notNull()
 			.default("paragraph"),
 		orderIndex: integer("order_index").notNull().default(0),
+		// Optional group color (hex) chosen by the teacher; shown on the
+		// student segment bar so each group is visually distinguishable.
+		color: text("color"),
 		// Concept (text node) ids from the goal map that belong to this segment.
 		nodeIds: text("node_ids", { mode: "json" }).notNull().default("[]"),
 		...timestamps,

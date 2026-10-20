@@ -94,6 +94,7 @@ export function LearnerMapEditor() {
 		name: string;
 		type: "paragraph" | "depth-topic";
 		orderIndex: number;
+		color?: string | null;
 		nodeIds: string[];
 	}>;
 	type SegmentSelection = { kind: "auto" } | { kind: "segment"; id: string } | { kind: "all" };
@@ -426,14 +427,28 @@ export function LearnerMapEditor() {
 								key={segment.id}
 								type="button"
 								onClick={() => setSelection({ kind: "segment", id: segment.id })}
+								style={
+									activeSegment?.id === segment.id && segment.color
+										? {
+												backgroundColor: segment.color,
+												borderColor: segment.color,
+											}
+										: undefined
+								}
 								className={cn(
-									"rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
+									"rounded-lg border border-transparent px-2.5 py-1 text-xs font-medium transition-colors",
 									activeSegment?.id === segment.id
 										? "bg-primary text-primary-foreground"
 										: "text-muted-foreground hover:bg-muted",
 								)}
 								title="Reconstruct the concepts of this segment"
 							>
+								<span
+									className="mr-1.5 inline-block size-2 rounded-full align-middle"
+									style={{
+										backgroundColor: segment.color ?? "var(--muted-foreground)",
+									}}
+								/>
 								{index + 1}. {segment.name}
 							</button>
 						))}

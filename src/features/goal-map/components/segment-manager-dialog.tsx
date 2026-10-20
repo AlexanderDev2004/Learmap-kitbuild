@@ -21,9 +21,11 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { SEGMENT_COLOR_PALETTE } from "@/features/goal-map/lib/map-segment-service";
 import type { Node } from "@/features/learner-map/lib/comparator";
 import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { toast } from "@/lib/error-toast";
+import { cn } from "@/lib/utils";
 import { GoalMapRpc } from "@/server/rpc/goal-map";
 
 type SegmentType = "paragraph" | "depth-topic";
@@ -83,6 +85,7 @@ export function SegmentManagerDialog({
 		id: string | null;
 		name: string;
 		type: SegmentType;
+		color: string;
 		nodeIds: string[];
 	} | null>(null);
 
@@ -93,6 +96,7 @@ export function SegmentManagerDialog({
 			id: null,
 			name: `Segmen ${(segments?.length ?? 0) + 1}`,
 			type: "paragraph",
+			color: SEGMENT_COLOR_PALETTE[(segments?.length ?? 0) % SEGMENT_COLOR_PALETTE.length],
 			nodeIds: [],
 		});
 	};
@@ -102,6 +106,7 @@ export function SegmentManagerDialog({
 			id: segment.id,
 			name: segment.name,
 			type: segment.type,
+			color: segment.color ?? SEGMENT_COLOR_PALETTE[0],
 			nodeIds: [...segment.nodeIds],
 		});
 	};
@@ -136,6 +141,7 @@ export function SegmentManagerDialog({
 			orderIndex: editing.id
 				? (segments?.find((s) => s.id === editing.id)?.orderIndex ?? 0)
 				: (segments?.length ?? 0),
+			color: editing.color,
 			nodeIds: editing.nodeIds,
 		});
 	};
@@ -192,6 +198,37 @@ export function SegmentManagerDialog({
 									</SelectItem>
 								</SelectContent>
 							</Select>
+						</div>
+						<div className="space-y-1.5">
+							<span className="text-sm font-medium">Warna group</span>
+							<div className="flex items-center gap-2">
+								<div className="flex flex-wrap gap-1.5">
+									{SEGMENT_COLOR_PALETTE.map((color) => (
+										<button
+											key={color}
+											type="button"
+											aria-label={`Pilih warna ${color}`}
+											onClick={() => setEditing({ ...editing, color })}
+											style={{ backgroundColor: color }}
+											className={cn(
+												"size-6 rounded-full border-2 transition-transform",
+												editing.color.toLowerCase() === color.toLowerCase()
+													? "scale-110 border-foreground"
+													: "border-transparent hover:scale-105",
+											)}
+										/>
+									))}
+								</div>
+								<input
+									type="color"
+									aria-label="Warna kustom"
+									value={editing.color}
+									onChange={(e) =>
+										setEditing({ ...editing, color: e.target.value })
+									}
+									className="ml-auto size-8 cursor-pointer rounded border"
+								/>
+							</div>
 						</div>
 						<div className="space-y-1.5">
 							<label className="text-sm font-medium">
@@ -252,6 +289,13 @@ export function SegmentManagerDialog({
 								>
 									<div className="min-w-0">
 										<div className="flex items-center gap-2">
+											<span
+												className="size-3 shrink-0 rounded-full border"
+												style={{
+													backgroundColor:
+														segment.color ?? "var(--muted)",
+												}}
+											/>
 											<span className="text-sm font-medium">
 												{index + 1}. {segment.name}
 											</span>
