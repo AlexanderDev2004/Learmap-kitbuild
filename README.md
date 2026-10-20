@@ -196,6 +196,14 @@ dengan Worker name `learnmap`, storage gambar di R2 bucket
 - Wrangler ter-autentikasi: `npx wrangler login` (OAuth), atau set env
   `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
 
+> **Catatan SSR/SPA:** aplikasi berjalan dalam **SPA mode**
+> (`tanstackStart({ spa: { enabled: true } })` di `vite.config.ts`).
+> Alasannya: plan gratis Workers membatasi CPU 10ms per request dan SSR
+> kadang melewatinya (Cloudflare error 1102 "Worker exceeded resource
+> limits"). Dengan SPA mode, worker hanya menyajikan aset statis (tanpa
+> CPU) dan server function (IO database). Kalau nanti upgrade ke plan
+> berbayar, SSR bisa diaktifkan kembali dengan menghapus opsi `spa`.
+
 ### 1. Buat Database Turso
 
 ```bash

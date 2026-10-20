@@ -93,7 +93,13 @@ export default defineConfig({
 	plugins: [
 		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		tailwindcss(),
-		tanstackStart(),
+		tanstackStart({
+			// SPA mode: no SSR. Cloudflare Workers free plan caps CPU at 10ms
+			// per request, which SSR rendering occasionally exceeds (error 1102).
+			// Serving a prerendered shell + client rendering keeps worker CPU
+			// usage near zero; data still flows through server functions.
+			spa: { enabled: true },
+		}),
 		viteReact(),
 	] as PluginOption[],
 });
