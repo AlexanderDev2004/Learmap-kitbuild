@@ -116,7 +116,12 @@ export function GoalMapEditor() {
 		if (!existing) return;
 		const loadedNodes = Array.isArray(existing.nodes) ? existing.nodes : [];
 		const loadedEdges = Array.isArray(existing.edges) ? existing.edges : [];
-		send({ type: "LOADED", data: { nodes: loadedNodes, edges: loadedEdges } });
+		// Frames are stored with zIndex -1 so they render beneath edges; make
+		// sure any frame loaded from the database keeps that stacking.
+		const normalizedNodes = loadedNodes.map((n) =>
+			n.type === "group" ? { ...n, zIndex: -1 } : n,
+		);
+		send({ type: "LOADED", data: { nodes: normalizedNodes, edges: loadedEdges } });
 		updateMeta({
 			topicId: typeof existing.topicId === "string" ? existing.topicId : "",
 			name: typeof existing.title === "string" ? existing.title : "",
@@ -281,16 +286,48 @@ export function GoalMapEditor() {
 	);
 
 	const handleDeleteSelected = useCallback(() => {
-		const selectedIds = new Set(
+		// A selected frame is never destroyed outright: Delete releases its
+		// member nodes (same as Unframe) so they never lose their positions.
+		const selectedGroups = new Set(
+			stableNodes
+				.filter((n) => selectedIdSet.has(n.id) && n.type === "group")
+				.map((n) => n.id),
+		);
+		const selectedNodes = new Set(
 			stableNodes
 				.filter((n) => selectedIdSet.has(n.id) && n.type !== "group")
 				.map((n) => n.id),
 		);
-		if (selectedIds.size === 0) return;
-		const nextNodes = stableNodes.filter((n) => !selectedIds.has(n.id));
-		const nextEdges = stableEdges.filter(
-			(e) => !selectedIds.has(e.source) && !selectedIds.has(e.target),
-		);
+
+		let nextNodes: Node[] = stableNodes;
+		if (selectedGroups.size > 0) {
+			const groupPositions = new Map(
+				stableNodes.filter((n) => n.type === "group").map((n) => [n.id, n.position]),
+			);
+			nextNodes = nextNodes
+				.filter((n) => !selectedGroups.has(n.id))
+				.map((n) => {
+					if (!n.parentId || !selectedGroups.has(n.parentId)) return n;
+					const parent = groupPositions.get(n.parentId);
+					const { parentId: _removedParentId, ...rest } = n;
+					return {
+						...rest,
+						position: {
+							x: n.position.x + (parent?.x ?? 0),
+							y: n.position.y + (parent?.y ?? 0),
+						},
+					};
+				});
+		}
+
+		if (selectedNodes.size === 0 && selectedGroups.size === 0) return;
+		if (selectedNodes.size > 0) {
+			nextNodes = nextNodes.filter((n) => !selectedNodes.has(n.id));
+		}
+		const nextEdges = stableEdges.filter((e) => {
+			if (selectedGroups.has(e.source) || selectedGroups.has(e.target)) return false;
+			return !selectedNodes.has(e.source) && !selectedNodes.has(e.target);
+		});
 		send({
 			type: "DELETE_SELECTED",
 			nodes: nextNodes,
@@ -298,7 +335,8 @@ export function GoalMapEditor() {
 		});
 		setSelectedIdSet((prev) => {
 			const next = new Set(prev);
-			for (const id of selectedIds) next.delete(id);
+			for (const id of selectedNodes) next.delete(id);
+			for (const id of selectedGroups) next.delete(id);
 			return next;
 		});
 	}, [stableNodes, stableEdges, selectedIdSet, send]);
@@ -382,6 +420,9 @@ export function GoalMapEditor() {
 		const groupNode: Node = {
 			id: groupId,
 			type: "group",
+			// Frames must stay beneath edges and regular nodes so clicks that
+			// land on an edge path still select what is visually on top.
+			zIndex: -1,
 			position: { x: minX - PADDING, y: minY - PADDING },
 			style: {
 				width: maxX - minX + PADDING * 2,
@@ -389,7 +430,7 @@ export function GoalMapEditor() {
 			},
 			data: { label: `Frame ${groupCount + 1}`, color },
 			deletable: false,
-		};
+		} as Node;
 
 		const selectedIdLookup = new Set(selected.map((n) => n.id));
 		const nextNodes: Node[] = [
@@ -569,6 +610,22 @@ export function GoalMapEditor() {
 	const handleUndo = useCallback(() => send({ type: "UNDO" }), [send]);
 	const handleRedo = useCallback(() => send({ type: "REDO" }), [send]);
 
+	// Ignore Delete/Backspace while the user is typing in an input, textarea,
+	// or contenteditable element so text editing never deletes map nodes.
+	const readOnlyTyping = useCallback((e: KeyboardEvent) => {
+		const target = e.target as HTMLElement | null;
+		if (!target) return false;
+		const tag = target.tagName;
+		if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+		return target.isContentEditable;
+	}, []);
+
+	// React Flow reports the authoritative selection here; mirror it into
+	// selectedIdSet so the Frame/Unframe/Delete toolbar state stays correct.
+	const handleSelectionChange = useCallback(({ nodes }: { nodes: Node[] }) => {
+		setSelectedIdSet(new Set(nodes.map((n) => n.id)));
+	}, []);
+
 	useEffect(() => {
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
@@ -591,10 +648,26 @@ export function GoalMapEditor() {
 				e.preventDefault();
 				handleRedo();
 			}
+			// Delete/Backspace removes the current selection; a selected frame is
+			// released (members keep their positions) instead of being destroyed.
+			if ((e.key === "Delete" || e.key === "Backspace") && !readOnlyTyping(e)) {
+				handleDeleteSelected();
+			}
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [saving, doSave, saveMeta, isNewMap, setSaveOpen, setContextMenu, handleUndo, handleRedo]);
+	}, [
+		saving,
+		doSave,
+		saveMeta,
+		isNewMap,
+		setSaveOpen,
+		setContextMenu,
+		handleUndo,
+		handleRedo,
+		handleDeleteSelected,
+		readOnlyTyping,
+	]);
 
 	// ── Dialogs and handlers ──────────────────────────────────
 	const handleAddConcept = useCallback(
@@ -733,6 +806,7 @@ export function GoalMapEditor() {
 					onNodeClick={handleNodeClick}
 					onPaneClick={handlePaneClick}
 					onUpdateNodeData={handleUpdateNodeData}
+					onSelectionChange={handleSelectionChange}
 					readOnly={false}
 				>
 					<SearchNodesPanel

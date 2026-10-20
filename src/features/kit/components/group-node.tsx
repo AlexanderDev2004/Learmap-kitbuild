@@ -1,4 +1,4 @@
-import { type Node, type NodeProps } from "@xyflow/react";
+import { type Node, type NodeProps, NodeResizer } from "@xyflow/react";
 import { memo, useState } from "react";
 
 import { SEGMENT_COLOR_PALETTE } from "@/features/goal-map/lib/map-segment-service";
@@ -12,12 +12,13 @@ type GroupNodeData = {
 };
 
 /**
- * Blueprint-style group container: a named, colored box that wraps concept
- * nodes so they can be moved, renamed, and recolored together. The label is
- * renamed with a double click; the palette dots change the group color.
+ * Blueprint-style frame: a named, colored box that wraps concept nodes so they
+ * can be moved, renamed, recolored, and resized together. Rename with a double
+ * click on the label; recolor via the palette dots (hover or selected); resize
+ * via the corner/edge handles that appear when selected.
  */
 function GroupNodeComponent({ id, data, selected }: Partial<NodeProps<Node<GroupNodeData>>>) {
-	const { onUpdateNodeData } = useNodeContext();
+	const { readOnly, onUpdateNodeData } = useNodeContext();
 	const [renaming, setRenaming] = useState(false);
 	const [draftLabel, setDraftLabel] = useState(data?.label ?? "");
 
@@ -34,13 +35,26 @@ function GroupNodeComponent({ id, data, selected }: Partial<NodeProps<Node<Group
 
 	return (
 		<div
-			className={cn("group h-full w-full rounded-2xl border-2 transition-shadow")}
+			className={cn("group relative h-full w-full rounded-2xl border-2 transition-shadow")}
 			style={{
 				borderColor: color,
 				backgroundColor: `${color}14`,
 				boxShadow: selected ? `0 0 0 2px ${color}66` : undefined,
 			}}
 		>
+			<NodeResizer
+				isVisible={!!selected && !readOnly}
+				minWidth={160}
+				minHeight={100}
+				lineStyle={{ borderColor: color }}
+				handleStyle={{
+					backgroundColor: color,
+					width: 8,
+					height: 8,
+					border: "none",
+					borderRadius: 9999,
+				}}
+			/>
 			<div className="flex items-center gap-1 px-2 pt-1">
 				{renaming ? (
 					<input
@@ -59,7 +73,7 @@ function GroupNodeComponent({ id, data, selected }: Partial<NodeProps<Node<Group
 					/>
 				) : (
 					<span
-						className="nodrag max-w-40 cursor-text truncate text-xs font-semibold select-none"
+						className="nodrag min-w-0 flex-1 cursor-text truncate text-xs font-semibold select-none"
 						style={{ color }}
 						title="Double click to rename"
 						onDoubleClick={() => {
@@ -70,21 +84,27 @@ function GroupNodeComponent({ id, data, selected }: Partial<NodeProps<Node<Group
 						{label}
 					</span>
 				)}
-				<div className="nodrag ml-auto flex items-center gap-1 rounded px-1 opacity-0 transition-opacity group-hover:opacity-100 has-[:focus]:opacity-100">
-					{SEGMENT_COLOR_PALETTE.map((paletteColor) => (
-						<button
-							key={paletteColor}
-							type="button"
-							aria-label={`Group color ${paletteColor}`}
-							className={cn(
-								"size-3 cursor-pointer rounded-full border transition-transform hover:scale-125",
-								color.toLowerCase() === paletteColor.toLowerCase() && "scale-125",
-							)}
-							style={{ backgroundColor: paletteColor }}
-							onClick={() => id && onUpdateNodeData?.(id, { color: paletteColor })}
-						/>
-					))}
-				</div>
+			</div>
+			<div
+				className={cn(
+					"nodrag absolute -top-4 right-2 flex items-center gap-1 rounded-full border border-border bg-background/95 px-1.5 py-0.5 shadow-sm transition-opacity",
+					"pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100",
+					selected && "pointer-events-auto opacity-100",
+				)}
+			>
+				{SEGMENT_COLOR_PALETTE.map((paletteColor) => (
+					<button
+						key={paletteColor}
+						type="button"
+						aria-label={`Frame color ${paletteColor}`}
+						className={cn(
+							"size-3 cursor-pointer rounded-full border transition-transform hover:scale-125",
+							color.toLowerCase() === paletteColor.toLowerCase() && "scale-125",
+						)}
+						style={{ backgroundColor: paletteColor }}
+						onClick={() => id && onUpdateNodeData?.(id, { color: paletteColor })}
+					/>
+				))}
 			</div>
 		</div>
 	);

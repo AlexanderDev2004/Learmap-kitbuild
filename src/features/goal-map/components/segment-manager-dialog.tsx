@@ -181,14 +181,16 @@ export function SegmentManagerDialog({
 							/>
 						</div>
 						<div className="space-y-1.5">
-							<label className="text-sm font-medium">Tipe segmentasi</label>
+							<label htmlFor="segmentation-type" className="text-sm font-medium">
+								Tipe segmentasi
+							</label>
 							<Select
 								value={editing.type}
 								onValueChange={(value) =>
 									setEditing({ ...editing, type: value as SegmentType })
 								}
 							>
-								<SelectTrigger>
+								<SelectTrigger id="segmentation-type">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>

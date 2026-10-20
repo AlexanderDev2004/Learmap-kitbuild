@@ -45,7 +45,6 @@ async function main() {
 
 	for (const r of responses.rows) {
 		const answers = JSON.parse(r.answers as string);
-		userMap.get(r.user_id as string) || r.user_id;
 
 		// Per-item
 		for (const id of qIds) {
