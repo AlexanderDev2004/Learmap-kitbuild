@@ -3,6 +3,7 @@ import { useSetAtom } from "jotai";
 import {
 	BookOpen,
 	Grid3X3,
+	Group,
 	Loader2,
 	MoreHorizontal,
 	Plus,
@@ -10,6 +11,7 @@ import {
 	Search,
 	Shuffle,
 	Trash2,
+	Ungroup,
 	FileX2,
 } from "lucide-react";
 import { memo, useState } from "react";
@@ -68,6 +70,10 @@ export type EditorToolbarProps = {
 	goalMapId?: string;
 	onDeleted?: () => void;
 	onOpenSegments?: () => void;
+	canCreateGroup: boolean;
+	onCreateGroup: () => void;
+	canUngroup: boolean;
+	onUngroup: () => void;
 };
 
 const tooltipHandle = createTooltipHandle();
@@ -89,6 +95,10 @@ function EditorToolbarImpl({
 	goalMapId,
 	onDeleted,
 	onOpenSegments,
+	canCreateGroup,
+	onCreateGroup,
+	canUngroup,
+	onUngroup,
 }: EditorToolbarProps) {
 	const queryClient = useQueryClient();
 	const setConceptDialogOpen = useSetAtom(conceptDialogOpenAtom);
@@ -214,10 +224,42 @@ function EditorToolbarImpl({
 						disabled={isNewMap}
 					>
 						<Grid3X3 className="size-4" />
-						Group
+						Segments
 					</Button>
 				}
 				payload="Group/segment the concept map for step-by-step reconstruction"
+			/>
+
+			<TooltipTrigger
+				handle={tooltipHandle}
+				render={
+					<Button
+						size="sm"
+						variant="outline"
+						onClick={onCreateGroup}
+						disabled={isNewMap || !canCreateGroup}
+					>
+						<Group className="size-4" />
+						Group
+					</Button>
+				}
+				payload="Wrap the selected nodes into a named, colored group that moves together (like Blueprint groups)"
+			/>
+
+			<TooltipTrigger
+				handle={tooltipHandle}
+				render={
+					<Button
+						size="sm"
+						variant="outline"
+						onClick={onUngroup}
+						disabled={isNewMap || !canUngroup}
+					>
+						<Ungroup className="size-4" />
+						Ungroup
+					</Button>
+				}
+				payload="Dissolve the selected group and release its nodes"
 			/>
 
 			<TooltipTrigger

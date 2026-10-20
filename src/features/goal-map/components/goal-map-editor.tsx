@@ -3,7 +3,7 @@ import { useMachine } from "@xstate/react";
 import type { Connection, NodeMouseHandler } from "@xyflow/react";
 import { applyEdgeChanges, applyNodeChanges, ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { Suspense, useCallback, useEffect, useState, lazy } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, lazy } from "react";
 
 import "@xyflow/react/dist/style.css";
 import { AddConceptDialog } from "@/features/goal-map/components/add-concept-dialog";
@@ -23,6 +23,7 @@ import {
 	searchOpenAtom,
 } from "@/features/goal-map/lib/atoms";
 import { goalMapMachine } from "@/features/goal-map/lib/goal-map.machine";
+import { SEGMENT_COLOR_PALETTE } from "@/features/goal-map/lib/map-segment-service";
 import {
 	DEFAULT_COLOR,
 	getColorByValue,
@@ -30,7 +31,6 @@ import {
 } from "@/features/kit/components/color-picker";
 import { ConceptMapCanvas } from "@/features/kit/components/concept-map-canvas";
 import { SearchNodesPanel } from "@/features/kit/components/search-nodes-panel";
-import { filterSelectChanges } from "@/features/kit/lib/graph-machine";
 import { getLayoutedElements } from "@/features/kit/lib/layout";
 import type { Node, Edge } from "@/features/learner-map/lib/comparator";
 import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
@@ -134,11 +134,30 @@ export function GoalMapEditor() {
 	const stableNodes = useStableSerializedValue(nodes);
 	const stableEdges = useStableSerializedValue(edges);
 
+	const [selectedIdSet, setSelectedIdSet] = useState<Set<string>>(() => new Set());
+
 	// ── Graph change handlers ─────────────────────────────────
 	const onNodesChange = useCallback(
 		(changes: import("@xyflow/react").NodeChange<Node>[]) => {
-			const filtered = filterSelectChanges(changes);
-			const next = applyNodeChanges(filtered, stableNodes);
+			// Select changes stay in local state so undo history stays clean;
+			// everything else goes through SET_NODES into the machine.
+			const selectChanges = changes.filter((c) => c.type === "select");
+			if (selectChanges.length > 0) {
+				setSelectedIdSet((prev) => {
+					const next = new Set(prev);
+					for (const change of selectChanges) {
+						if (change.selected) {
+							next.add(change.id);
+						} else {
+							next.delete(change.id);
+						}
+					}
+					return next;
+				});
+			}
+			const other = changes.filter((c) => c.type !== "select");
+			if (other.length === 0) return;
+			const next = applyNodeChanges(other, stableNodes);
 			send({ type: "SET_NODES", nodes: next });
 		},
 		[stableNodes, send],
@@ -262,8 +281,11 @@ export function GoalMapEditor() {
 	);
 
 	const handleDeleteSelected = useCallback(() => {
-		const rfNodes = getNodes();
-		const selectedIds = new Set(rfNodes.filter((n) => n.selected).map((n) => n.id));
+		const selectedIds = new Set(
+			stableNodes
+				.filter((n) => selectedIdSet.has(n.id) && n.type !== "group")
+				.map((n) => n.id),
+		);
 		if (selectedIds.size === 0) return;
 		const nextNodes = stableNodes.filter((n) => !selectedIds.has(n.id));
 		const nextEdges = stableEdges.filter(
@@ -274,7 +296,12 @@ export function GoalMapEditor() {
 			nodes: nextNodes,
 			edges: nextEdges,
 		});
-	}, [stableNodes, stableEdges, getNodes, send]);
+		setSelectedIdSet((prev) => {
+			const next = new Set(prev);
+			for (const id of selectedIds) next.delete(id);
+			return next;
+		});
+	}, [stableNodes, stableEdges, selectedIdSet, send]);
 
 	const selectNode = useCallback(
 		(nodeId: string) => {
@@ -288,6 +315,128 @@ export function GoalMapEditor() {
 		},
 		[stableNodes, setCenter],
 	);
+
+	// ── Blueprint-style groups ──────────────────────────────────
+	// Selection lives in local state (selectedIdSet) and is injected into the
+	// canvas nodes; the machine keeps nodes selection-free for a clean undo
+	// history and saved JSON.
+	const canvasNodes = useMemo(
+		() => stableNodes.map((n) => (selectedIdSet.has(n.id) ? { ...n, selected: true } : n)),
+		[stableNodes, selectedIdSet],
+	);
+	const groupSelection = useMemo(() => {
+		let concepts = 0;
+		let hasGroup = false;
+		for (const id of selectedIdSet) {
+			const node = stableNodes.find((n) => n.id === id);
+			if (!node) continue;
+			if (node.type === "group") {
+				hasGroup = true;
+			} else if ((node.type === "text" || node.type === "connector") && !node.parentId) {
+				concepts++;
+			}
+		}
+		return { concepts, hasGroup };
+	}, [selectedIdSet, stableNodes]);
+
+	const handleUpdateNodeData = useCallback(
+		(id: string, data: Record<string, unknown>) => {
+			send({
+				type: "SET_NODES",
+				nodes: stableNodes.map((n) =>
+					n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
+				),
+			});
+		},
+		[stableNodes, send],
+	);
+
+	const createGroupFromSelection = useCallback(() => {
+		const selected = stableNodes.filter(
+			(n) =>
+				selectedIdSet.has(n.id) &&
+				!n.parentId &&
+				(n.type === "text" || n.type === "connector"),
+		);
+		if (selected.length < 2) return;
+
+		const rfNodes = getNodes();
+		const measured = (id: string) => {
+			const rfNode = rfNodes.find((n) => n.id === id);
+			return { w: rfNode?.measured?.width ?? 150, h: rfNode?.measured?.height ?? 60 };
+		};
+
+		const PADDING = 28;
+		const HEADER = 40;
+		const minX = Math.min(...selected.map((n) => n.position.x));
+		const minY = Math.min(...selected.map((n) => n.position.y));
+		const maxX = Math.max(...selected.map((n) => n.position.x + measured(n.id).w));
+		const maxY = Math.max(...selected.map((n) => n.position.y + measured(n.id).h));
+		const groupId = `group-${crypto.randomUUID()}`;
+		const groupCount = stableNodes.filter((n) => n.type === "group").length;
+		const color = SEGMENT_COLOR_PALETTE[groupCount % SEGMENT_COLOR_PALETTE.length];
+
+		const groupNode: Node = {
+			id: groupId,
+			type: "group",
+			position: { x: minX - PADDING, y: minY - PADDING },
+			style: {
+				width: maxX - minX + PADDING * 2,
+				height: maxY - minY + PADDING * 2 + HEADER,
+			},
+			data: { label: `Group ${groupCount + 1}`, color },
+			deletable: false,
+		};
+
+		const selectedIdLookup = new Set(selected.map((n) => n.id));
+		const nextNodes: Node[] = [
+			groupNode,
+			...stableNodes.map((n) => {
+				if (!selectedIdLookup.has(n.id)) return n;
+				return {
+					...n,
+					parentId: groupId,
+					position: {
+						x: n.position.x - groupNode.position.x,
+						y: n.position.y - groupNode.position.y,
+					},
+				};
+			}),
+		];
+		send({ type: "SET_NODES", nodes: nextNodes });
+		setSelectedIdSet(new Set());
+		toast.success("Group created");
+	}, [selectedIdSet, stableNodes, getNodes, send]);
+
+	const ungroupSelected = useCallback(() => {
+		const groupIds = new Set(
+			stableNodes
+				.filter((n) => selectedIdSet.has(n.id) && n.type === "group")
+				.map((n) => n.id),
+		);
+		if (groupIds.size === 0) return;
+
+		const nextNodes: Node[] = stableNodes
+			.filter((n) => !groupIds.has(n.id))
+			.map((n) => {
+				if (!n.parentId || !groupIds.has(n.parentId)) return n;
+				const parent = stableNodes.find((p) => p.id === n.parentId);
+				const { parentId: _removedParentId, ...rest } = n;
+				return {
+					...rest,
+					position: {
+						x: n.position.x + (parent?.position.x ?? 0),
+						y: n.position.y + (parent?.position.y ?? 0),
+					},
+				};
+			});
+		send({ type: "SET_NODES", nodes: nextNodes });
+		setSelectedIdSet((prev) => {
+			const next = new Set(prev);
+			for (const id of groupIds) next.delete(id);
+			return next;
+		});
+	}, [selectedIdSet, stableNodes, send]);
 
 	// ── Save ──────────────────────────────────────────────────
 	const doSave = useCallback(
@@ -371,6 +520,8 @@ export function GoalMapEditor() {
 	// ── Context menu handlers ─────────────────────────────────
 	const handleNodeClick: NodeMouseHandler = useCallback(
 		(_event, node) => {
+			// Group containers only respond to selection/drag/rename/recolor.
+			if (node.type === "group") return;
 			const target = _event.target as HTMLElement;
 			const nodeElement = target.closest(".react-flow__node") as HTMLElement | null;
 			if (nodeElement) {
@@ -569,7 +720,7 @@ export function GoalMapEditor() {
 
 			<div className="border-t-[0.5px] -mx-4 bg-card relative h-full overflow-hidden">
 				<ConceptMapCanvas
-					nodes={stableNodes}
+					nodes={canvasNodes}
 					edges={stableEdges}
 					onNodesChange={onNodesChange}
 					onEdgesChange={onEdgesChange}
@@ -578,6 +729,7 @@ export function GoalMapEditor() {
 					isValidConnection={isValidConnectionHandler}
 					onNodeClick={handleNodeClick}
 					onPaneClick={handlePaneClick}
+					onUpdateNodeData={handleUpdateNodeData}
 					readOnly={false}
 				>
 					<SearchNodesPanel
@@ -605,6 +757,10 @@ export function GoalMapEditor() {
 					goalMapId={goalMapId}
 					onDeleted={() => void navigate({ to: "/dashboard/goal-map", replace: true })}
 					onOpenSegments={() => setSegmentsOpen(true)}
+					canCreateGroup={groupSelection.concepts >= 2}
+					onCreateGroup={createGroupFromSelection}
+					canUngroup={groupSelection.hasGroup}
+					onUngroup={ungroupSelected}
 				/>
 			</div>
 		</div>

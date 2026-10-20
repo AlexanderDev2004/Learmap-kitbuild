@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
+import { toKitNodes } from "@/features/kit/lib/kit-nodes";
 import { GoalMapNotFoundError } from "@/lib/errors";
 import { safeParseJson } from "@/lib/utils";
 import { NonEmpty } from "@/lib/validation-schemas";
@@ -153,11 +154,7 @@ export const generateKit = Effect.fn("generateKit")(function* (input: GenerateKi
 			? yield* safeParseJson(gm.nodes, [], Schema.Array(Schema.Any))
 			: [];
 
-	const kitNodes = nodes.filter((n) => {
-		if (typeof n !== "object" || n === null) return false;
-		const node = n as { type?: string };
-		return node.type === "text" || node.type === "connector";
-	});
+	const kitNodes = toKitNodes(nodes);
 
 	const kitEdges: Array<Record<string, unknown>> = [];
 

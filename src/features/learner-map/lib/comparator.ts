@@ -9,6 +9,11 @@ export const NodeSchema = Schema.Struct({
 	}),
 	type: Schema.optional(Schema.String),
 	selected: Schema.optional(Schema.Boolean),
+	// Blueprint-style group support: a group container node wraps member
+	// nodes, whose positions are then relative to the group.
+	parentId: Schema.optional(Schema.String),
+	style: Schema.optional(Schema.Any),
+	deletable: Schema.optional(Schema.Boolean),
 });
 
 export type Node = Schema.Schema.Type<typeof NodeSchema>;

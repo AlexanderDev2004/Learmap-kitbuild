@@ -2,6 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { validateNodes } from "@/features/goal-map/lib/validator";
+import { toKitNodes } from "@/features/kit/lib/kit-nodes";
 import { Database } from "@/server/db/client";
 import { goalMaps, kits, texts } from "@/server/db/schema/app-schema";
 
@@ -121,9 +122,7 @@ export const saveGoalMap = Effect.fn("saveGoalMap")(function* (
 
 		if (data.publish || kitRows[0]) {
 			const layout = kitRows[0]?.layout ?? "preset";
-			const kitNodes = data.nodes.filter(
-				(n) => n?.type === "text" || n?.type === "connector",
-			);
+			const kitNodes = toKitNodes(data.nodes);
 			const kitPayload = {
 				id: data.goalMapId,
 				kitId: data.goalMapId,

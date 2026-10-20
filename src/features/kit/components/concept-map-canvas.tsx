@@ -14,6 +14,7 @@ import { NodeContext } from "../lib/node-context";
 import { ConnectorNode } from "./connector-node";
 import { FloatingConnectionLine } from "./floating-connection-line";
 import { FloatingEdge } from "./floating-edge";
+import { GroupNode } from "./group-node";
 import { TextNode } from "./text-node";
 
 export type ConceptMapCanvasProps = {
@@ -35,8 +36,12 @@ export type ConceptMapCanvasProps = {
 	onEdgeClick?: EdgeMouseHandler;
 	/** Called when the canvas/pane is clicked */
 	onPaneClick?: () => void;
+	/** Called when the set of selected elements changes */
+	onSelectionChange?: (params: { nodes: Node[]; edges: Edge[] }) => void;
 	/** Validates if a connection is allowed during drag */
 	isValidConnection?: (params: { source: string; target: string }) => boolean;
+	/** Updates a node's data through the owning editor (controlled flows) */
+	onUpdateNodeData?: (id: string, data: Record<string, unknown>) => void;
 	/** When true, disables all interactions (read-only mode) */
 	readOnly?: boolean;
 	/** Children rendered inside ReactFlow (SearchNodesPanel, etc.) */
@@ -46,6 +51,7 @@ export type ConceptMapCanvasProps = {
 const NODE_TYPES = Object.freeze({
 	text: TextNode,
 	connector: ConnectorNode,
+	group: GroupNode,
 });
 
 const EDGE_TYPES = Object.freeze({
@@ -72,7 +78,9 @@ export function ConceptMapCanvas({
 	onNodeClick,
 	onEdgeClick,
 	onPaneClick,
+	onSelectionChange,
 	isValidConnection,
+	onUpdateNodeData,
 	readOnly,
 	children,
 }: ConceptMapCanvasProps) {
@@ -146,7 +154,10 @@ export function ConceptMapCanvas({
 
 	const reactFlowStyle = useMemo(() => ({ touchAction: "none" as const }), []);
 
-	const nodeContextValue = useMemo(() => ({ readOnly: !!readOnly }), [readOnly]);
+	const nodeContextValue = useMemo(
+		() => ({ readOnly: !!readOnly, onUpdateNodeData }),
+		[readOnly, onUpdateNodeData],
+	);
 
 	return (
 		<NodeContext.Provider value={nodeContextValue}>
@@ -167,6 +178,7 @@ export function ConceptMapCanvas({
 				onNodeClick={handleNodeClick}
 				onEdgeClick={handleEdgeClick}
 				onPaneClick={handlePaneClick}
+				onSelectionChange={onSelectionChange}
 				connectionRadius={80}
 				connectionMode={ConnectionMode.Loose}
 				nodesDraggable={!readOnly}

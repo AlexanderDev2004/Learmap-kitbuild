@@ -23,6 +23,7 @@ export const NodeDataSchema = Schema.Struct({
 	label: Schema.optionalWith(Schema.String, { nullable: true }),
 	propositionType: Schema.optionalWith(Schema.String, { nullable: true }),
 	description: Schema.optionalWith(Schema.String, { nullable: true }),
+	color: Schema.optionalWith(Schema.String, { nullable: true }),
 	examples: Schema.optionalWith(Schema.Array(Schema.String), {
 		nullable: true,
 	}),
@@ -40,6 +41,10 @@ export const NodeSchema = Schema.Struct({
 	data: NodeDataSchema,
 	width: Schema.optionalWith(Schema.Number, { nullable: true }),
 	height: Schema.optionalWith(Schema.Number, { nullable: true }),
+	// Blueprint-style groups: container size and membership.
+	style: Schema.optionalWith(Schema.Any, { nullable: true }),
+	parentId: Schema.optionalWith(Schema.String, { nullable: true }),
+	deletable: Schema.optionalWith(Schema.Boolean, { nullable: true }),
 });
 
 export const EdgeSchema = Schema.Struct({
