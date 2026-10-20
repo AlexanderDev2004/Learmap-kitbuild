@@ -5,6 +5,14 @@
 	"compatibility_flags": ["nodejs_compat"],
 	"workers_dev": true,
 	"preview_urls": true,
+	"routes": [
+		{
+			// Custom domain on the alexanderar.com zone (same Cloudflare
+			// account); wrangler creates the DNS record on deploy.
+			"pattern": "learnmap.alexanderar.com",
+			"custom_domain": true
+		}
+	],
 	"observability": {
 		"logs": {
 			"enabled": true,
@@ -14,9 +22,9 @@
 	"main": "./src/server.ts",
 	"vars": {
 		"VITE_SENTRY_DSN": "https://5823410ade9efac97ee0a2281bb49bae@o4505224747352064.ingest.us.sentry.io/4510510883012608",
-		"VITE_APP_URL": "https://learnmap.example.com",
-		"BETTER_AUTH_URL": "https://learnmap.example.com",
-		"SITE_URL": "https://learnmap.example.com"
+		"VITE_APP_URL": "https://learnmap.alexanderar.com",
+		"BETTER_AUTH_URL": "https://learnmap.alexanderar.com",
+		"SITE_URL": "https://learnmap.alexanderar.com"
 	},
 	"r2_buckets": [
 		{

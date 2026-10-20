@@ -182,95 +182,92 @@ This project is using these tech stack, so check their respective documentations
 
 ## Deploying to Cloudflare Workers
 
-### Prerequisites
+Aplikasi ini live di **https://learnmap.alexanderar.com** (Cloudflare Workers),
+dengan Worker name `learnmap`, storage gambar di R2 bucket
+`learnmap-materials`, dan database di Turso (LibSQL remote).
 
-- [Cloudflare account](https://dash.cloudflare.com/sign-up)
-- [Turso database](https://turso.tech) (SQLite at the edge)
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) authenticated
+### Prasyarat
 
-### 1. Create Turso Database
+- Akun [Cloudflare](https://dash.cloudflare.com/sign-up) — R2 harus sudah
+  **diaktifkan** sekali lewat dashboard (menu R2 → Get started), karena
+  aktivasi R2 tidak bisa dilakukan lewat API. Tanpa ini `wrangler deploy`
+  gagal dengan error `10042`.
+- Database [Turso](https://turso.tech) (SQLite di edge).
+- Wrangler ter-autentikasi: `npx wrangler login` (OAuth), atau set env
+  `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
+
+### 1. Buat Database Turso
 
 ```bash
 # Install Turso CLI
-curl -sSfL https://get.tur.so/install.sh | bash
+curl -sSfL https://get.tur.so/install.sh | bash   # macOS/Linux
+irm get.tur.so/install.ps1 | iex                   # Windows PowerShell
+
 turso auth login
 
-# Create database
-turso db create kitbuild
-
-# Get connection details
-turso db show kitbuild --url
-turso db tokens create kitbuild
+# Buat database lalu ambil detail koneksinya
+turso db create learnmap
+turso db show learnmap --url        # -> TURSO_DATABASE_URL
+turso db tokens create learnmap     # -> TURSO_AUTH_TOKEN
 ```
 
-### 2. Configure Environment
+### 2. Set Konfigurasi Production
 
-Create `.env`:
+Yang sudah terpasang di `wrangler.json` (tidak perlu diubah):
+
+- `routes`: custom domain `learnmap.alexanderar.com`
+  (`custom_domain: true` — wrangler otomatis membuat DNS record di zone
+  `alexanderar.com` saat deploy).
+- `vars`: `VITE_APP_URL`, `BETTER_AUTH_URL`, `SITE_URL` menunjuk ke
+  `https://learnmap.alexanderar.com` (vars ini juga ikut ter-bake ke build
+  client oleh @cloudflare/vite-plugin).
+
+### 3. Set Secrets Worker
+
+Secrets di-set langsung ke Worker lewat wrangler (bukan lewat `.env`):
 
 ```bash
-DATABASE_MODE=remote
-TURSO_DATABASE_URL=libsql://your-db.turso.io
-TURSO_AUTH_TOKEN=your-turso-token
-BETTER_AUTH_SECRET=your-random-secret-min-32-chars
-BETTER_AUTH_URL=https://your-domain.com
-SITE_URL=https://your-domain.com
-VITE_SENTRY_DSN=https://your-sentry-dsn  # optional
+npx wrangler secret put TURSO_DATABASE_URL   # paste libsql://... turso
+npx wrangler secret put TURSO_AUTH_TOKEN     # paste token Turso
+npx wrangler secret put BETTER_AUTH_SECRET   # random string min. 32 karakter
 ```
 
-### 3. Configure Wrangler
-
-Edit `wrangler.json`:
-
-```json
-{
-	"name": "kitbuild",
-	"compatibility_date": "2025-09-02",
-	"compatibility_flags": ["nodejs_compat"],
-	"main": "@tanstack/react-start/server-entry",
-	"r2_buckets": [
-		{
-			"binding": "MATERIAL_IMAGES",
-			"bucket_name": "kitbuild-materials"
-		}
-	]
-}
-```
-
-### 4. Create R2 Bucket & Deploy
+### 4. Push Schema ke Turso lalu Deploy
 
 ```bash
-# Create storage bucket
-wrangler r2 bucket create kitbuild-materials
+# Push schema Drizzle ke database Turso production
+$env:DATABASE_MODE='remote'
+$env:TURSO_DATABASE_URL='libsql://learnmap-xxx.turso.io'
+$env:TURSO_AUTH_TOKEN='your-turso-token'
+npx drizzle-kit push
 
-# Wipe local SQLite db file, then rerun migrations
-vp run db:wipe
-vp run db:migrate
+# Buat R2 bucket (sekali saja, setelah R2 diaktifkan di dashboard)
+npx wrangler r2 bucket create learnmap-materials
 
-# Wipe remote Turso DB, then rerun migrations
-vp run db:wipe --force
-vp run db:migrate
-
-# Push database schema (remote Turso)
-export DATABASE_MODE=remote
-export TURSO_DATABASE_URL=libsql://your-db.turso.io
-export TURSO_AUTH_TOKEN=your-turso-token
-vpx drizzle-kit push
-
-# Deploy
+# Deploy (menjalankan typecheck + lint + test dulu)
 vp run deploy
 ```
 
+### 5. Seeding Data Production (opsional)
+
+Script seed membaca `.env`, jadi arahkan `.env` lokal ke database Turso
+production untuk sementara (`DATABASE_MODE=remote`, `TURSO_DATABASE_URL=...`,
+`TURSO_AUTH_TOKEN=...`), lalu jalankan misalnya `vp run db:seed:java`.
+Kembalikan `.env` ke nilai lokal setelahnya.
+
 ### Environment Reference
 
-| Variable             | Type       | Purpose                                   |
-| -------------------- | ---------- | ----------------------------------------- |
-| `DATABASE_MODE`      | env        | `remote` (Turso) or `local` (SQLite file) |
-| `TURSO_DATABASE_URL` | env        | Database connection string                |
-| `TURSO_AUTH_TOKEN`   | secret     | Turso authentication                      |
-| `BETTER_AUTH_SECRET` | secret     | Session signing key (32+ chars)           |
-| `BETTER_AUTH_URL`    | env        | Auth callback URL                         |
-| `SITE_URL`           | env        | Canonical site URL                        |
-| `MATERIAL_IMAGES`    | R2 binding | Image storage bucket                      |
+| Variable             | Type          | Purpose                                     |
+| -------------------- | ------------- | ------------------------------------------- |
+| `TURSO_DATABASE_URL` | Worker secret | Database connection string                  |
+| `TURSO_AUTH_TOKEN`   | Worker secret | Turso authentication                        |
+| `BETTER_AUTH_SECRET` | Worker secret | Session signing key (32+ chars)             |
+| `BETTER_AUTH_URL`    | wrangler vars | Auth callback URL                           |
+| `SITE_URL`           | wrangler vars | Canonical site URL                          |
+| `VITE_APP_URL`       | wrangler vars | Base URL yang ter-bake ke client build      |
+| `MATERIAL_IMAGES`    | R2 binding    | Image storage bucket (`learnmap-materials`) |
+
+---
 
 ---
 
