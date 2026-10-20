@@ -36,6 +36,7 @@ import type { Node, Edge } from "@/features/learner-map/lib/comparator";
 import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { useStableSerializedValue } from "@/hooks/use-stable-serialized-value";
 import { toast } from "@/lib/error-toast";
+import { getErrorDetails } from "@/lib/error-types";
 import { areNodesConnected } from "@/lib/react-flow-types";
 import { randomString } from "@/lib/utils";
 import { GoalMapRpc } from "@/server/rpc/goal-map";
@@ -524,7 +525,8 @@ export function GoalMapEditor() {
 					}
 				},
 				onError: (error) => {
-					const message = error instanceof Error ? error.message : "Save failed";
+					const details = getErrorDetails(error);
+					const message = details.message;
 					if (/unauthorized|forbidden/i.test(message)) {
 						addWarning(
 							"Saved locally (not signed in). Changes are only on this device.",
@@ -539,6 +541,10 @@ export function GoalMapEditor() {
 								replace: goalMapId === "new",
 							});
 						}
+					} else if (details.category === "network") {
+						setSaveError(
+							"Could not reach the server. Make sure the dev server and database are running (pnpm run dev), then save again.",
+						);
 					} else {
 						setSaveError(message);
 					}

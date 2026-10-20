@@ -50,8 +50,13 @@ function buildDescription(
 	const { operation, fallbackMessage } = options;
 
 	const defaultCategoryMessage = CATEGORY_DESCRIPTIONS[category];
+	// Low-level network failures ("Failed to fetch") carry no actionable detail;
+	// the generic connectivity guidance is clearer for that category.
 	const hasSpecificMessage =
-		message && message !== defaultCategoryMessage && message !== "An unknown error occurred";
+		category !== "network" &&
+		message &&
+		message !== defaultCategoryMessage &&
+		message !== "An unknown error occurred";
 
 	let description = hasSpecificMessage ? message : defaultCategoryMessage;
 
