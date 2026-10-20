@@ -75,15 +75,44 @@ Grounded in segmentation theory (Schneider et al., 2021), which applies Mayer's 
 
 LearnMap reimplements the core KitBuild workflow with modern tooling:
 
-| Feature                  | Description                                                                 |
-| ------------------------ | --------------------------------------------------------------------------- |
-| Concept Map Editor       | Visual editor for creating goal maps with bi-directional/multi-link support |
-| Automatic Kit Generation | Disassembles goal maps into student-ready activity kits                     |
-| Map Diagnosis            | Automatic comparison of learner maps against goal maps                      |
-| Extended Assessments     | Quiz builder for MCQ, text, and Likert-scale questions (research extension) |
-| Assignment Management    | Deadlines, time limits, access controls                                     |
-| Research Dashboard       | Analytics and exportable data for research analysis                         |
-| Feedback System          | Targeted feedback based on diagnosis results                                |
+| Feature                  | Description                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Concept Map Editor       | Visual editor for creating goal maps with bi-directional/multi-link support                                   |
+| Automatic Kit Generation | Disassembles goal maps into student-ready activity kits                                                       |
+| Map Diagnosis            | Automatic comparison of learner maps against goal maps                                                        |
+| Segmentation             | Splits a goal map into ordered kit segments using Paragraph or Depth-Topic models (see below)                 |
+| Visual Grouping (Frames) | Named, colored frames that wrap nodes in the goal map editor for organization (see below)                     |
+| Extended Assessments     | Quiz builder for MCQ, text, and Likert-scale questions (research extension)                                   |
+| Aiken Import/Export      | Import and export assessment questions in the Moodle [Aiken format](https://docs.moodle.org/en/Aiken_format)  |
+| Answer Review Control    | Teachers toggle "Show Answer" so students see which questions they missed after submission                    |
+| Assignment Management    | Deadlines, time limits, access controls, and per-assignment associated forms (pretest/posttest/questionnaire) |
+| Research Dashboard       | Analytics sheets, student-level results, and exportable CSV for research analysis                             |
+| Feedback System          | Targeted feedback based on diagnosis results                                                                  |
+
+### Segmentation vs Frames
+
+These two editor tools are easy to confuse, but they serve different purposes:
+
+- **Segments** (segmentation) divides a goal map into the kit segments students
+  actually work through, in order. This is the mechanism used in the thesis
+  experiment (Paragraph vs Depth-Topic models) and it directly affects what
+  students receive.
+- **Frames** are a visual aid only: select one or more nodes in the goal map
+  editor (click, `Ctrl+click` to add more, or `Shift+drag` a selection box),
+  press **Frame**, and the nodes get wrapped in a named, colored box that can
+  be moved, renamed (double-click the label), and recolored (hover the frame)
+  together. Frames never reach kits, scores, or student views; **Unframe**
+  dissolves a frame and releases its nodes.
+
+### Forms: Aiken format and Show Answer
+
+- Forms support multiple choice, short answer, and Likert-scale questions.
+  Teachers can import/export questions in the Aiken format for round-tripping
+  with Moodle or plain-text question banks.
+- On an assignment, the teacher decides whether students may review their
+  answers. With **Show Answer** enabled, a student's result page lists each
+  question with their answer marked wrong and the correct answer shown below
+  it; when disabled, students only see their score.
 
 ---
 
