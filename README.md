@@ -114,6 +114,86 @@ These two editor tools are easy to confuse, but they serve different purposes:
   question with their answer marked wrong and the correct answer shown below
   it; when disabled, students only see their score.
 
+## Workflow Guide: from Goal Map to Assignment
+
+A complete Kit-Build activity is built in four stages. Everything below is done
+from the teacher/admin dashboard (`alex@kitbuild.mail` in the demo data).
+
+### 1. Topic and Goal Map (`/dashboard/goal-map`)
+
+1. Create the reading material first if you have one: open a goal map (or a
+   new one) and press **Material** in the editor toolbar to paste or upload
+   (`.txt` / `.md`) the reading text students will read.
+2. Build the map: **Concept** adds concept nodes, **Link** adds linking words
+   and connects two nodes (bi-directional and multi-link are supported).
+3. Press **Save** and pick the topic and map name in the *Save As…* dialog.
+   Saving the goal map also stores its segments.
+
+### 2. Segmentation (`Segments` button in the goal map editor)
+
+Open the **Segments** button in the editor toolbar to manage kit segments:
+
+- **Paragraph model** — press *Add Segment*, give it a name, choose the
+  **Paragraf (manual)** type, pick a color, then tick which nodes belong to it.
+  Create one segment per paragraph of the reading material.
+- **Depth-Topic model** — choose the **Depth-Topic (kedalaman topik)** type.
+  Segments follow the depth levels of the topic hierarchy (core concept → main
+  concepts → details); the dialog can also generate them automatically from the
+  map structure.
+- **Import Frame** — frames you drew in the editor can be converted into
+  segments in one go. Pick the segmentation model once in the import dialog
+  (Paragraf or Depth-Topic) and it is applied to every imported frame.
+
+Both models can live in the **same goal map** — that is exactly how the
+dual-model experiment kit is set up (see the seed script
+`scripts/seed/kit-test-dual.ts` for a complete worked example: topic *Siklus
+Air*, segments P1–P3 = Paragraph, D1–D3 = Depth-Topic).
+
+### 3. Forms (`/dashboard/forms`)
+
+Create the assessments in the form builder:
+
+1. **New Form**, choose the type: `Pre-Test`, `Post-Test`, `Delayed Test`, or
+   `Questionnaire`, then **Publish** it when done.
+2. Add questions: multiple choice (with correct answer), short answer, or
+   Likert scale. For MCQ question banks you can use **Import Aiken** to paste
+   an [Aiken format](https://docs.moodle.org/en/Aiken_format) file, and
+   **Export Aiken** to hand questions back out.
+
+### 4. Assignment (`/dashboard/assignments`)
+
+Press **Create Assignment** and follow the 4-step wizard:
+
+1. **Basic Information** — title, description, and the reading material.
+2. **Configuration** — pick the goal map, start/end date, and time limit. The
+   kit is generated automatically from the goal map when the assignment is
+   created.
+3. **Procedure** — attach the **Pre-Test** (required), **Post-Test**,
+   **Delayed Post-Test** (+ delay in days), and the questionnaire; here you can
+   also toggle **Show Answer** per form.
+4. **Assignment** — choose the target cohorts and/or individual students.
+
+Students only see assignments targeted at them (via their cohort membership or
+directly), so make sure the students are members of the chosen cohorts
+(`/dashboard/users` manages cohorts and members).
+
+### 5. Working as a Student
+
+Student view (`tanaka@kitbuild.mail` in the demo data):
+
+1. **My Assignments** lists the targeted assignments with the current phase
+   badge. Open one to see the four-phase flow:
+   **Pre-Test → Kitbuilding → Post-Test → Kuesioner**.
+2. **Take Pre-Test** first — Kitbuilding stays locked until it is submitted.
+3. **Kitbuilding** — rebuild the concept map by dragging concepts and
+   connecting them with linking words. The segment pills let you work segment
+   by segment (this is where Paragraph vs Depth-Topic segmentation is
+   experienced). Press **Submit** when done — Post-Test unlocks after that.
+4. **Post-Test**, then the questionnaire if one is attached.
+5. If the teacher enabled **Show Answer**, the result page shows every missed
+   question with the correct answer below the student's answer; otherwise only
+   the score is shown.
+
 ---
 
 ## Quick Start (Development)
@@ -169,6 +249,19 @@ Visit http://localhost:5173
 `db:seed:fotosintesis` additionally loads the photosynthesis experiment kit
 (two segmentation models in one goal map: Kelompok A = Segmen Paragraf, Kelompok
 B = Segmen Depth Topik) with the student accounts above.
+
+For a **single kit containing both segmentation models at once** (segments
+P1–P3 = Paragraph, D1–D3 = Depth-Topic, plus Pre-Test, Post-Test, and a
+perception questionnaire), run the dual-model seed after `db:seed`:
+
+```bash
+npx tsx --env-file=.env scripts/seed/kit-test-dual.ts
+```
+
+It is idempotent and also reactivates the demo student accounts if a previous
+run soft-deleted them. Sign in as `alex@kitbuild.mail` to inspect the *Siklus
+Air* goal map and assignment, or as `tanaka@kitbuild.mail` to work through the
+four-phase flow.
 
 This project is using these tech stack, so check their respective documentations for further information:
 
