@@ -181,11 +181,16 @@ export function SegmentManagerDialog({
 		}));
 	const importedFrameNames = new Set((segments ?? []).map((s) => s.name.trim().toLowerCase()));
 
+	// Segmentation model for imported frames (thesis: Model 1 = paragraph,
+	// Model 2 = depth-topic). Chosen once and applied to every import so a
+	// batch of frames maps to a single treatment group.
+	const [importType, setImportType] = useState<SegmentType>("paragraph");
+
 	const importFrame = (frame: FrameInfo) => {
 		saveMutation.mutate({
 			goalMapId,
 			name: frame.name,
-			type: "paragraph",
+			type: importType,
 			orderIndex: segments?.length ?? 0,
 			color: frame.color,
 			nodeIds: frame.nodeIds,
@@ -389,6 +394,27 @@ export function SegmentManagerDialog({
 									dijadikan segmen langsung: nama, warna, dan konsep di dalamnya
 									ikut otomatis.
 								</p>
+								<div className="flex items-center gap-2">
+									<span className="text-sm">Model segmentasi:</span>
+									<Select
+										value={importType}
+										onValueChange={(value) =>
+											setImportType(value as SegmentType)
+										}
+									>
+										<SelectTrigger className="h-8 w-56">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="paragraph">
+												Paragraf (Model 1)
+											</SelectItem>
+											<SelectItem value="depth-topic">
+												Depth-Topic (Model 2)
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
 								<div className="max-h-44 space-y-1 overflow-y-auto rounded-md border p-2">
 									{frames.map((frame) => {
 										const imported = importedFrameNames.has(
