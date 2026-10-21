@@ -126,14 +126,14 @@ from the teacher/admin dashboard (`alex@kitbuild.mail` in the demo data).
    (`.txt` / `.md`) the reading text students will read.
 2. Build the map: **Concept** adds concept nodes, **Link** adds linking words
    and connects two nodes (bi-directional and multi-link are supported).
-3. Press **Save** and pick the topic and map name in the *Save As…* dialog.
+3. Press **Save** and pick the topic and map name in the _Save As…_ dialog.
    Saving the goal map also stores its segments.
 
 ### 2. Segmentation (`Segments` button in the goal map editor)
 
 Open the **Segments** button in the editor toolbar to manage kit segments:
 
-- **Paragraph model** — press *Add Segment*, give it a name, choose the
+- **Paragraph model** — press _Add Segment_, give it a name, choose the
   **Paragraf (manual)** type, pick a color, then tick which nodes belong to it.
   Create one segment per paragraph of the reading material.
 - **Depth-Topic model** — choose the **Depth-Topic (kedalaman topik)** type.
@@ -146,8 +146,8 @@ Open the **Segments** button in the editor toolbar to manage kit segments:
 
 Both models can live in the **same goal map** — that is exactly how the
 dual-model experiment kit is set up (see the seed script
-`scripts/seed/kit-test-dual.ts` for a complete worked example: topic *Siklus
-Air*, segments P1–P3 = Paragraph, D1–D3 = Depth-Topic).
+`scripts/seed/kit-test-dual.ts` for a complete worked example: topic _Siklus
+Air_, segments P1–P3 = Paragraph, D1–D3 = Depth-Topic).
 
 ### 3. Forms (`/dashboard/forms`)
 
@@ -259,8 +259,8 @@ npx tsx --env-file=.env scripts/seed/kit-test-dual.ts
 ```
 
 It is idempotent and also reactivates the demo student accounts if a previous
-run soft-deleted them. Sign in as `alex@kitbuild.mail` to inspect the *Siklus
-Air* goal map and assignment, or as `tanaka@kitbuild.mail` to work through the
+run soft-deleted them. Sign in as `alex@kitbuild.mail` to inspect the _Siklus
+Air_ goal map and assignment, or as `tanaka@kitbuild.mail` to work through the
 four-phase flow.
 
 This project is using these tech stack, so check their respective documentations for further information:
