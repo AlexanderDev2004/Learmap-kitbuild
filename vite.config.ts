@@ -65,6 +65,17 @@ export default defineConfig({
 			"@": fileURLToPath(new URL("./src/", import.meta.url)),
 		},
 	},
+	environments: {
+		ssr: {
+			resolve: {
+				// "node" must come before "browser" so @better-auth/utils/password
+				// resolves to the node:crypto scrypt implementation. Without it the
+				// pure-JS (@noble/hashes) fallback is bundled, which exceeds the
+				// Workers CPU limit on every sign-in/sign-up (503, error 1102).
+				conditions: ["development", "module", "node", "browser", "default"],
+			},
+		},
+	},
 	build: {
 		target: "es2023",
 		cssCodeSplit: true,
