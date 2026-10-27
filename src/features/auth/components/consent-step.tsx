@@ -31,7 +31,7 @@ export function ConsentStep({ onLastFieldSubmit }: ConsentStepProps) {
 							Your data (including learning activity, assessment results, and
 							questionnaire responses) will be collected and used for research
 							purposes to evaluate the effectiveness of the LearnMap concept map
-							platform method in Japanese language learning.
+							platform method in the learning activities under study.
 						</p>
 					</div>
 				</div>
@@ -56,7 +56,7 @@ export function ConsentStep({ onLastFieldSubmit }: ConsentStepProps) {
 						<p className="text-sm text-muted-foreground">
 							The research findings may be published in academic journals or presented
 							at conferences to contribute to the advancement of educational
-							technology in language learning.
+							technology.
 						</p>
 					</div>
 				</div>

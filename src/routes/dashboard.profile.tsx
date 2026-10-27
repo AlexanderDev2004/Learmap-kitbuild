@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Guard } from "@/features/auth/components/Guard";
+import { experienceLevelLabel } from "@/features/auth/types";
 import { JlptLevel, ProfileSchema } from "@/features/profile/lib/profile-service";
 import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { authClient } from "@/lib/auth-client";
@@ -111,9 +112,11 @@ function ProfilePage() {
 								{me.jlptLevel && me.jlptLevel !== "None" && (
 									<div>
 										<Label className="text-xs text-muted-foreground uppercase tracking-wide">
-											JLPT Level
+											Experience Level
 										</Label>
-										<p className="text-sm font-medium">{me.jlptLevel}</p>
+										<p className="text-sm font-medium">
+											{experienceLevelLabel(me.jlptLevel)}
+										</p>
 									</div>
 								)}
 							</div>
@@ -201,7 +204,9 @@ function ProfilePage() {
 										<form.Field name="jlptLevel">
 											{(field) => (
 												<div className="space-y-1.5">
-													<Label htmlFor="jlptLevel">JLPT Level</Label>
+													<Label htmlFor="jlptLevel">
+														Experience Level
+													</Label>
 													<select
 														id="jlptLevel"
 														className="w-full h-10 border border-input bg-background px-3 py-2 text-sm"
@@ -212,12 +217,14 @@ function ProfilePage() {
 															)
 														}
 													>
-														<option value="None">None</option>
-														<option value="N5">N5</option>
-														<option value="N4">N4</option>
-														<option value="N3">N3</option>
-														<option value="N2">N2</option>
-														<option value="N1">N1</option>
+														<option value="None">
+															None (No prior experience)
+														</option>
+														<option value="N5">Beginner</option>
+														<option value="N4">Elementary</option>
+														<option value="N3">Intermediate</option>
+														<option value="N2">Pre-Advanced</option>
+														<option value="N1">Advanced</option>
 													</select>
 												</div>
 											)}
@@ -310,7 +317,7 @@ function ProfilePage() {
 														onChange={(e) =>
 															field.handleChange(e.target.value)
 														}
-														placeholder="What motivates you to learn Japanese? Share your goals and aspirations..."
+														placeholder="What motivates you to learn this subject? Share your goals and aspirations..."
 														rows={4}
 														className="resize-none"
 													/>

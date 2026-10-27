@@ -45,7 +45,7 @@ export function PersonalStep({ onLastFieldSubmit }: PersonalStepProps) {
 				<form.Field name="jlptLevel">
 					{(field: AnyFieldApi) => (
 						<div className="space-y-1.5 col-span-8">
-							<Label htmlFor="jlptLevel">JLPT Level</Label>
+							<Label htmlFor="jlptLevel">Prior Experience Level</Label>
 							<SearchableSelect
 								value={field.state.value}
 								onChange={(value) =>
@@ -53,7 +53,7 @@ export function PersonalStep({ onLastFieldSubmit }: PersonalStepProps) {
 								}
 								options={jlptOptions}
 								placeholder="Select level"
-								searchPlaceholder="Search JLPT level..."
+								searchPlaceholder="Search experience level..."
 							/>
 							<FieldInfo field={field} />
 						</div>
@@ -64,7 +64,9 @@ export function PersonalStep({ onLastFieldSubmit }: PersonalStepProps) {
 			<form.Field name="japaneseLearningDuration">
 				{(field: AnyFieldApi) => (
 					<div className="space-y-1.5">
-						<Label htmlFor="japaneseLearningDuration">Months Learning Japanese</Label>
+						<Label htmlFor="japaneseLearningDuration">
+							Months Learning This Subject
+						</Label>
 						<Input
 							id="japaneseLearningDuration"
 							type="number"
@@ -85,7 +87,7 @@ export function PersonalStep({ onLastFieldSubmit }: PersonalStepProps) {
 				{(field: AnyFieldApi) => (
 					<div className="space-y-1.5">
 						<Label htmlFor="previousJapaneseScore">
-							Previous Japanese Score (if any)
+							Previous Score in This Subject (if any)
 						</Label>
 						<Input
 							id="previousJapaneseScore"
@@ -108,7 +110,7 @@ export function PersonalStep({ onLastFieldSubmit }: PersonalStepProps) {
 				{(field: AnyFieldApi) => (
 					<div className="space-y-1.5">
 						<Label htmlFor="mediaConsumption">
-							Hours/Week Consuming Japanese Media
+							Hours/Week Consuming Related Learning Media
 						</Label>
 						<Input
 							id="mediaConsumption"
@@ -130,7 +132,9 @@ export function PersonalStep({ onLastFieldSubmit }: PersonalStepProps) {
 			<form.Field name="motivation">
 				{(field: AnyFieldApi) => (
 					<div className="space-y-1.5">
-						<Label htmlFor="motivation">What motivates you to learn Japanese?</Label>
+						<Label htmlFor="motivation">
+							What motivates you to learn this subject?
+						</Label>
 						<Textarea
 							id="motivation"
 							placeholder="Share your motivation..."

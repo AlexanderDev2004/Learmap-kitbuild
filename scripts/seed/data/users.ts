@@ -86,7 +86,7 @@ export const DEMO_STUDENTS: DemoStudent[] = [
 		japaneseLearningDuration: 12,
 		previousJapaneseScore: 75,
 		mediaConsumption: 15,
-		motivation: "Anime and Japanese culture",
+		motivation: "Videos, books, and hands-on science content",
 		studyGroup: "experiment",
 	},
 	{

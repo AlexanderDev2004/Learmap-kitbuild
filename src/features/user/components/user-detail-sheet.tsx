@@ -215,7 +215,7 @@ export function UserDetailSheet({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="jlptLevel">JLPT Level</Label>
+								<Label htmlFor="jlptLevel">Experience Level</Label>
 								<Select
 									value={formData.jlptLevel ?? ""}
 									onValueChange={(level) =>
@@ -229,12 +229,14 @@ export function UserDetailSheet({
 										<SelectValue placeholder="Select level" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="None">None</SelectItem>
-										<SelectItem value="N5">N5</SelectItem>
-										<SelectItem value="N4">N4</SelectItem>
-										<SelectItem value="N3">N3</SelectItem>
-										<SelectItem value="N2">N2</SelectItem>
-										<SelectItem value="N1">N1</SelectItem>
+										<SelectItem value="None">
+											None (No prior experience)
+										</SelectItem>
+										<SelectItem value="N5">Beginner</SelectItem>
+										<SelectItem value="N4">Elementary</SelectItem>
+										<SelectItem value="N3">Intermediate</SelectItem>
+										<SelectItem value="N2">Pre-Advanced</SelectItem>
+										<SelectItem value="N1">Advanced</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>

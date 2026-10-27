@@ -28,12 +28,12 @@ export const TAM_QUESTIONS = [
 	},
 	{
 		questionText:
-			"Using Kit-Build helps me learn Japanese reading better than traditional methods",
+			"Using Kit-Build helps me learn the reading material better than traditional methods",
 		type: "likert" as const,
 		options: LIKERT_SCALE_5,
 	},
 	{
-		questionText: "I find Kit-Build useful for my Japanese language learning",
+		questionText: "I find Kit-Build useful for my learning",
 		type: "likert" as const,
 		options: LIKERT_SCALE_5,
 	},
