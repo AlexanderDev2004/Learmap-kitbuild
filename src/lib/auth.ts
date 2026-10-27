@@ -26,6 +26,10 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 				// tab at http://127.0.0.1:<port> to test both roles side by side.
 				"http://127.0.0.1:5173",
 				"http://127.0.0.1:5174",
+				// The dev server binds to [::1] only, so "localhost" can resolve to
+				// the IPv6 loopback and Better Auth would reject the origin.
+				"http://[::1]:5173",
+				"http://[::1]:5174",
 			],
 			database: drizzleAdapter(db, {
 				provider: "sqlite",
