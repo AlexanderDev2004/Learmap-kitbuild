@@ -30,3 +30,4 @@ data/*.sqlite3
 /playwright/.cache/
 /playwright/.auth/
 e2e/example.spec.ts
+.env.prod

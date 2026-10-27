@@ -26,10 +26,9 @@
 		"BETTER_AUTH_URL": "https://learnmap.alexanderar.com",
 		"SITE_URL": "https://learnmap.alexanderar.com"
 	},
-	"r2_buckets": [
-		{
-			"binding": "MATERIAL_IMAGES",
-			"bucket_name": "learnmap-materials"
-		}
-	]
+	// Binding R2 (MATERIAL_IMAGES) dinonaktifkan sementara: akun Cloudflare
+	// belum mengaktifkan R2 sehingga deploy ditolak (error 10042).
+	// Fitur upload/lihat gambar materi tidak akan berfungsi sampai binding
+	// ini diaktifkan kembali. Aktifkan R2 di dashboard lalu kembalikan blok:
+	// "r2_buckets": [{ "binding": "MATERIAL_IMAGES", "bucket_name": "learnmap-materials" }]
 }
