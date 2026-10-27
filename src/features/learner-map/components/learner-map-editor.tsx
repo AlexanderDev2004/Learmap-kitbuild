@@ -3,10 +3,11 @@ import { useNavigate, getRouteApi } from "@tanstack/react-router";
 import { useMachine } from "@xstate/react";
 import type { Connection, NodeMouseHandler } from "@xyflow/react";
 import { applyNodeChanges, applyEdgeChanges, ReactFlowProvider, useReactFlow } from "@xyflow/react";
+import type { EdgeChange, NodeChange } from "@xyflow/react";
 
 import "@xyflow/react/dist/style.css";
-import type { EdgeChange, NodeChange } from "@xyflow/react";
 import { AlertCircle, BookOpenIcon, InfoIcon, X } from "lucide-react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -235,6 +236,56 @@ export function LearnerMapEditor() {
 			return isValidConnection(sourceNode?.type, targetNode?.type);
 		},
 		[nodes, edges, isSubmitted],
+	);
+
+	/**
+	 * Drag a node and drop it onto another node to connect them.
+	 *
+	 * The connection handles are small circles on each node's sides; dropping a
+	 * node directly onto another node is the alternative gesture (matches the
+	 * KitBuild UX of dragging a node onto another to link them). The proposition
+	 * rule concept→connector→concept still applies: the edge direction is
+	 * resolved from node types, and concept→concept drops are rejected with an
+	 * explanatory toast instead of failing silently.
+	 */
+	const onNodeDragStop = useCallback(
+		(event: ReactMouseEvent, node: Node) => {
+			if (isSubmitted) return;
+			// The dragged node sits under the cursor at drop time; find the first
+			// OTHER node underneath it (nodes can overlap at drop).
+			const targetId = document
+				.elementsFromPoint(event.clientX, event.clientY)
+				.map((el) => el.closest(".react-flow__node")?.getAttribute("data-id"))
+				.find((id) => id && id !== node.id);
+			if (!targetId) return;
+			const targetNode = nodes.find((n) => n.id === targetId);
+			if (!targetNode) return;
+
+			// Resolve direction from types so connector→concept drags also work.
+			const source = node.type === "connector" ? targetNode : node;
+			const target = node.type === "connector" ? node : targetNode;
+			if (!isValidConnection(source.type, target.type, source.id, target.id)) {
+				toast.warning(
+					"Tidak bisa dihubungkan — konsep hanya bisa dihubungkan lewat penghubung (link). Tarik node ke penghubung, bukan langsung ke konsep lain.",
+				);
+				return;
+			}
+			if (areNodesConnected(edges, source.id, target.id)) {
+				toast.info(
+					`Node sudah terhubung: "${source.data?.label ?? source.id}" sudah terhubung dengan "${
+						target.data?.label ?? target.id
+					}".`,
+				);
+				return;
+			}
+			onConnect({
+				source: source.id,
+				target: target.id,
+				sourceHandle: null,
+				targetHandle: null,
+			});
+		},
+		[nodes, edges, isSubmitted, onConnect],
 	);
 
 	const handleUndo = useCallback(() => send({ type: "UNDO" }), [send]);
@@ -475,6 +526,7 @@ export function LearnerMapEditor() {
 					onConnect={onConnect}
 					onConnectEnd={noop}
 					isValidConnection={isValidConnectionHandler}
+					onNodeDragStop={onNodeDragStop}
 					onNodeClick={onNodeClick}
 					onPaneClick={onPaneClick}
 					readOnly={isSubmitted}

@@ -4,6 +4,7 @@ import type {
 	EdgeMouseHandler,
 	NodeChange,
 	NodeMouseHandler,
+	OnNodeDrag,
 } from "@xyflow/react";
 import { ConnectionMode, ReactFlow, useReactFlow } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
@@ -32,6 +33,8 @@ export type ConceptMapCanvasProps = {
 	onConnectEnd?: () => void;
 	/** Called when a node is clicked */
 	onNodeClick?: NodeMouseHandler;
+	/** Called when a node drag ends (e.g. dropped onto another node to connect) */
+	onNodeDragStop?: OnNodeDrag;
 	/** Called when an edge is clicked */
 	onEdgeClick?: EdgeMouseHandler;
 	/** Called when the canvas/pane is clicked */
@@ -76,6 +79,7 @@ export function ConceptMapCanvas({
 	onConnect,
 	onConnectEnd,
 	onNodeClick,
+	onNodeDragStop,
 	onEdgeClick,
 	onPaneClick,
 	onSelectionChange,
@@ -176,6 +180,7 @@ export function ConceptMapCanvas({
 				onConnectEnd={onConnectEnd}
 				isValidConnection={isValidConnection}
 				onNodeClick={handleNodeClick}
+				onNodeDragStop={onNodeDragStop}
 				onEdgeClick={handleEdgeClick}
 				onPaneClick={handlePaneClick}
 				onSelectionChange={onSelectionChange}
