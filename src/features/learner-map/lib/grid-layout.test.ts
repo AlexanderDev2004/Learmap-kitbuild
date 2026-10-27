@@ -14,7 +14,9 @@ describe("shuffleArray", () => {
 		const result = shuffleArray(array);
 
 		expect(result).toHaveLength(array.length);
-		expect(result).not.toEqual(array);
+		// A shuffle may legitimately produce the original order, so assert
+		// the same multiset of elements rather than a different order.
+		expect([...result].sort()).toEqual([...array].sort());
 	});
 
 	it("should return new array without modifying original", () => {
