@@ -1,4 +1,4 @@
-import { and, count, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { buildWhereClause, calculateOffset, createFuzzyPattern } from "@/lib/db-query-builder";
@@ -40,9 +40,12 @@ export const listUsers = Effect.fn("listUsers")((input: UserFilterInput) =>
 		const whereClause = buildWhereClause([
 			isNull(user.deletedAt),
 			search
-				? or(
-						ilike(user.name, createFuzzyPattern(search)),
-						ilike(user.email, createFuzzyPattern(search)),
+				? // SQLite/LibSQL has no ILIKE operator, so match case-insensitively
+					// via lower() on both sides; ESCAPE honors createFuzzyPattern's
+					// backslash-escaped wildcards.
+					or(
+						sql`lower(${user.name}) LIKE lower(${createFuzzyPattern(search)}) ESCAPE '\\'`,
+						sql`lower(${user.email}) LIKE lower(${createFuzzyPattern(search)}) ESCAPE '\\'`,
 					)
 				: null,
 			roleFilter ? eq(user.role, roleFilter) : null,
