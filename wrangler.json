@@ -25,7 +25,7 @@
 		"VITE_APP_URL": "https://learnmap.alexanderar.com",
 		"BETTER_AUTH_URL": "https://learnmap.alexanderar.com",
 		"SITE_URL": "https://learnmap.alexanderar.com"
-	},
+	}
 	// Binding R2 (MATERIAL_IMAGES) dinonaktifkan sementara: akun Cloudflare
 	// belum mengaktifkan R2 sehingga deploy ditolak (error 10042).
 	// Fitur upload/lihat gambar materi tidak akan berfungsi sampai binding
