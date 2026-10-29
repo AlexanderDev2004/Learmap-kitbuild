@@ -167,6 +167,9 @@ export const mapSegments = sqliteTable(
 		color: text("color"),
 		// Concept (text node) ids from the goal map that belong to this segment.
 		nodeIds: text("node_ids", { mode: "json" }).notNull().default("[]"),
+		// Persisted frame box ({x,y,w,h} JSON) chosen by dragging/resizing the
+		// segment frame in the goal-map editor. Null = auto-fit to member nodes.
+		frameBounds: text("frame_bounds", { mode: "json" }),
 		...timestamps,
 	},
 	(table) => [index("map_segments_goalMapId_idx").on(table.goalMapId)],

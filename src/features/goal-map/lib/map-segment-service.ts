@@ -12,6 +12,16 @@ export const ListSegmentsInput = Schema.Struct({
 });
 export type ListSegmentsInput = typeof ListSegmentsInput.Type;
 
+// Persisted frame box chosen by dragging/resizing the segment frame in the
+// goal-map editor. Null/undefined = auto-fit the box to its member nodes.
+export const FrameBoundsInput = Schema.Struct({
+	x: Schema.Number,
+	y: Schema.Number,
+	w: Schema.Number,
+	h: Schema.Number,
+});
+export type FrameBoundsInput = typeof FrameBoundsInput.Type;
+
 export const SaveSegmentInput = Schema.Struct({
 	goalMapId: NonEmpty("Goal map ID"),
 	id: Schema.optional(Schema.String),
@@ -21,6 +31,7 @@ export const SaveSegmentInput = Schema.Struct({
 	// Optional group color as a hex string (e.g. "#2563eb").
 	color: Schema.optional(Schema.Union(Schema.Null, NonEmpty("Segment color"))),
 	nodeIds: Schema.Array(Schema.String),
+	frameBounds: Schema.optional(Schema.Union(Schema.Null, FrameBoundsInput)),
 });
 export type SaveSegmentInput = typeof SaveSegmentInput.Type;
 
@@ -42,6 +53,7 @@ export type MapSegmentOutput = {
 	orderIndex: number;
 	color: string | null;
 	nodeIds: string[];
+	frameBounds: FrameBoundsInput | null;
 };
 
 /** Default group colors used when none is chosen (auto depth-topic levels). */
@@ -72,6 +84,12 @@ export const listSegments = Effect.fn("listSegments")(function* (input: ListSegm
 		orderIndex: row.orderIndex,
 		color: row.color,
 		nodeIds: Array.isArray(row.nodeIds) ? row.nodeIds : [],
+		frameBounds:
+			row.frameBounds &&
+			typeof row.frameBounds === "object" &&
+			!Array.isArray(row.frameBounds)
+				? (row.frameBounds as FrameBoundsInput)
+				: null,
 	}));
 });
 
@@ -94,6 +112,7 @@ export const saveSegment = Effect.fn("saveSegment")(function* (input: SaveSegmen
 		orderIndex: input.orderIndex,
 		color: input.color ?? null,
 		nodeIds: input.nodeIds,
+		frameBounds: input.frameBounds ?? null,
 	};
 
 	if (input.id) {
@@ -172,6 +191,7 @@ export const replaceDepthSegments = Effect.fn("replaceDepthSegments")(function* 
 			orderIndex: index,
 			color,
 			nodeIds,
+			frameBounds: null,
 		});
 	}
 

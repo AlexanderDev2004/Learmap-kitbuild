@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useMachine } from "@xstate/react";
 import type { Connection, NodeMouseHandler } from "@xyflow/react";
@@ -66,6 +67,10 @@ export function GoalMapEditor() {
 		...GoalMapRpc.getGoalMap({ goalMapId }),
 		enabled: !isNewMap,
 	});
+	const { data: segments } = useRpcQuery({
+		...GoalMapRpc.listSegments({ goalMapId }),
+		enabled: !isNewMap,
+	});
 	const { data: topics, isLoading: topicsLoading } = useRpcQuery(TopicRpc.listTopics());
 	const { data: kitStatus } = useRpcQuery({
 		...KitRpc.getKitStatus(goalMapId),
@@ -107,6 +112,17 @@ export function GoalMapEditor() {
 	});
 	const saving = saveGoalMapMutation.isPending;
 
+	// Segment frame edits (rename/recolor) persist straight to the segment.
+	const queryClient = useQueryClient();
+	const saveSegmentMutation = useRpcMutation(GoalMapRpc.saveSegment(), {
+		operation: "save segment",
+		showSuccess: true,
+		successMessage: "Segment updated",
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: GoalMapRpc.segments() });
+		},
+	});
+
 	// ── Load initial graph state ──────────────────────────────
 	useEffect(() => {
 		if (!isNewMap) return;
@@ -142,6 +158,45 @@ export function GoalMapEditor() {
 
 	const [selectedIdSet, setSelectedIdSet] = useState<Set<string>>(() => new Set());
 
+	// Segment frames persist their dragged/resized bounds to the segment
+	// record when the gesture ends (see onNodesChange frame handling below).
+	const saveFrameMutation = useRpcMutation(GoalMapRpc.saveSegment(), {
+		operation: "save segment frame",
+		showSuccess: false,
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: GoalMapRpc.segments() });
+		},
+	});
+
+	// Deleting a frame's trash button removes the whole segment (soft delete),
+	// same as the Segment dialog.
+	const deleteFrameMutation = useRpcMutation(GoalMapRpc.deleteSegment(), {
+		operation: "delete segment",
+		showSuccess: true,
+		successMessage: "Segment deleted",
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: GoalMapRpc.segments() });
+		},
+	});
+
+	const persistFrameBounds = useCallback(
+		(segmentId: string, bounds: { x: number; y: number; w: number; h: number }) => {
+			const segment = segments?.find((s) => s.id === segmentId);
+			if (!segment) return;
+			saveFrameMutation.mutate({
+				goalMapId,
+				id: segment.id,
+				name: segment.name,
+				type: segment.type,
+				orderIndex: segment.orderIndex,
+				color: segment.color ?? undefined,
+				nodeIds: segment.nodeIds,
+				frameBounds: bounds,
+			});
+		},
+		[segments, goalMapId, saveFrameMutation],
+	);
+
 	// ── Graph change handlers ─────────────────────────────────
 	const onNodesChange = useCallback(
 		(changes: import("@xyflow/react").NodeChange<Node>[]) => {
@@ -161,12 +216,48 @@ export function GoalMapEditor() {
 					return next;
 				});
 			}
-			const other = changes.filter((c) => c.type !== "select");
+			const isFrameChange = (
+				c: import("@xyflow/react").NodeChange<Node>,
+			): c is import("@xyflow/react").NodeChange<Node> & { id: string } =>
+				"id" in c && typeof c.id === "string" && c.id.startsWith("segment-frame-");
+			const frameChanges = changes.filter((c) => c.type !== "select" && isFrameChange(c));
+
+			// Frame moves/resizes update local bounds state (not the machine);
+			// they persist to the segment when the gesture ends.
+			if (frameChanges.length > 0) {
+				setFrameBounds((prev) => {
+					const next = { ...prev };
+					let persistedId: string | null = null;
+					for (const change of frameChanges) {
+						const segmentId = change.id.slice("segment-frame-".length);
+						const current = next[segmentId] ?? { x: 0, y: 0, w: 200, h: 140 };
+						if (change.type === "position" && change.position) {
+							next[segmentId] = {
+								...current,
+								x: change.position.x,
+								y: change.position.y,
+							};
+							if (change.dragging === false) persistedId = segmentId;
+						} else if (change.type === "dimensions" && change.dimensions) {
+							next[segmentId] = {
+								...current,
+								w: change.dimensions.width ?? current.w,
+								h: change.dimensions.height ?? current.h,
+							};
+							if (change.resizing === false) persistedId = segmentId;
+						}
+					}
+					if (persistedId) persistFrameBounds(persistedId, next[persistedId]);
+					return next;
+				});
+			}
+
+			const other = changes.filter((c) => c.type !== "select" && !isFrameChange(c));
 			if (other.length === 0) return;
 			const next = applyNodeChanges(other, stableNodes);
 			send({ type: "SET_NODES", nodes: next });
 		},
-		[stableNodes, send],
+		[stableNodes, send, persistFrameBounds],
 	);
 
 	const onEdgesChange = useCallback(
@@ -355,13 +446,115 @@ export function GoalMapEditor() {
 		[stableNodes, setCenter],
 	);
 
+	// ── Segment frames ──────────────────────────────────────────
+	// Interactive frames drawn behind the nodes so teachers and admins can see
+	// which nodes belong to which segment. Bounds come from the segment record
+	// (persisted when the teacher drags/resizes the frame); when none are
+	// stored the box auto-fits to its member nodes. Frames are synthetic —
+	// they are never written into the saved map JSON.
+	const [frameBounds, setFrameBounds] = useState<
+		Record<string, { x: number; y: number; w: number; h: number }>
+	>({});
+	useEffect(() => {
+		if (!segments) return;
+		// Sync from server: stored bounds win; keep in-flight local edits only
+		// for segments whose stored bounds are still null.
+		setFrameBounds((prev) => {
+			const next: typeof prev = {};
+			for (const segment of segments) {
+				if (segment.frameBounds) next[segment.id] = segment.frameBounds;
+				else if (prev[segment.id]) next[segment.id] = prev[segment.id];
+			}
+			return next;
+		});
+	}, [segments]);
+
+	const segmentFrameNodes = useMemo(() => {
+		const list = segments ?? [];
+		if (list.length === 0) return [];
+		const rfNodes = getNodes();
+		const measured = (id: string) => {
+			const rfNode = rfNodes.find((n) => n.id === id);
+			return { w: rfNode?.measured?.width ?? 150, h: rfNode?.measured?.height ?? 60 };
+		};
+		const PADDING = 28;
+		return list.flatMap((segment, index) => {
+			const stored = frameBounds[segment.id];
+			let position: { x: number; y: number };
+			let style: { width: number; height: number };
+			if (stored) {
+				position = { x: stored.x, y: stored.y };
+				style = { width: stored.w, height: stored.h };
+			} else {
+				const members = segment.nodeIds
+					.map((id) => stableNodes.find((n) => n.id === id))
+					.filter((n): n is Node => !!n && !n.parentId);
+				if (members.length === 0) return [];
+				const minX = Math.min(...members.map((n) => n.position.x));
+				const minY = Math.min(...members.map((n) => n.position.y));
+				const maxX = Math.max(...members.map((n) => n.position.x + measured(n.id).w));
+				const maxY = Math.max(...members.map((n) => n.position.y + measured(n.id).h));
+				position = { x: minX - PADDING, y: minY - PADDING };
+				style = {
+					width: maxX - minX + PADDING * 2,
+					height: maxY - minY + PADDING * 2 + 28,
+				};
+			}
+			const frameNode = {
+				id: `segment-frame-${segment.id}`,
+				type: "segmentFrame",
+				// Frames must stay beneath edges and regular nodes (same layer as
+				// manual group frames).
+				zIndex: -1,
+				position,
+				style,
+				// Declared dimensions (in addition to style) so React Flow treats
+				// the frame as measured immediately. Frame dimension changes are
+				// filtered out of onNodesChange (never applied back via
+				// applyNodeChanges), so the node would otherwise never receive a
+				// measured size: it would stay visibility:hidden and its drags
+				// would be rejected with React Flow error #015.
+				width: style.width,
+				height: style.height,
+				measured: { width: style.width, height: style.height },
+				selected: selectedIdSet.has(`segment-frame-${segment.id}`),
+				data: {
+					label: segment.name,
+					color:
+						segment.color ??
+						SEGMENT_COLOR_PALETTE[index % SEGMENT_COLOR_PALETTE.length],
+					onDelete: () => {
+						const segmentName = segment.name || "this segment";
+						if (
+							!window.confirm(
+								`Delete segment "${segmentName}"? Its nodes stay on the map.`,
+							)
+						)
+							return;
+						deleteFrameMutation.mutate({ id: segment.id });
+					},
+				},
+				draggable: true,
+				selectable: true,
+				deletable: false,
+				connectable: false,
+			} as Node;
+			return [frameNode];
+		});
+	}, [segments, frameBounds, stableNodes, getNodes, selectedIdSet]);
+
 	// ── Blueprint-style groups ──────────────────────────────────
 	// Selection lives in local state (selectedIdSet) and is injected into the
 	// canvas nodes; the machine keeps nodes selection-free for a clean undo
 	// history and saved JSON.
 	const canvasNodes = useMemo(
-		() => stableNodes.map((n) => (selectedIdSet.has(n.id) ? { ...n, selected: true } : n)),
-		[stableNodes, selectedIdSet],
+		() => [
+			...stableNodes.map((n) => (selectedIdSet.has(n.id) ? { ...n, selected: true } : n)),
+			...segmentFrameNodes.map((n) =>
+				selectedIdSet.has(n.id) ? { ...n, selected: true } : n,
+			),
+		],
+		[stableNodes, selectedIdSet, segmentFrameNodes],
 	);
 	const groupSelection = useMemo(() => {
 		let concepts = 0;
@@ -383,6 +576,28 @@ export function GoalMapEditor() {
 
 	const handleUpdateNodeData = useCallback(
 		(id: string, data: Record<string, unknown>) => {
+			// Segment frames are derived (not machine nodes): persist their
+			// label/color edits back to the segment record instead.
+			if (id.startsWith("segment-frame-")) {
+				const segmentId = id.slice("segment-frame-".length);
+				const segment = segments?.find((s) => s.id === segmentId);
+				if (!segment) return;
+				const nextName =
+					typeof data.label === "string" && data.label.trim()
+						? data.label.trim()
+						: segment.name;
+				// saveSegment overwrites every field, so always send the full record.
+				saveSegmentMutation.mutate({
+					goalMapId,
+					id: segment.id,
+					name: nextName,
+					type: segment.type,
+					orderIndex: segment.orderIndex,
+					color: typeof data.color === "string" ? data.color : (segment.color ?? null),
+					nodeIds: [...segment.nodeIds],
+				});
+				return;
+			}
 			send({
 				type: "SET_NODES",
 				nodes: stableNodes.map((n) =>
@@ -390,7 +605,7 @@ export function GoalMapEditor() {
 				),
 			});
 		},
-		[stableNodes, send],
+		[stableNodes, send, segments, saveSegmentMutation, goalMapId],
 	);
 
 	const createGroupFromSelection = useCallback(() => {

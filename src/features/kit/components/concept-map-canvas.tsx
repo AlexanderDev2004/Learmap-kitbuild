@@ -9,6 +9,7 @@ import type {
 import { ConnectionMode, ReactFlow, useReactFlow } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
 
+import { SegmentFrameNode } from "@/features/goal-map/components/segment-frame-node";
 import type { Node, Edge } from "@/features/learner-map/lib/comparator";
 
 import { NodeContext } from "../lib/node-context";
@@ -55,6 +56,7 @@ const NODE_TYPES = Object.freeze({
 	text: TextNode,
 	connector: ConnectorNode,
 	group: GroupNode,
+	segmentFrame: SegmentFrameNode,
 });
 
 const EDGE_TYPES = Object.freeze({
