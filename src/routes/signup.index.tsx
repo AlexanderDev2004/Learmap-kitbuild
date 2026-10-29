@@ -10,6 +10,7 @@ import { ConsentStep } from "@/features/auth/components/consent-step";
 import { PersonalStep } from "@/features/auth/components/personal-step";
 import { useAppForm } from "@/features/auth/components/use-app-form";
 import { steps, SignUpSchema } from "@/features/auth/types";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { extractFormErrorMessages } from "@/lib/form-error-messages";
 import { cn } from "@/lib/utils";
@@ -167,6 +168,7 @@ export const Route = createFileRoute("/signup/")({
 
 function SignUpPage() {
 	const navigate = useNavigate();
+	const hydrated = useHydrated();
 	const [snapshot, send] = useMachine(signUpMachine);
 
 	const { data: whitelistData, isLoading: whitelistLoading } = useRpcQuery(
@@ -470,13 +472,17 @@ function SignUpPage() {
 										{([canSubmit, isSubmitting]) => (
 											<Button
 												type="submit"
+												// A submit before hydration would bypass the
+												// handler and fall through to a dead GET
+												// navigation.
 												disabled={
+													!hydrated ||
 													!canSubmit ||
 													isSubmitting ||
 													signUpMutation.isPending
 												}
 											>
-												{signUpMutation.isPending
+												{!hydrated || signUpMutation.isPending
 													? "Creating account..."
 													: "Create Account"}
 											</Button>

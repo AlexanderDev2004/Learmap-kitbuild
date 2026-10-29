@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FieldInfo } from "@/components/ui/field-info";
 import { Input, PasswordInput } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { studentIdToAuthEmail } from "@/lib/student-id-auth";
 import { Password } from "@/lib/validation-schemas";
 import { getMe } from "@/server/rpc/profile";
@@ -60,6 +61,7 @@ const LoginSchema = Schema.Struct({
 
 function LoginPage() {
 	const navigate = useNavigate();
+	const hydrated = useHydrated();
 	const [error, setError] = useState<string | null>(null);
 
 	const form = useForm({
@@ -166,10 +168,16 @@ function LoginPage() {
 						{([canSubmit, isSubmitting]) => (
 							<Button
 								type="submit"
-								disabled={!canSubmit || isSubmitting}
+								// A submit before hydration would bypass the handler and
+								// fall through to a dead GET navigation.
+								disabled={!hydrated || !canSubmit || isSubmitting}
 								className="w-full"
 							>
-								{isSubmitting ? "Signing in..." : "Sign in"}
+								{!hydrated
+									? "Loading..."
+									: isSubmitting
+										? "Signing in..."
+										: "Sign in"}
 							</Button>
 						)}
 					</form.Subscribe>
