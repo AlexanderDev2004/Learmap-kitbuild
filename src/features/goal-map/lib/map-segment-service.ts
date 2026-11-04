@@ -105,17 +105,22 @@ export const saveSegment = Effect.fn("saveSegment")(function* (input: SaveSegmen
 		return yield* new GoalMapNotFoundError({ goalMapId: input.goalMapId });
 	}
 
-	const values = {
+	const base = {
 		goalMapId: input.goalMapId,
 		name: input.name,
 		type: input.type,
 		orderIndex: input.orderIndex,
 		color: input.color ?? null,
 		nodeIds: input.nodeIds,
-		frameBounds: input.frameBounds ?? null,
 	};
 
 	if (input.id) {
+		// frameBounds is only written when the client sends it (frame drag/
+		// resize). Rename/recolor from the Segment dialog omit the field so a
+		// teacher's modeled box survives metadata edits instead of resetting
+		// to auto-fit.
+		const values =
+			input.frameBounds === undefined ? base : { ...base, frameBounds: input.frameBounds };
 		yield* db
 			.update(mapSegments)
 			.set(values)
@@ -125,7 +130,7 @@ export const saveSegment = Effect.fn("saveSegment")(function* (input: SaveSegmen
 
 	const [row] = yield* db
 		.insert(mapSegments)
-		.values({ ...values, id: crypto.randomUUID() })
+		.values({ ...base, frameBounds: input.frameBounds ?? null, id: crypto.randomUUID() })
 		.returning({ id: mapSegments.id });
 	return { id: row.id };
 });
