@@ -19,6 +19,7 @@ import { Guard } from "@/features/auth/components/Guard";
 import { useRpcQuery } from "@/hooks/use-rpc-query";
 import { cn } from "@/lib/utils";
 import { AnalyticsRpc } from "@/server/rpc/analytics";
+import { GoalMapRpc } from "@/server/rpc/goal-map";
 
 export const Route = createFileRoute("/dashboard/analytics/")({
 	component: () => (
@@ -45,6 +46,8 @@ function AnalyticsPage() {
 		showNeutralEdges: true,
 		consolidatedView: true,
 		showNamesOnHover: false,
+		showFrames: true,
+		hiddenSegmentIds: [] as string[],
 	});
 
 	const handleVisibilityChange = useCallback((updates: Partial<typeof visibility>) => {
@@ -55,6 +58,14 @@ function AnalyticsPage() {
 		...AnalyticsRpc.getAnalyticsForAssignment(selectedAssignmentId ?? ""),
 		enabled: !!selectedAssignmentId,
 		refetchOnWindowFocus: false,
+	});
+
+	// Segments of the selected assignment's goal map, for the per-frame
+	// visibility toggles in AnalyticsControls.
+	const goalMapId = analyticsData?.goalMap?.id ?? "";
+	const { data: segments } = useRpcQuery({
+		...GoalMapRpc.listSegments({ goalMapId }),
+		enabled: !!goalMapId,
 	});
 
 	const selectedLearners = useMemo(() => {
@@ -204,6 +215,7 @@ function AnalyticsPage() {
 								className="absolute bottom-3 left-2 sm:left-3 right-2 sm:right-auto bg-card/30 backdrop-blur-lg border rounded-lg shadow-lg pointer-events-auto max-w-full sm:max-w-64"
 								visibility={visibility}
 								onChange={handleVisibilityChange}
+								segments={segments}
 							/>
 						</>
 					)}

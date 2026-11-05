@@ -2,23 +2,13 @@ import { useMemo } from "react";
 
 import { ErrorCard } from "@/components/ui/error-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { VisibilityState } from "@/features/learner-map/lib/visibility";
 import { useRpcQuery } from "@/hooks/use-rpc-query";
 import { cn } from "@/lib/utils";
 import { AnalyticsRpc } from "@/server/rpc/analytics";
 
 import type { AssignmentAnalytics } from "../lib/analytics-service.shared";
 import { CanvasContent } from "./canvas-content";
-
-interface VisibilityState {
-	showGoalMap: boolean;
-	showLearnerMap: boolean;
-	showCorrectEdges: boolean;
-	showMissingEdges: boolean;
-	showExcessiveEdges: boolean;
-	showNeutralEdges: boolean;
-	consolidatedView: boolean;
-	showNamesOnHover: boolean;
-}
 
 interface AnalyticsCanvasWrapperProps {
 	selectedAssignmentId: string | null;

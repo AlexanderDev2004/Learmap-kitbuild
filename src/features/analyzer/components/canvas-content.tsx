@@ -3,6 +3,7 @@ import { lazy, Suspense, useMemo } from "react";
 
 import type { LearnerMapResult } from "@/features/analyzer/lib/analytics-service.queries";
 import type { AssignmentAnalytics } from "@/features/analyzer/lib/analytics-service.shared";
+import type { VisibilityState } from "@/features/learner-map/lib/visibility";
 
 // Lazy load AnalyticsCanvas (heavy React Flow component)
 const AnalyticsCanvas = lazy(() =>
@@ -31,16 +32,7 @@ export function CanvasContent({
 	analyticsData: AssignmentAnalytics | null | undefined;
 	multipleLearnerMapDetails: LearnerMapResult[] | null;
 	isLoadingLearnerMaps: boolean;
-	visibility: {
-		showGoalMap: boolean;
-		showLearnerMap: boolean;
-		showCorrectEdges: boolean;
-		showMissingEdges: boolean;
-		showExcessiveEdges: boolean;
-		showNeutralEdges: boolean;
-		consolidatedView: boolean;
-		showNamesOnHover: boolean;
-	};
+	visibility: VisibilityState;
 	allowNodeDragging: boolean;
 }) {
 	const mappedLearnerMaps = useMemo(

@@ -38,6 +38,8 @@ export function LearnerMapResult() {
 		showNeutralEdges: true,
 		consolidatedView: true,
 		showNamesOnHover: true,
+		showFrames: true,
+		hiddenSegmentIds: [],
 	});
 
 	const [mobileSidePanelOpen, setMobileSidePanelOpen] = useState(false);

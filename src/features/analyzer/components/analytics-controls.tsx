@@ -1,4 +1,8 @@
+import { ChevronDownIcon } from "lucide-react";
+import { useState } from "react";
+
 import { Switch } from "@/components/ui/switch";
+import type { VisibilityState } from "@/features/learner-map/lib/visibility";
 import { cn } from "@/lib/utils";
 
 function LegendDot({ color }: { color: string }) {
@@ -13,21 +17,11 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 	);
 }
 
-interface VisibilityState {
-	showGoalMap: boolean;
-	showLearnerMap: boolean;
-	showCorrectEdges: boolean;
-	showMissingEdges: boolean;
-	showExcessiveEdges: boolean;
-	showNeutralEdges: boolean;
-	consolidatedView: boolean;
-	showNamesOnHover: boolean;
-}
-
 interface AnalyticsControlsProps {
 	visibility: VisibilityState;
 	onChange: (updates: Partial<VisibilityState>) => void;
 	showDisplayOptions?: boolean;
+	segments?: ReadonlyArray<{ id: string; name: string; color: string | null }>;
 	className?: string;
 }
 
@@ -35,8 +29,22 @@ export function AnalyticsControls({
 	visibility,
 	onChange,
 	showDisplayOptions = true,
+	segments,
 	className,
 }: AnalyticsControlsProps) {
+	// Per-segment frame list is collapsed by default to keep the panel compact.
+	const [segmentListOpen, setSegmentListOpen] = useState(false);
+	const hiddenCount = visibility.hiddenSegmentIds.length;
+	const toggleSegment = (segmentId: string, shown: boolean) => {
+		const hidden = new Set(visibility.hiddenSegmentIds);
+		if (shown) {
+			hidden.delete(segmentId);
+		} else {
+			hidden.add(segmentId);
+		}
+		onChange({ hiddenSegmentIds: [...hidden] });
+	};
+
 	return (
 		<div className={cn("border-b-[0.5px] p-3 space-y-3", className)}>
 			<div className="flex items-center justify-between">
@@ -118,6 +126,68 @@ export function AnalyticsControls({
 							<span>Show Names on Hover</span>
 						</div>
 					</div>
+
+					<div className="flex items-center gap-4 flex-wrap">
+						<div className="flex items-center gap-2 text-xs">
+							<Switch
+								checked={visibility.showFrames}
+								onCheckedChange={(v) => onChange({ showFrames: v })}
+							/>
+							<span>Segment Frames</span>
+						</div>
+					</div>
+
+					{segments && segments.length > 0 && visibility.showFrames && (
+						<div className="flex flex-col gap-2">
+							<button
+								type="button"
+								onClick={() => setSegmentListOpen((v) => !v)}
+								className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide pl-0.5 cursor-pointer hover:text-foreground transition-colors w-full"
+							>
+								<ChevronDownIcon
+									className={cn(
+										"size-3.5 transition-transform",
+										!segmentListOpen && "-rotate-90",
+									)}
+								/>
+								Frames per Segmen
+								{hiddenCount > 0 && (
+									<span className="ml-auto normal-case tracking-normal text-[10px] bg-muted rounded-full px-1.5 py-0.5">
+										{hiddenCount} tersembunyi
+									</span>
+								)}
+							</button>
+							{segmentListOpen && (
+								<div className="flex flex-col gap-2">
+									{segments.map((segment) => {
+										const shown = !visibility.hiddenSegmentIds.includes(
+											segment.id,
+										);
+										return (
+											<div
+												key={segment.id}
+												className="flex items-center gap-2 text-xs"
+											>
+												<Switch
+													checked={shown}
+													onCheckedChange={(v) =>
+														toggleSegment(segment.id, v)
+													}
+												/>
+												<span
+													className="inline-block size-3 rounded-full shrink-0"
+													style={{
+														backgroundColor: segment.color ?? "#64748b",
+													}}
+												/>
+												<span className="truncate">{segment.name}</span>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</div>
+					)}
 				</>
 			)}
 		</div>

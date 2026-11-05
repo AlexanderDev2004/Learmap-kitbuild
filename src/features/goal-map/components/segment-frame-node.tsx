@@ -3,10 +3,21 @@ import { Handle, NodeResizer, Position } from "@xyflow/react";
 import { Trash2 } from "lucide-react";
 import { memo } from "react";
 
+type SegmentVerdictTone = "correct" | "partial" | "missing" | "none";
+
 type SegmentFrameNodeData = {
 	label: string;
 	color: string;
+	/** Optional diagnosis badge shown next to the label (Analyzer view). */
+	verdict?: { text: string; tone: SegmentVerdictTone };
 	onDelete?: () => void;
+};
+
+const VERDICT_STYLES: Record<SegmentVerdictTone, string> = {
+	correct: "bg-emerald-100 text-emerald-800 border-emerald-300",
+	partial: "bg-amber-100 text-amber-800 border-amber-300",
+	missing: "bg-red-100 text-red-800 border-red-300",
+	none: "bg-muted text-muted-foreground border-border",
 };
 
 /**
@@ -66,7 +77,7 @@ function SegmentFrameNodeComponent({
 					<Trash2 className="size-3.5" />
 				</button>
 			)}
-			<div className="px-2 pt-1">
+			<div className="flex items-center justify-between gap-2 px-2 pt-1">
 				<span
 					className="block truncate text-xs font-semibold select-none"
 					style={{ color }}
@@ -74,6 +85,14 @@ function SegmentFrameNodeComponent({
 				>
 					{data?.label ?? "Segmen"}
 				</span>
+				{data?.verdict && (
+					<span
+						className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${VERDICT_STYLES[data.verdict.tone]}`}
+						title={data.verdict.text}
+					>
+						{data.verdict.text}
+					</span>
+				)}
 			</div>
 		</div>
 	);

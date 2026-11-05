@@ -3,12 +3,19 @@ import { ZoomIn, ZoomOut } from "lucide-react";
 import { useCallback, useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+	computeSegmentVerdicts,
+	formatSegmentVerdict,
+} from "@/features/analyzer/lib/segment-verdicts";
 import { useAnalyticsEdges } from "@/features/analyzer/lib/use-analytics-edges";
 
 import "@xyflow/react/dist/style.css";
 import { useAnalyticsNodes } from "@/features/analyzer/lib/use-analytics-nodes";
 import { ConceptMapCanvas } from "@/features/kit/components/concept-map-canvas";
 import type { Edge, Node } from "@/features/learner-map/lib/comparator";
+import type { VisibilityState } from "@/features/learner-map/lib/visibility";
+import { useRpcQuery } from "@/hooks/use-rpc-query";
+import { GoalMapRpc } from "@/server/rpc/goal-map";
 
 interface AnalyticsCanvasProps {
 	goalMap: {
@@ -48,16 +55,7 @@ interface AnalyticsCanvasProps {
 		type: "correct" | "missing" | "excessive" | "neutral";
 		createdBy?: string;
 	}>;
-	visibility: {
-		showGoalMap: boolean;
-		showLearnerMap: boolean;
-		showCorrectEdges: boolean;
-		showMissingEdges: boolean;
-		showExcessiveEdges: boolean;
-		showNeutralEdges: boolean;
-		consolidatedView: boolean;
-		showNamesOnHover: boolean;
-	};
+	visibility: VisibilityState;
 	isMultiView?: boolean;
 	readOnly?: boolean;
 }
@@ -105,6 +103,79 @@ function AnalyticsCanvasInner({
 		isMultiView,
 	});
 
+	// â”€â”€ Segment frames with per-segment verdicts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// When exactly one learner map is selected, every segment frame shows how
+	// well the student reconstructed that segment: Benar (all propositions
+	// correct), Sebagian (partial), Missing (none correct), plus excessive
+	// propositions the student added inside the segment. Verdicts reuse the
+	// same compareMaps scoring as the global diagnosis, so they can never
+	// contradict it. With multiple learners overlaid the comparison target is
+	// ambiguous, so frames render without a verdict.
+	const { data: segments } = useRpcQuery({
+		...GoalMapRpc.listSegments({ goalMapId: goalMap.id }),
+	});
+	const segmentFrameNodes = useMemo(() => {
+		if (!visibility.showFrames) return [];
+		const hidden = new Set(visibility.hiddenSegmentIds ?? []);
+		const list = (segments ?? []).filter((s) => !hidden.has(s.id));
+		if (list.length === 0) return [];
+		if (currentLearnerMaps.length !== 1) return [];
+		const learner = currentLearnerMaps[0];
+		const verdicts = computeSegmentVerdicts(
+			goalMap.nodes,
+			goalMap.edges,
+			learner.nodes,
+			learner.edges,
+			list.map((s) => ({ id: s.id, nodeIds: [...s.nodeIds] })),
+		);
+		const PADDING = 28;
+		const measured = (id: string) => {
+			const rfNode = (
+				nodes as Array<Node & { measured?: { width?: number; height?: number } }>
+			).find((n) => n.id === id);
+			return { w: rfNode?.measured?.width ?? 150, h: rfNode?.measured?.height ?? 60 };
+		};
+		return list.flatMap((segment) => {
+			const members = segment.nodeIds
+				.map((id) => goalMap.nodes.find((n) => n.id === id))
+				.filter((n): n is Node => !!n);
+			if (members.length === 0) return [];
+			const minX = Math.min(...members.map((n) => n.position.x));
+			const minY = Math.min(...members.map((n) => n.position.y));
+			const maxX = Math.max(...members.map((n) => n.position.x + measured(n.id).w));
+			const maxY = Math.max(...members.map((n) => n.position.y + measured(n.id).h));
+			const verdict = verdicts.get(segment.id);
+			return [
+				{
+					id: `segment-frame-${segment.id}`,
+					type: "segmentFrame",
+					zIndex: -1,
+					position: { x: minX - PADDING, y: minY - PADDING },
+					style: {
+						width: maxX - minX + PADDING * 2,
+						height: maxY - minY + PADDING * 2 + 28,
+					},
+					width: maxX - minX + PADDING * 2,
+					height: maxY - minY + PADDING * 2 + 28,
+					measured: {
+						width: maxX - minX + PADDING * 2,
+						height: maxY - minY + PADDING * 2 + 28,
+					},
+					selectable: false,
+					draggable: false,
+					connectable: false,
+					data: {
+						label: segment.name,
+						color: segment.color ?? "#64748b",
+						verdict: verdict
+							? { text: formatSegmentVerdict(verdict), tone: verdict.tone }
+							: undefined,
+					},
+				} as Node,
+			];
+		});
+	}, [segments, currentLearnerMaps, goalMap.nodes, goalMap.edges, nodes, visibility]);
+
 	const displayEdges = edges as Edge[];
 	const noop = useCallback(() => {}, []);
 
@@ -137,7 +208,7 @@ function AnalyticsCanvasInner({
 				</Button>
 			</div>
 			<ConceptMapCanvas
-				nodes={nodes}
+				nodes={[...nodes, ...segmentFrameNodes] as Node[]}
 				edges={displayEdges}
 				onNodesChange={noop}
 				onEdgesChange={noop}

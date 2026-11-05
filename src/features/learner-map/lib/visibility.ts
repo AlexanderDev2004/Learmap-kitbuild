@@ -7,4 +7,7 @@ export interface VisibilityState {
 	showNeutralEdges: boolean;
 	consolidatedView: boolean;
 	showNamesOnHover: boolean;
+	// Analyzer segment frames: master switch plus per-segment overrides.
+	showFrames: boolean;
+	hiddenSegmentIds: string[];
 }
