@@ -124,6 +124,15 @@ export function LearnerMapEditor() {
 			? edges
 			: edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
 
+	// Re-fit the viewport whenever the active segment changes so every concept
+	// of the segment is on screen; React Flow does not render off-screen nodes,
+	// so without this the segment looks like it is missing concepts.
+	useEffect(() => {
+		if (isSubmitted) return;
+		const timer = setTimeout(() => void fitView({ padding: 0.2, duration: 400 }), 80);
+		return () => clearTimeout(timer);
+	}, [selection, isSubmitted, fitView]);
+
 	useEffect(() => {
 		if (assignmentData && condition === "concept_map" && !isSubmitted) {
 			const key = `canvas-onboarding-${assignmentId}`;

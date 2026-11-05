@@ -79,6 +79,34 @@ export function GoalMapEditor() {
 
 	const [segmentsOpen, setSegmentsOpen] = useState(false);
 
+	// â”€â”€ Student review mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	// Preview of exactly what the student sees in the learner-map editor: no
+	// segment frames, the same segment pill bar, one segment at a time. The
+	// canvas is read-only so teachers can verify their segmentation before
+	// assigning without accidentally modifying the map.
+	const [reviewMode, setReviewMode] = useState(false);
+	const [reviewSegmentId, setReviewSegmentId] = useState<string | null>(null);
+	const reviewSegment =
+		reviewSegmentId != null
+			? ((segments ?? []).find((s) => s.id === reviewSegmentId) ?? null)
+			: null;
+	const reviewHiddenIds = useMemo(() => {
+		const hidden = new Set<string>();
+		if (reviewMode && reviewSegment) {
+			const activeIds = new Set(reviewSegment.nodeIds);
+			for (const segment of segments ?? []) {
+				for (const nodeId of segment.nodeIds) {
+					if (!activeIds.has(nodeId)) hidden.add(nodeId);
+				}
+			}
+		}
+		return hidden;
+	}, [reviewMode, reviewSegment, segments]);
+	const startReview = useCallback(() => {
+		setReviewSegmentId(null);
+		setReviewMode(true);
+	}, []);
+
 	// ── Simple UI state (local) ──────────────────────────────
 	const [conceptDialogOpen, setConceptDialogOpen] = useAtom(conceptDialogOpenAtom);
 	const [linkDialogOpen, setLinkDialogOpen] = useAtom(linkDialogOpenAtom);
@@ -547,15 +575,36 @@ export function GoalMapEditor() {
 	// Selection lives in local state (selectedIdSet) and is injected into the
 	// canvas nodes; the machine keeps nodes selection-free for a clean undo
 	// history and saved JSON.
-	const canvasNodes = useMemo(
-		() => [
+	const canvasNodes = useMemo(() => {
+		// Review mode renders exactly the student's view: segment frames are
+		// gone and only the active segment's concepts remain (presentation
+		// only — the machine state and saved map are untouched).
+		if (reviewMode) {
+			return stableNodes.filter((n) => !reviewHiddenIds.has(n.id));
+		}
+		return [
 			...stableNodes.map((n) => (selectedIdSet.has(n.id) ? { ...n, selected: true } : n)),
 			...segmentFrameNodes.map((n) =>
 				selectedIdSet.has(n.id) ? { ...n, selected: true } : n,
 			),
-		],
-		[stableNodes, selectedIdSet, segmentFrameNodes],
-	);
+		];
+	}, [stableNodes, selectedIdSet, segmentFrameNodes, reviewMode, reviewHiddenIds]);
+	const canvasEdges = useMemo(() => {
+		if (reviewMode && reviewHiddenIds.size > 0) {
+			return stableEdges.filter(
+				(e) => !reviewHiddenIds.has(e.source) && !reviewHiddenIds.has(e.target),
+			);
+		}
+		return stableEdges;
+	}, [stableEdges, reviewMode, reviewHiddenIds]);
+
+	// Follow the same behavior as the student editor: fit the viewport to the
+	// active segment whenever review mode starts or the segment changes.
+	useEffect(() => {
+		if (!reviewMode) return;
+		const timer = setTimeout(() => void fitView({ padding: 0.2, duration: 400 }), 80);
+		return () => clearTimeout(timer);
+	}, [reviewMode, reviewSegmentId, fitView]);
 	const groupSelection = useMemo(() => {
 		let concepts = 0;
 		let hasGroup = false;
@@ -850,8 +899,15 @@ export function GoalMapEditor() {
 	useEffect(() => {
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
+				if (reviewMode) {
+					setReviewMode(false);
+					return;
+				}
 				setContextMenu(null);
 			}
+			// Review mode is read-only: undo/redo/save/delete shortcuts must
+			// not touch the map while previewing.
+			if (reviewMode) return;
 			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
 				e.preventDefault();
 				if (saving) return;
@@ -878,6 +934,7 @@ export function GoalMapEditor() {
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [
+		reviewMode,
 		saving,
 		doSave,
 		saveMeta,
@@ -1018,7 +1075,7 @@ export function GoalMapEditor() {
 			<div className="border-t-[0.5px] -mx-4 bg-card relative h-full overflow-hidden">
 				<ConceptMapCanvas
 					nodes={canvasNodes}
-					edges={stableEdges}
+					edges={canvasEdges}
 					onNodesChange={onNodesChange}
 					onEdgesChange={onEdgesChange}
 					onConnect={onConnect}
@@ -1028,7 +1085,7 @@ export function GoalMapEditor() {
 					onPaneClick={handlePaneClick}
 					onUpdateNodeData={handleUpdateNodeData}
 					onSelectionChange={handleSelectionChange}
-					readOnly={false}
+					readOnly={reviewMode}
 				>
 					<SearchNodesPanel
 						open={searchOpen}
@@ -1038,28 +1095,88 @@ export function GoalMapEditor() {
 					/>
 				</ConceptMapCanvas>
 
-				<EditorToolbar
-					onUndo={handleUndo}
-					onRedo={handleRedo}
-					canUndo={canUndo}
-					canRedo={canRedo}
-					onZoomIn={handleZoomIn}
-					onZoomOut={handleZoomOut}
-					onFit={handleFit}
-					onCenterMap={centerMap}
-					onAutoLayout={handleAutoLayout}
-					onDelete={handleDeleteSelected}
-					onSave={() => doSave({ topicId: saveMeta.topicId, name: saveMeta.name })}
-					saving={saving}
-					isNewMap={isNewMap}
-					goalMapId={goalMapId}
-					onDeleted={() => void navigate({ to: "/dashboard/goal-map", replace: true })}
-					onOpenSegments={() => setSegmentsOpen(true)}
-					canCreateGroup={groupSelection.concepts >= 1}
-					onCreateGroup={createGroupFromSelection}
-					canUngroup={groupSelection.hasGroup}
-					onUngroup={ungroupSelected}
-				/>
+				{reviewMode ? (
+					<div className="absolute top-3 left-1/2 z-20 flex max-w-[92%] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-xl border bg-white/90 p-1.5 shadow-lg backdrop-blur-sm">
+						{(segments ?? []).map((segment, index) => (
+							<button
+								key={segment.id}
+								type="button"
+								onClick={() => setReviewSegmentId(segment.id)}
+								style={
+									reviewSegment?.id === segment.id && segment.color
+										? {
+												backgroundColor: segment.color,
+												borderColor: segment.color,
+											}
+										: undefined
+								}
+								className={`rounded-lg border border-transparent px-2.5 py-1 text-xs font-medium transition-colors ${
+									reviewSegment?.id === segment.id
+										? "bg-primary text-primary-foreground"
+										: "text-muted-foreground hover:bg-muted"
+								}`}
+								title="Preview this segment as students see it"
+							>
+								<span
+									className="mr-1.5 inline-block size-2 rounded-full align-middle"
+									style={{
+										backgroundColor: segment.color ?? "var(--muted-foreground)",
+									}}
+								/>
+								{index + 1}. {segment.name}
+							</button>
+						))}
+						<button
+							type="button"
+							onClick={() => setReviewSegmentId(null)}
+							className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+								reviewSegment === null
+									? "bg-primary text-primary-foreground"
+									: "text-muted-foreground hover:bg-muted"
+							}`}
+							title="Show all segments"
+						>
+							Semua
+						</button>
+						<span className="mx-1 h-4 w-px bg-border" />
+						<button
+							type="button"
+							onClick={() => setReviewMode(false)}
+							className="rounded-lg bg-foreground px-2.5 py-1 text-xs font-medium text-background transition-colors hover:bg-foreground/85"
+							title="Back to editing (Esc)"
+						>
+							Exit Review
+						</button>
+					</div>
+				) : (
+					<EditorToolbar
+						onUndo={handleUndo}
+						onRedo={handleRedo}
+						canUndo={canUndo}
+						canRedo={canRedo}
+						onZoomIn={handleZoomIn}
+						onZoomOut={handleZoomOut}
+						onFit={handleFit}
+						onCenterMap={centerMap}
+						onAutoLayout={handleAutoLayout}
+						onDelete={handleDeleteSelected}
+						onSave={() => doSave({ topicId: saveMeta.topicId, name: saveMeta.name })}
+						saving={saving}
+						isNewMap={isNewMap}
+						goalMapId={goalMapId}
+						onDeleted={() =>
+							void navigate({ to: "/dashboard/goal-map", replace: true })
+						}
+						onOpenSegments={() => setSegmentsOpen(true)}
+						onToggleReview={
+							!isNewMap && (segments?.length ?? 0) > 0 ? startReview : undefined
+						}
+						canCreateGroup={groupSelection.concepts >= 1}
+						onCreateGroup={createGroupFromSelection}
+						canUngroup={groupSelection.hasGroup}
+						onUngroup={ungroupSelected}
+					/>
+				)}
 			</div>
 		</div>
 	);

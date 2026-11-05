@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSetAtom } from "jotai";
 import {
 	BookOpen,
+	Eye,
 	Grid3X3,
 	Group,
 	Loader2,
@@ -70,6 +71,7 @@ export type EditorToolbarProps = {
 	goalMapId?: string;
 	onDeleted?: () => void;
 	onOpenSegments?: () => void;
+	onToggleReview?: () => void;
 	canCreateGroup: boolean;
 	onCreateGroup: () => void;
 	canUngroup: boolean;
@@ -95,6 +97,7 @@ function EditorToolbarImpl({
 	goalMapId,
 	onDeleted,
 	onOpenSegments,
+	onToggleReview,
 	canCreateGroup,
 	onCreateGroup,
 	canUngroup,
@@ -229,6 +232,19 @@ function EditorToolbarImpl({
 				}
 				payload="Group/segment the concept map for step-by-step reconstruction"
 			/>
+
+			{onToggleReview && (
+				<TooltipTrigger
+					handle={tooltipHandle}
+					render={
+						<Button size="sm" variant="outline" onClick={onToggleReview}>
+							<Eye className="size-4" />
+							Review
+						</Button>
+					}
+					payload="Preview the map exactly as students see it: one segment at a time, no frames, read-only"
+				/>
+			)}
 
 			<TooltipTrigger
 				handle={tooltipHandle}
