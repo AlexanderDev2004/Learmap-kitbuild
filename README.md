@@ -67,6 +67,23 @@ LearnMap is built for a thesis experiment comparing **two segmentation models** 
 
 Grounded in segmentation theory (Schneider et al., 2021), which applies Mayer's Segmenting Principle to concept maps: meaningful, coherent segmentation can reduce cognitive load and improve learning outcomes.
 
+### The P and D badges
+
+Every segment is labelled with a one-letter badge showing which segmentation
+model it belongs to — both in the goal map editor / Analyzer (on each
+segment's frame header chip) and in the student's segment pill bar:
+
+| Badge | Model           | Meaning                                                             |
+| ----- | --------------- | ------------------------------------------------------------------- |
+| **P** | **P**aragraph   | Segment of the **Paragraph Segmentation** model (struktur bacaan)   |
+| **D** | **D**epth-Topic | Segment of the **Depth-Topic Segmentation** model (kedalaman topik) |
+
+The badge colour matches the segment's colour. In the Analyzer, each badge
+also has a tooltip ("Model Paragraf (struktur bacaan)" / "Model Depth-Topic
+(kedalaman topik)"), and the visibility panel can show or hide frames **per
+model** (toggle _Paragraf_ / _Depth-Topic_ under Frame per Model) — useful for
+comparing the two models side by side on the same goal map.
+
 **Measured variables:** pretest, posttest, map score (learner map vs goal map match), completion time, and student perception questionnaire. Sub-Map Scoring (SMS) and build-order analysis are deliberately **not** used.
 
 ---
