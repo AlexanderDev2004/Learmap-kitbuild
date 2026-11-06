@@ -23,6 +23,7 @@ import {
 	materialTextAtom,
 	searchOpenAtom,
 } from "@/features/goal-map/lib/atoms";
+import { assignHeaderOffsets } from "@/features/goal-map/lib/frame-header";
 import { goalMapMachine } from "@/features/goal-map/lib/goal-map.machine";
 import { SEGMENT_COLOR_PALETTE } from "@/features/goal-map/lib/map-segment-service";
 import {
@@ -506,28 +507,41 @@ export function GoalMapEditor() {
 			return { w: rfNode?.measured?.width ?? 150, h: rfNode?.measured?.height ?? 60 };
 		};
 		const PADDING = 28;
-		return list.flatMap((segment, index) => {
+		const layout = list.map((segment) => {
 			const stored = frameBounds[segment.id];
-			let position: { x: number; y: number };
-			let style: { width: number; height: number };
 			if (stored) {
-				position = { x: stored.x, y: stored.y };
-				style = { width: stored.w, height: stored.h };
-			} else {
-				const members = segment.nodeIds
-					.map((id) => stableNodes.find((n) => n.id === id))
-					.filter((n): n is Node => !!n && !n.parentId);
-				if (members.length === 0) return [];
-				const minX = Math.min(...members.map((n) => n.position.x));
-				const minY = Math.min(...members.map((n) => n.position.y));
-				const maxX = Math.max(...members.map((n) => n.position.x + measured(n.id).w));
-				const maxY = Math.max(...members.map((n) => n.position.y + measured(n.id).h));
-				position = { x: minX - PADDING, y: minY - PADDING };
-				style = {
-					width: maxX - minX + PADDING * 2,
-					height: maxY - minY + PADDING * 2 + 28,
+				return {
+					segment,
+					position: { x: stored.x, y: stored.y },
+					style: { width: stored.w, height: stored.h },
 				};
 			}
+			const members = segment.nodeIds
+				.map((id) => stableNodes.find((n) => n.id === id))
+				.filter((n): n is Node => !!n && !n.parentId);
+			if (members.length === 0) return null;
+			const minX = Math.min(...members.map((n) => n.position.x));
+			const minY = Math.min(...members.map((n) => n.position.y));
+			const maxX = Math.max(...members.map((n) => n.position.x + measured(n.id).w));
+			const maxY = Math.max(...members.map((n) => n.position.y + measured(n.id).h));
+			return {
+				segment,
+				position: { x: minX - PADDING, y: minY - PADDING },
+				style: { width: maxX - minX + PADDING * 2, height: maxY - minY + PADDING * 2 + 28 },
+			};
+		});
+		const placed = layout.filter((l) => l !== null);
+		// Overlapping frames (the two models segment the same concepts) would
+		// stack their header chips on the same line; push colliding chips up.
+		const headerOffsets = assignHeaderOffsets(
+			placed.map((l) => ({
+				x: l.position.x,
+				y: l.position.y,
+				width: l.style.width,
+				height: l.style.height,
+			})),
+		);
+		return placed.map(({ segment, position, style }, placedIndex) => {
 			const frameNode = {
 				id: `segment-frame-${segment.id}`,
 				type: "segmentFrame",
@@ -550,7 +564,9 @@ export function GoalMapEditor() {
 					label: segment.name,
 					color:
 						segment.color ??
-						SEGMENT_COLOR_PALETTE[index % SEGMENT_COLOR_PALETTE.length],
+						SEGMENT_COLOR_PALETTE[placedIndex % SEGMENT_COLOR_PALETTE.length],
+					model: segment.type,
+					headerOffset: headerOffsets[placedIndex],
 					onDelete: () => {
 						const segmentName = segment.name || "this segment";
 						if (
@@ -567,7 +583,7 @@ export function GoalMapEditor() {
 				deletable: false,
 				connectable: false,
 			} as Node;
-			return [frameNode];
+			return frameNode;
 		});
 	}, [segments, frameBounds, stableNodes, getNodes, selectedIdSet]);
 

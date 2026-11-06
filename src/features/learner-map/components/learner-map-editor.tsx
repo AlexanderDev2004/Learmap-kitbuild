@@ -510,6 +510,16 @@ export function LearnerMapEditor() {
 									}}
 								/>
 								{index + 1}. {segment.name}
+								<span
+									className="ml-1.5 inline-block rounded-full border border-current px-1 text-[9px] font-bold leading-none align-middle"
+									title={
+										segment.type === "paragraph"
+											? "Model Paragraf (struktur bacaan)"
+											: "Model Depth-Topic (kedalaman topik)"
+									}
+								>
+									{segment.type === "paragraph" ? "P" : "D"}
+								</span>
 							</button>
 						))}
 						<button

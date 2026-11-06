@@ -11,6 +11,7 @@ import { useAnalyticsEdges } from "@/features/analyzer/lib/use-analytics-edges";
 
 import "@xyflow/react/dist/style.css";
 import { useAnalyticsNodes } from "@/features/analyzer/lib/use-analytics-nodes";
+import { assignHeaderOffsets } from "@/features/goal-map/lib/frame-header";
 import { ConceptMapCanvas } from "@/features/kit/components/concept-map-canvas";
 import type { Edge, Node } from "@/features/learner-map/lib/comparator";
 import type { VisibilityState } from "@/features/learner-map/lib/visibility";
@@ -117,7 +118,10 @@ function AnalyticsCanvasInner({
 	const segmentFrameNodes = useMemo(() => {
 		if (!visibility.showFrames) return [];
 		const hidden = new Set(visibility.hiddenSegmentIds ?? []);
-		const list = (segments ?? []).filter((s) => !hidden.has(s.id));
+		const models = visibility.shownModels;
+		const list = (segments ?? []).filter(
+			(s) => !hidden.has(s.id) && (models.length === 0 || models.includes(s.type)),
+		);
 		if (list.length === 0) return [];
 		if (currentLearnerMaps.length !== 1) return [];
 		const learner = currentLearnerMaps[0];
@@ -135,44 +139,56 @@ function AnalyticsCanvasInner({
 			).find((n) => n.id === id);
 			return { w: rfNode?.measured?.width ?? 150, h: rfNode?.measured?.height ?? 60 };
 		};
-		return list.flatMap((segment) => {
+		const layout = list.map((segment) => {
 			const members = segment.nodeIds
 				.map((id) => goalMap.nodes.find((n) => n.id === id))
 				.filter((n): n is Node => !!n);
-			if (members.length === 0) return [];
+			if (members.length === 0) return null;
 			const minX = Math.min(...members.map((n) => n.position.x));
 			const minY = Math.min(...members.map((n) => n.position.y));
 			const maxX = Math.max(...members.map((n) => n.position.x + measured(n.id).w));
 			const maxY = Math.max(...members.map((n) => n.position.y + measured(n.id).h));
+			return {
+				segment,
+				position: { x: minX - PADDING, y: minY - PADDING },
+				style: { width: maxX - minX + PADDING * 2, height: maxY - minY + PADDING * 2 + 28 },
+			};
+		});
+		const placed = layout.filter((l) => l !== null);
+		// Overlapping frames (the two models segment the same concepts) would
+		// stack their header chips on the same line; push colliding chips up.
+		const headerOffsets = assignHeaderOffsets(
+			placed.map((l) => ({
+				x: l.position.x,
+				y: l.position.y,
+				width: l.style.width,
+				height: l.style.height,
+			})),
+		);
+		return placed.map(({ segment, position, style }, placedIndex) => {
 			const verdict = verdicts.get(segment.id);
-			return [
-				{
-					id: `segment-frame-${segment.id}`,
-					type: "segmentFrame",
-					zIndex: -1,
-					position: { x: minX - PADDING, y: minY - PADDING },
-					style: {
-						width: maxX - minX + PADDING * 2,
-						height: maxY - minY + PADDING * 2 + 28,
-					},
-					width: maxX - minX + PADDING * 2,
-					height: maxY - minY + PADDING * 2 + 28,
-					measured: {
-						width: maxX - minX + PADDING * 2,
-						height: maxY - minY + PADDING * 2 + 28,
-					},
-					selectable: false,
-					draggable: false,
-					connectable: false,
-					data: {
-						label: segment.name,
-						color: segment.color ?? "#64748b",
-						verdict: verdict
-							? { text: formatSegmentVerdict(verdict), tone: verdict.tone }
-							: undefined,
-					},
-				} as Node,
-			];
+			return {
+				id: `segment-frame-${segment.id}`,
+				type: "segmentFrame",
+				zIndex: -1,
+				position,
+				style,
+				width: style.width,
+				height: style.height,
+				measured: { width: style.width, height: style.height },
+				selectable: false,
+				draggable: false,
+				connectable: false,
+				data: {
+					label: segment.name,
+					color: segment.color ?? "#64748b",
+					model: segment.type,
+					headerOffset: headerOffsets[placedIndex],
+					verdict: verdict
+						? { text: formatSegmentVerdict(verdict), tone: verdict.tone }
+						: undefined,
+				},
+			} as Node;
 		});
 	}, [segments, currentLearnerMaps, goalMap.nodes, goalMap.edges, nodes, visibility]);
 

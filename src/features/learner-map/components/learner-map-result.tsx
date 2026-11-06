@@ -40,6 +40,7 @@ export function LearnerMapResult() {
 		showNamesOnHover: true,
 		showFrames: true,
 		hiddenSegmentIds: [],
+		shownModels: [],
 	});
 
 	const [mobileSidePanelOpen, setMobileSidePanelOpen] = useState(false);

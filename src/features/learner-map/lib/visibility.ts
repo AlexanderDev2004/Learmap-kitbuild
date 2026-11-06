@@ -10,4 +10,6 @@ export interface VisibilityState {
 	// Analyzer segment frames: master switch plus per-segment overrides.
 	showFrames: boolean;
 	hiddenSegmentIds: string[];
+	/** Which segmentation models to show; empty array = show all. */
+	shownModels: Array<"paragraph" | "depth-topic">;
 }

@@ -5,9 +5,21 @@ import { memo } from "react";
 
 type SegmentVerdictTone = "correct" | "partial" | "missing" | "none";
 
+/** Which segmentation model produced the segment. */
+export type SegmentModel = "paragraph" | "depth-topic";
+
+const MODEL_BADGE: Record<SegmentModel, { text: string; title: string }> = {
+	paragraph: { text: "P", title: "Model Paragraf (struktur bacaan)" },
+	"depth-topic": { text: "D", title: "Model Depth-Topic (kedalaman topik)" },
+};
+
 type SegmentFrameNodeData = {
 	label: string;
 	color: string;
+	/** Which segmentation model the segment belongs to. */
+	model?: SegmentModel;
+	/** Vertical px offset so headers of overlapping frames never collide. */
+	headerOffset?: number;
 	/** Optional diagnosis badge shown next to the label (Analyzer view). */
 	verdict?: { text: string; tone: SegmentVerdictTone };
 	onDelete?: () => void;
@@ -77,23 +89,46 @@ function SegmentFrameNodeComponent({
 					<Trash2 className="size-3.5" />
 				</button>
 			)}
-			<div className="flex items-center justify-between gap-2 px-2 pt-1">
-				<span
-					className="block truncate text-xs font-semibold select-none"
-					style={{ color }}
-					title={data?.label}
+			{/* Label chip straddles the top border; the diagnosis verdict sits
+				inside the top-right so narrow frames can still show the full
+				label without it being squeezed by the verdict badge. */}
+			<div
+				className="pointer-events-none absolute left-1.5 max-w-[320px]"
+				style={{
+					top: 0,
+					transform: `translateY(calc(-50% - ${data?.headerOffset ?? 0}px))`,
+				}}
+			>
+				<div
+					className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-0.5 shadow-sm"
+					style={{ backgroundColor: color }}
 				>
-					{data?.label ?? "Segmen"}
-				</span>
-				{data?.verdict && (
 					<span
-						className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${VERDICT_STYLES[data.verdict.tone]}`}
+						className="block min-w-0 truncate text-xs font-semibold text-white select-none"
+						title={data?.label}
+					>
+						{data?.label ?? "Segmen"}
+					</span>
+					{data?.model && (
+						<span
+							className="shrink-0 rounded-full bg-white/25 px-1 text-[9px] font-bold leading-none text-white select-none"
+							title={MODEL_BADGE[data.model].title}
+						>
+							{MODEL_BADGE[data.model].text}
+						</span>
+					)}
+				</div>
+			</div>
+			{data?.verdict && (
+				<div className="pointer-events-none absolute top-1.5 right-1.5">
+					<span
+						className={`rounded-full border bg-background/80 px-1.5 py-0.5 text-[10px] font-semibold ${VERDICT_STYLES[data.verdict.tone]}`}
 						title={data.verdict.text}
 					>
 						{data.verdict.text}
 					</span>
-				)}
-			</div>
+				</div>
+			)}
 		</div>
 	);
 }
