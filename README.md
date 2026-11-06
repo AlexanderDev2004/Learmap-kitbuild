@@ -1,4 +1,4 @@
-# LearnMap
+﻿# LearnMap
 
 A modern reimplementation of the [KitBuild Concept Map](https://collab.kit-build.net/) platform using contemporary web technologies. Originally built as part of a bachelor thesis.
 
@@ -10,10 +10,10 @@ LearnMap is a modern, researcher-friendly reimplementation of the KitBuild Conce
 
 The original system (operational since 2009) pioneered automatic diagnosis of concept maps for formative assessment. This reimplementation aims to:
 
-- Provide a cleaner, more accessible interface for researchers and educators. Everything is managed in a single place: pre-test, post-test, delayed-test, questionnaires — no external platforms like Google Forms needed.
+- Provide a cleaner, more accessible interface for researchers and educators. Everything is managed in a single place: pre-test, post-test, delayed-test, questionnaires â€” no external platforms like Google Forms needed.
 - Run on modern web infrastructure (Cloudflare Workers + Turso/LibSQL). No VPS required to deploy.
 
-All core assessment methods — automatic map diagnosis, kit generation algorithms, feedback frameworks — come directly from the original KitBuild research. This reimplementation **does not** introduce new pedagogical approaches; it reimplements the proven ones in a more maintainable, extensible form. All credits belong to the original researchers.
+All core assessment methods â€” automatic map diagnosis, kit generation algorithms, feedback frameworks â€” come directly from the original KitBuild research. This reimplementation **does not** introduce new pedagogical approaches; it reimplements the proven ones in a more maintainable, extensible form. All credits belong to the original researchers.
 
 ---
 
@@ -70,7 +70,7 @@ Grounded in segmentation theory (Schneider et al., 2021), which applies Mayer's 
 ### The P and D badges
 
 Every segment is labelled with a one-letter badge showing which segmentation
-model it belongs to — both in the goal map editor / Analyzer (on each
+model it belongs to â€” both in the goal map editor / Analyzer (on each
 segment's frame header chip) and in the student's segment pill bar:
 
 | Badge | Model           | Meaning                                                             |
@@ -81,7 +81,7 @@ segment's frame header chip) and in the student's segment pill bar:
 The badge colour matches the segment's colour. In the Analyzer, each badge
 also has a tooltip ("Model Paragraf (struktur bacaan)" / "Model Depth-Topic
 (kedalaman topik)"), and the visibility panel can show or hide frames **per
-model** (toggle _Paragraf_ / _Depth-Topic_ under Frame per Model) — useful for
+model** (toggle _Paragraf_ / _Depth-Topic_ under Frame per Model) â€” useful for
 comparing the two models side by side on the same goal map.
 
 **Measured variables:** pretest, posttest, map score (learner map vs goal map match), completion time, and student perception questionnaire. Sub-Map Scoring (SMS) and build-order analysis are deliberately **not** used.
@@ -143,28 +143,28 @@ from the teacher/admin dashboard (`alex@kitbuild.mail` in the demo data).
    (`.txt` / `.md`) the reading text students will read.
 2. Build the map: **Concept** adds concept nodes, **Link** adds linking words
    and connects two nodes (bi-directional and multi-link are supported).
-3. Press **Save** and pick the topic and map name in the _Save As…_ dialog.
+3. Press **Save** and pick the topic and map name in the _Save Asâ€¦_ dialog.
    Saving the goal map also stores its segments.
 
 ### 2. Segmentation (`Segments` button in the goal map editor)
 
 Open the **Segments** button in the editor toolbar to manage kit segments:
 
-- **Paragraph model** — press _Add Segment_, give it a name, choose the
+- **Paragraph model** â€” press _Add Segment_, give it a name, choose the
   **Paragraf (manual)** type, pick a color, then tick which nodes belong to it.
   Create one segment per paragraph of the reading material.
-- **Depth-Topic model** — choose the **Depth-Topic (kedalaman topik)** type.
-  Segments follow the depth levels of the topic hierarchy (core concept → main
-  concepts → details); the dialog can also generate them automatically from the
+- **Depth-Topic model** â€” choose the **Depth-Topic (kedalaman topik)** type.
+  Segments follow the depth levels of the topic hierarchy (core concept â†’ main
+  concepts â†’ details); the dialog can also generate them automatically from the
   map structure.
-- **Import Frame** — frames you drew in the editor can be converted into
+- **Import Frame** â€” frames you drew in the editor can be converted into
   segments in one go. Pick the segmentation model once in the import dialog
   (Paragraf or Depth-Topic) and it is applied to every imported frame.
 
 Both models can live in the **same goal map** — that is exactly how the
 dual-model experiment kit is set up (see the seed script
-`scripts/seed/kit-test-dual.ts` for a complete worked example: topic _Siklus
-Air_, segments P1–P3 = Paragraph, D1–D3 = Depth-Topic).
+`scripts/seed/rantai-makanan.ts` for a complete worked example: topic
+_Rantai Makanan_, segments P1–P4 = Paragraph, D1–D4 = Depth-Topic).
 
 ### 3. Forms (`/dashboard/forms`)
 
@@ -181,14 +181,14 @@ Create the assessments in the form builder:
 
 Press **Create Assignment** and follow the 4-step wizard:
 
-1. **Basic Information** — title, description, and the reading material.
-2. **Configuration** — pick the goal map, start/end date, and time limit. The
+1. **Basic Information** â€” title, description, and the reading material.
+2. **Configuration** â€” pick the goal map, start/end date, and time limit. The
    kit is generated automatically from the goal map when the assignment is
    created.
-3. **Procedure** — attach the **Pre-Test** (required), **Post-Test**,
+3. **Procedure** â€” attach the **Pre-Test** (required), **Post-Test**,
    **Delayed Post-Test** (+ delay in days), and the questionnaire; here you can
    also toggle **Show Answer** per form.
-4. **Assignment** — choose the target cohorts and/or individual students.
+4. **Assignment** â€” choose the target cohorts and/or individual students.
 
 Students only see assignments targeted at them (via their cohort membership or
 directly), so make sure the students are members of the chosen cohorts
@@ -200,12 +200,12 @@ Student view (`tanaka@kitbuild.mail` in the demo data):
 
 1. **My Assignments** lists the targeted assignments with the current phase
    badge. Open one to see the four-phase flow:
-   **Pre-Test → Kitbuilding → Post-Test → Kuesioner**.
-2. **Take Pre-Test** first — Kitbuilding stays locked until it is submitted.
-3. **Kitbuilding** — rebuild the concept map by dragging concepts and
+   **Pre-Test â†’ Kitbuilding â†’ Post-Test â†’ Kuesioner**.
+2. **Take Pre-Test** first â€” Kitbuilding stays locked until it is submitted.
+3. **Kitbuilding** â€” rebuild the concept map by dragging concepts and
    connecting them with linking words. The segment pills let you work segment
    by segment (this is where Paragraph vs Depth-Topic segmentation is
-   experienced). Press **Submit** when done — Post-Test unlocks after that.
+   experienced). Press **Submit** when done â€” Post-Test unlocks after that.
 4. **Post-Test**, then the questionnaire if one is attached.
 5. If the teacher enabled **Show Answer**, the result page shows every missed
    question with the correct answer below the student's answer; otherwise only
@@ -234,7 +234,7 @@ pnpm run dev
 `pnpm run dev` = `vp dev` plus a small LibSQL-compatible HTTP server
 (`scripts/dev/sqlite-server.ts`) that is started automatically when nothing is
 listening on `TURSO_DATABASE_URL`. The Workers runtime used by `vp dev` cannot
-open `file:` SQLite URLs, so local development talks to sqld over HTTP — with
+open `file:` SQLite URLs, so local development talks to sqld over HTTP â€” with
 no Docker and no Turso account. If you prefer a real sqld instance (Linux/WSL),
 start Docker first and it will be reused as-is:
 
@@ -245,7 +245,7 @@ pnpm run dev
 
 Visit http://localhost:5173
 
-> Tip: cookies are scoped per host, so you can test two accounts side by side —
+> Tip: cookies are scoped per host, so you can test two accounts side by side â€”
 > sign in as a researcher at `http://localhost:5173` and as a student at
 > `http://127.0.0.1:5173`.
 
@@ -263,22 +263,32 @@ Visit http://localhost:5173
 | Student | sari@kitbuild.mail   | demo12345  |
 | Student | rudi@kitbuild.mail   | demo12345  |
 
+`db:seed` creates the base accounts above **plus the Rantai Makanan
+dual-model experiment kit** â€” the same dataset used on production: the goal
+map with 13 concepts and 14 propositions, one kit over it, **eight segments
+(P1â€“P4 Paragraf + D1â€“D4 Depth-Topic) each with a pre-modeled frame**, the
+Pre-Test / Post-Test / Delayed Test forms, the perception (Kuesioner
+Persepsi) and TAM questionnaires, and the assignment "Uji Coba Dua Model
+Segmen - Rantai Makanan" wiring them all together. Sign in as
+`alex@kitbuild.mail` to inspect the goal map and segments, or as
+`tanaka@kitbuild.mail` to work through the segmented flow.
+
 `db:seed:fotosintesis` additionally loads the photosynthesis experiment kit
 (two segmentation models in one goal map: Kelompok A = Segmen Paragraf, Kelompok
 B = Segmen Depth Topik) with the student accounts above.
 
-For a **single kit containing both segmentation models at once** (segments
-P1–P3 = Paragraph, D1–D3 = Depth-Topic, plus Pre-Test, Post-Test, and a
-perception questionnaire), run the dual-model seed after `db:seed`:
+For the **15 segmentation test accounts** (8 students in cohort
+_Uji Segmen A â€” Paragraf_, 7 in _Uji Segmen B â€” Depth-Topic_), run after
+`db:seed`:
 
 ```bash
-npx tsx --env-file=.env scripts/seed/kit-test-dual.ts
+pnpm run db:seed:segment-users
 ```
 
-It is idempotent and also reactivates the demo student accounts if a previous
-run soft-deleted them. Sign in as `alex@kitbuild.mail` to inspect the _Siklus
-Air_ goal map and assignment, or as `tanaka@kitbuild.mail` to work through the
-four-phase flow.
+Each account signs in with password `segmen12345`
+(`para01..para08@kitbuild.mail`, `depth01..depth07@kitbuild.mail`); both
+cohorts are added as targets of the "Uji Coba Dua Model Segmen" assignment so
+the two segmentation-model groups can be compared.
 
 This project is using these tech stack, so check their respective documentations for further information:
 
@@ -298,8 +308,8 @@ dengan Worker name `learnmap`, storage gambar di R2 bucket
 
 ### Prasyarat
 
-- Akun [Cloudflare](https://dash.cloudflare.com/sign-up) — R2 harus sudah
-  **diaktifkan** sekali lewat dashboard (menu R2 → Get started), karena
+- Akun [Cloudflare](https://dash.cloudflare.com/sign-up) â€” R2 harus sudah
+  **diaktifkan** sekali lewat dashboard (menu R2 â†’ Get started), karena
   aktivasi R2 tidak bisa dilakukan lewat API. Tanpa ini `wrangler deploy`
   gagal dengan error `10042`.
 - Database [Turso](https://turso.tech) (SQLite di edge).
@@ -334,7 +344,7 @@ turso db tokens create learnmap     # -> TURSO_AUTH_TOKEN
 Yang sudah terpasang di `wrangler.json` (tidak perlu diubah):
 
 - `routes`: custom domain `learnmap.alexanderar.com`
-  (`custom_domain: true` — wrangler otomatis membuat DNS record di zone
+  (`custom_domain: true` â€” wrangler otomatis membuat DNS record di zone
   `alexanderar.com` saat deploy).
 - `vars`: `VITE_APP_URL`, `BETTER_AUTH_URL`, `SITE_URL` menunjuk ke
   `https://learnmap.alexanderar.com` (vars ini juga ikut ter-bake ke build
@@ -368,10 +378,15 @@ vp run deploy
 
 ### 5. Seeding Data Production (opsional)
 
-Script seed membaca `.env`, jadi arahkan `.env` lokal ke database Turso
-production untuk sementara (`DATABASE_MODE=remote`, `TURSO_DATABASE_URL=...`,
-`TURSO_AUTH_TOKEN=...`), lalu jalankan misalnya `vp run db:seed:java`.
-Kembalikan `.env` ke nilai lokal setelahnya.
+Script seed membaca env file, jadi arahkan seed ke database Turso production
+dengan `--env-file=.env.prod` (`DATABASE_MODE=remote`, `TURSO_DATABASE_URL`,
+`TURSO_AUTH_TOKEN`) — plus `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, dan
+`SITE_URL` production untuk service Auth — lalu jalankan:
+
+```bash
+npx tsx --env-file=.env.prod scripts/seed/index.ts   # base accounts + kit Rantai Makanan
+npx tsx --env-file=.env.prod scripts/seed/segment-test-users.ts   # 15 akun uji segmen (opsional)
+```
 
 ### Environment Reference
 
@@ -396,10 +411,10 @@ Prefer to run KitBuild on your own server instead of Cloudflare Workers? The Doc
 ```bash
 cp .env.example .env        # then set DATABASE_MODE=local, TURSO_DATABASE_URL=file:/app/data/kitbuild.sqlite
 vp run docker:up            # build + start (migrations run automatically)
-# → open http://localhost:3000
+# â†’ open http://localhost:3000
 ```
 
-Full instructions — including the production setup, environment reference, persistence, and backups — are in [docs/docker.md](docs/docker.md).
+Full instructions â€” including the production setup, environment reference, persistence, and backups â€” are in [docs/docker.md](docs/docker.md).
 
 ---
 
