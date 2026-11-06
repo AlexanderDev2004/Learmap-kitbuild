@@ -21,6 +21,7 @@
 		"db:seed": "tsx --env-file=.env scripts/seed/index.ts",
 		"db:seed:fotosintesis": "tsx --env-file=.env scripts/seed/photosynthesis.ts",
 		"db:seed:java": "tsx --env-file=.env scripts/seed/java.ts",
+		"db:seed:segment-users": "tsx --env-file=.env scripts/seed/segment-test-users.ts",
 		"db:seed:wri": "tsx --env-file=.env scripts/seed/wri-2026.ts",
 		"db:reset": "tsx --env-file=.env scripts/seed/reset.ts",
 		"db:reset:full": "tsx --env-file=.env scripts/seed/reset.ts full",
@@ -150,5 +151,5 @@
 		"web-vitals": "^5.2.0",
 		"wrangler": "^4.93.0"
 	},
-	"packageManager": "pnpm@10.32.1"
+	"packageManager": "pnpm@12.14.0"
 }

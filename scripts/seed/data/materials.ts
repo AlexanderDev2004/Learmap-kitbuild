@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+﻿import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -69,12 +69,3 @@ export const GOAL_MAP_TO_MATERIAL: Record<string, MaterialData> = {};
 for (const material of MATERIALS) {
 	GOAL_MAP_TO_MATERIAL[material.title] = material;
 }
-
-export const TOPICS = [
-	{
-		title: "Places & Neighborhood",
-		description:
-			"N5 reading describing a quiet neighborhood and daily activities — places, actions, and attributes",
-		goalMapTitles: ["わたしのうち"],
-	},
-];

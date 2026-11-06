@@ -502,7 +502,6 @@ const program = Effect.gen(function* () {
 	const db = yield* Database;
 
 	yield* Effect.log("--- Seed Uji Dua Model #2 (Rantai Makanan) ---");
-
 	// 1. Teacher ---------------------------------------------------------------
 	const existingTeacher = yield* db
 		.select()
@@ -792,4 +791,27 @@ const program = Effect.gen(function* () {
 	),
 );
 
-void Effect.runPromise(program);
+/**
+ * The Rantai Makanan seed as a reusable Effect (self-provided layers), so
+ * `scripts/seed/index.ts` can compose it into the main `db:seed` program.
+ */
+export function seedRantaiMakanan() {
+	return program.pipe(
+		Effect.provide(
+			Layer.mergeAll(
+				Layer.provideMerge(Auth.Default, DatabaseLive),
+				RateLimiter.Default,
+				Logger.pretty,
+			),
+		),
+	);
+}
+
+// Allow direct execution (`npx tsx --env-file=.env scripts/seed/rantai-makanan.ts`)
+// while staying importable from index.ts without double-running.
+if (process.argv[1]) {
+	const { pathToFileURL } = await import("node:url");
+	if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+		void Effect.runPromise(seedRantaiMakanan());
+	}
+}

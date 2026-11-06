@@ -67,10 +67,6 @@ export function seedUsers() {
 						.set({
 							studentId: demoStudent.studentId,
 							age: demoStudent.age,
-							jlptLevel: demoStudent.jlptLevel,
-							japaneseLearningDuration: demoStudent.japaneseLearningDuration,
-							previousJapaneseScore: demoStudent.previousJapaneseScore,
-							mediaConsumption: demoStudent.mediaConsumption,
 							motivation: demoStudent.motivation,
 							studyGroup: demoStudent.studyGroup,
 						})

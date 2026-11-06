@@ -68,10 +68,6 @@ export interface DemoStudent {
 	name: string;
 	studentId: string;
 	age: number;
-	jlptLevel: "N5" | "N4" | "N3" | "N2" | "N1" | "None";
-	japaneseLearningDuration: number;
-	previousJapaneseScore: number;
-	mediaConsumption: number;
 	motivation: string;
 	studyGroup: "experiment" | "control";
 }
@@ -82,10 +78,6 @@ export const DEMO_STUDENTS: DemoStudent[] = [
 		name: "Yuki",
 		studentId: "STD-001",
 		age: 20,
-		jlptLevel: "N5",
-		japaneseLearningDuration: 12,
-		previousJapaneseScore: 75,
-		mediaConsumption: 15,
 		motivation: "Videos, books, and hands-on science content",
 		studyGroup: "experiment",
 	},
@@ -94,10 +86,6 @@ export const DEMO_STUDENTS: DemoStudent[] = [
 		name: "Sari",
 		studentId: "STD-002",
 		age: 17,
-		jlptLevel: "None",
-		japaneseLearningDuration: 0,
-		previousJapaneseScore: 0,
-		mediaConsumption: 10,
 		motivation: "Biology and natural sciences",
 		studyGroup: "experiment",
 	},
@@ -106,10 +94,6 @@ export const DEMO_STUDENTS: DemoStudent[] = [
 		name: "Rudi",
 		studentId: "STD-003",
 		age: 17,
-		jlptLevel: "None",
-		japaneseLearningDuration: 0,
-		previousJapaneseScore: 0,
-		mediaConsumption: 20,
 		motivation: "Science experiments",
 		studyGroup: "control",
 	},

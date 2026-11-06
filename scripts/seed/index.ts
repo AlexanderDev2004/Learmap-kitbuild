@@ -1,54 +1,25 @@
-import { Layer, Logger, Effect } from "effect";
+import { Effect, Layer, Logger } from "effect";
 
 import { Auth } from "@/lib/auth";
 import { RateLimiter } from "@/lib/rate-limiter";
 import { DatabaseLive } from "@/server/db/client";
 
-import {
-	seedCohorts,
-	seedDemoData,
-	seedForms,
-	seedGoalMaps,
-	seedSubmissions,
-	seedUsers,
-	seedWhitelistEntries,
-} from "./seeders/index.js";
+import { seedRantaiMakanan } from "./rantai-makanan.js";
+import { seedUsers } from "./seeders/index.js";
 
+/**
+ * Main database seed (`pnpm run db:seed`):
+ *   1. Base accounts (admins, teachers, demo students)
+ *   2. The "Rantai Makanan" dual-model experiment kit — the same dataset used
+ *      on production: goal map + kit + 8 segments (P1-P4 Paragraf, D1-D4
+ *      Depth-Topic) with frames, Pre/Post/Delayed-Test forms, perception and
+ *      TAM questionnaires, and the assignment wiring them together.
+ */
 const program = Effect.gen(function* () {
 	yield* Effect.log("Seeding database...");
 
-	const { userIdsByEmail, teacherId } = yield* seedUsers();
-	yield* seedCohorts();
-	yield* seedWhitelistEntries();
-
-	const { goalMapIdsByTitle, goalMapDataByTitle } = yield* seedGoalMaps(teacherId);
-	const { preTestFormId, postTestFormId, delayedTestFormId } = yield* seedForms(teacherId);
-
-	const demoData = yield* seedDemoData(
-		userIdsByEmail,
-		teacherId,
-		goalMapIdsByTitle,
-		goalMapDataByTitle,
-		{
-			preTestFormId,
-			postTestFormId,
-			delayedTestFormId,
-		},
-	);
-
-	if (!demoData) {
-		yield* Effect.log("Failed to create demo data - わたしのうち goal map not found");
-		return;
-	}
-
-	yield* seedSubmissions(
-		userIdsByEmail,
-		demoData.demoAssignmentId,
-		demoData.dailyLifeGoalMapId,
-		demoData.demoKitId,
-		demoData.dailyLifeData,
-		{ preTestFormId, postTestFormId, delayedTestFormId },
-	);
+	yield* seedUsers();
+	yield* seedRantaiMakanan();
 
 	yield* Effect.log(
 		"--- Seed completed ---\n" +
@@ -59,13 +30,13 @@ const program = Effect.gen(function* () {
 			"  Teacher: banni@kitbuild.mail / banni12345\n" +
 			"  Teacher: helmy@kitbuild.mail / helmy12345\n" +
 			"  Teacher: alex@kitbuild.mail / alex12345\n" +
+			"  Student: tanaka@kitbuild.mail / demo12345\n" +
+			"  Student: sari@kitbuild.mail / demo12345\n" +
+			"  Student: rudi@kitbuild.mail / demo12345\n" +
 			"Created:\n" +
-			"  - Cohorts: 2A Marketing Management, 2B Marketing Management\n" +
-			"  - Kits: わたしのうち\n" +
-			"  - Assignments: 1 assignment\n" +
-			"  - Forms: pre-test, post-test, delayed-test, questionnaire, feedback\n" +
-			"  - Submissions: 1 demo student account (tanaka)\n" +
-			"  - Whitelist: 47 reserved student IDs\n",
+			"  - Goal map Rantai Makanan + kit + 8 segments (4 Paragraf, 4 Depth-Topic) with frames\n" +
+			"  - Forms: Pre-Test, Post-Test, Delayed Test, Kuesioner Persepsi, TAM\n" +
+			"  - Assignment: Uji Coba Dua Model Segmen - Rantai Makanan\n",
 	);
 }).pipe(
 	Effect.provide(
