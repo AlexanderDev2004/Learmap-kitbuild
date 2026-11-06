@@ -48,6 +48,7 @@ function AnalyticsPage() {
 		showNamesOnHover: false,
 		showFrames: true,
 		hiddenSegmentIds: [] as string[],
+		shownModels: [] as Array<"paragraph" | "depth-topic">,
 	});
 
 	const handleVisibilityChange = useCallback((updates: Partial<typeof visibility>) => {
