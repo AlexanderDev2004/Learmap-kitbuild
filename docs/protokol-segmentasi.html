@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="id">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Protokol Segmentasi — Pemrograman Java (Paragraf vs Depth-Topic)</title>
+		<style>
+			:root {
+				--bg: #f8fafc;
+				--card: #ffffff;
+				--border: #e2e8f0;
+				--text: #0f172a;
+				--muted: #64748b;
+				--accent: #2563eb;
+			}
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				font-family: "Segoe UI", system-ui, sans-serif;
+				background: var(--bg);
+				color: var(--text);
+				line-height: 1.6;
+				padding: 32px 16px;
+			}
+			.wrap {
+				max-width: 900px;
+				margin: 0 auto;
+			}
+			h1 {
+				font-size: 1.5rem;
+				margin-bottom: 4px;
+			}
+			.sub {
+				color: var(--muted);
+				font-size: 0.95rem;
+				margin-bottom: 24px;
+			}
+			.card {
+				background: var(--card);
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				padding: 24px;
+				margin-bottom: 24px;
+			}
+			h2 {
+				font-size: 1.15rem;
+				margin-bottom: 12px;
+			}
+			p + p {
+				margin-top: 8px;
+			}
+			.note {
+				color: var(--muted);
+				font-size: 0.9rem;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 12px;
+				font-size: 0.92rem;
+			}
+			th,
+			td {
+				text-align: left;
+				padding: 10px 12px;
+				border-bottom: 1px solid var(--border);
+				vertical-align: top;
+			}
+			th {
+				background: #f1f5f9;
+				font-weight: 600;
+			}
+			.chip {
+				display: inline-block;
+				width: 14px;
+				height: 14px;
+				border-radius: 4px;
+				vertical-align: -2px;
+				margin-right: 8px;
+				border: 1px solid rgba(0, 0, 0, 0.15);
+			}
+			.red {
+				background: #ef4444;
+			}
+			.amber {
+				background: #f59e0b;
+			}
+			.sky {
+				background: #0ea5e9;
+			}
+			.green {
+				background: #22c55e;
+			}
+			.badge {
+				display: inline-block;
+				font-size: 0.75rem;
+				font-weight: 600;
+				padding: 2px 10px;
+				border-radius: 999px;
+				color: #fff;
+			}
+			.level-tag {
+				font-size: 0.78rem;
+				color: var(--muted);
+			}
+			.pill-row td {
+				border-bottom: none;
+				padding: 6px 12px;
+			}
+			ul {
+				margin: 8px 0 0 20px;
+			}
+			li + li {
+				margin-top: 4px;
+			}
+			footer {
+				color: var(--muted);
+				font-size: 0.85rem;
+				text-align: center;
+				margin-top: 16px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<h1>Protokol Segmentasi — Materi "Pemrograman Java"</h1>
+			<p class="sub">
+				Perbandingan dua model segmentasi pada Kit-Build Concept Map &middot; Goal map 12
+				konsep / 12 proposisi &middot; Materi baca 4 paragraf
+			</p>
+
+			<div class="card">
+				<h2>Prinsip Umum</h2>
+				<p>
+					Goal map, materi bacaan, kit, serta instrumen (Pre-Test, Post-Test, Kuesioner)
+					<strong>identik</strong> untuk kedua kelompok. Satu-satunya perbedaan adalah
+					<strong>pengelompokan konsep ke dalam segmen</strong>, yang divisualisasikan
+					melalui warna konsep pada goal map. Segmentasi ditentukan
+					<strong>manual oleh peneliti</strong> mengikuti protokol di bawah, bukan
+					dihitung otomatis oleh sistem.
+				</p>
+			</div>
+
+			<div class="card">
+				<h2>
+					<span class="badge" style="background: #2563eb">A</span> Model 1 — Segmen
+					Paragraf (Kelompok Java 1)
+				</h2>
+				<p class="note">
+					Aturan: satu segmen = satu paragraf materi bacaan. Konsep yang dibahas pada
+					paragraf ke-n diberi warna ke-n. Urutan rebuild siswa mengikuti alur bacaan.
+				</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Segmen</th>
+							<th>Sumber</th>
+							<th>Konsep (node)</th>
+							<th>Jumlah</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><span class="chip red"></span><strong>Segmen 1</strong></td>
+							<td>Paragraf 1 — Pengertian Java &amp; JVM</td>
+							<td>Java, JVM</td>
+							<td>2</td>
+						</tr>
+						<tr>
+							<td><span class="chip amber"></span><strong>Segmen 2</strong></td>
+							<td>Paragraf 2 — Kompilasi &amp; eksekusi</td>
+							<td>Source code, Compiler, Bytecode</td>
+							<td>3</td>
+						</tr>
+						<tr>
+							<td><span class="chip sky"></span><strong>Segmen 3</strong></td>
+							<td>Paragraf 3 — Struktur program &amp; OOP</td>
+							<td>Class, Main method, Method, Objek</td>
+							<td>4</td>
+						</tr>
+						<tr>
+							<td><span class="chip green"></span><strong>Segmen 4</strong></td>
+							<td>Paragraf 4 — Variabel, tipe data, library, output</td>
+							<td>Variabel, Tipe data, Library, Output</td>
+							<td>4</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="card">
+				<h2>
+					<span class="badge" style="background: #7c3aed">B</span> Model 2 — Segmen
+					Depth-Topic (Kelompok Java 2)
+				</h2>
+				<p class="note">
+					Aturan: satu segmen = satu level kedalaman pada hierarki goal map, dari konsep
+					paling umum (level 0&ndash;1) ke paling spesifik (level 4). Level dihitung dari
+					jarak node ke akar hierarki ("Java"). Warna segmen memakai palet yang sama agar
+					variabel warna terkendali.
+				</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Segmen</th>
+							<th>Level kedalaman</th>
+							<th>Konsep (node)</th>
+							<th>Jumlah</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><span class="chip red"></span><strong>Segmen 1</strong></td>
+							<td>
+								<span class="level-tag"
+									>Level 0&ndash;1 — konsep inti (akar hierarki)</span
+								>
+							</td>
+							<td>Java, JVM, Bytecode, Class, Variabel</td>
+							<td>5</td>
+						</tr>
+						<tr>
+							<td><span class="chip amber"></span><strong>Segmen 2</strong></td>
+							<td><span class="level-tag">Level 2 — konsep menengah</span></td>
+							<td>Source code, Compiler, Method, Objek, Tipe data</td>
+							<td>5</td>
+						</tr>
+						<tr>
+							<td><span class="chip sky"></span><strong>Segmen 3</strong></td>
+							<td><span class="level-tag">Level 3 — konsep rincian</span></td>
+							<td>Main method, Output</td>
+							<td>2</td>
+						</tr>
+						<tr>
+							<td><span class="chip green"></span><strong>Segmen 4</strong></td>
+							<td><span class="level-tag">Level 4 — paling spesifik</span></td>
+							<td>Library</td>
+							<td>1</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="card">
+				<h2>Contoh Pemetaan yang Berbeda</h2>
+				<p class="note">
+					Konsep yang sama mendapat warna berbeda di tiap model — inilah treatment yang
+					dibandingkan:
+				</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Konsep</th>
+							<th>Model Paragraf</th>
+							<th>Model Depth-Topic</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><strong>Bytecode</strong></td>
+							<td>
+								<span class="chip amber"></span>Paragraf 2 (dibahas saat kompilasi)
+							</td>
+							<td><span class="chip red"></span>Level 0&ndash;1 (konsep inti)</td>
+						</tr>
+						<tr>
+							<td><strong>Class</strong></td>
+							<td>
+								<span class="chip sky"></span>Paragraf 3 (dibahas saat struktur
+								program)
+							</td>
+							<td><span class="chip red"></span>Level 0&ndash;1 (konsep inti)</td>
+						</tr>
+						<tr>
+							<td><strong>Main method</strong></td>
+							<td><span class="chip sky"></span>Paragraf 3</td>
+							<td><span class="chip sky"></span>Level 3 (rincian)</td>
+						</tr>
+						<tr>
+							<td><strong>Library</strong></td>
+							<td><span class="chip green"></span>Paragraf 4</td>
+							<td><span class="chip green"></span>Level 4 (paling spesifik)</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="card">
+				<h2>Langkah Penerapan di Sistem</h2>
+				<ul>
+					<li>
+						Goal map dibuat satu kali di editor (12 konsep, 12 proposisi), tanpa warna
+						segmen.
+					</li>
+					<li>
+						Setiap konsep diberi warna di editor goal map sesuai tabel di atas — manual,
+						oleh peneliti.
+					</li>
+					<li>
+						Kit dipecah otomatis oleh sistem berdasarkan warna; siswa merebuild per
+						segmen sesuai urutan warna.
+					</li>
+					<li>
+						Map Score, waktu pengerjaan, dan analytics dihitung otomatis dan identik
+						untuk kedua kelompok.
+					</li>
+					<li>
+						Keputusan pemetaan tiap konsep (kenapa X masuk segmen Y) didokumentasikan di
+						tabel ini dan dilampirkan pada Bab Metodologi.
+					</li>
+				</ul>
+			</div>
+
+			<footer>
+				Draf protokol segmentasi — LearnMap / Kit-Build Concept Map &middot; disusun dari
+				implementasi seed <code>scripts/seed/java.ts</code>
+			</footer>
+		</div>
+	</body>
+</html>
