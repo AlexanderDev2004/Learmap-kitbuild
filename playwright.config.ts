@@ -35,6 +35,8 @@ export default defineConfig({
 			VITE_DISABLE_REACT_SCAN: "true",
 			SITE_URL: "http://localhost:5174",
 			BETTER_AUTH_URL: "http://localhost:5174",
+			BETTER_AUTH_RATE_LIMIT_ENABLED: "false",
+			SIGNUP_RATE_LIMIT_MAX: "1000",
 		},
 	},
 });

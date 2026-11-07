@@ -4,7 +4,6 @@ import {
 	fillSignupAccountStep,
 	fillSignupAcademicStep,
 	fillSignupPersonalStep,
-	loginWithStudentId,
 	whitelistAccounts,
 } from "./signup-helpers";
 
@@ -30,47 +29,36 @@ test.describe("Signup - Authenticated Redirection", () => {
 });
 
 test.describe("Signup - Complete Flow with Auth", () => {
-	test("should signup new user and redirect to login", async ({ page }) => {
+	test("should signup new user and auto-login to dashboard", async ({ page }) => {
 		const acc = account(12);
 		await page.goto("/signup");
 		await fillSignupAccountStep(page, acc);
 		await page.locator('button:has-text("Next")').click();
 
-		await fillSignupPersonalStep(page, { age: "22", jlptLabel: "N4 (Elementary)" });
+		await fillSignupPersonalStep(page, { age: "22" });
 		await page.locator('button:has-text("Next")').click();
 
-		await fillSignupAcademicStep(page, {
-			studyGroup: "Experiment",
-			japaneseLearningDuration: "12",
-			mediaConsumption: "4",
-		});
+		await fillSignupAcademicStep(page);
 		await page.locator('button:has-text("Next")').click();
 
 		await completeConsentStep(page);
 		await page.locator('button:has-text("Create Account")').click();
 
 		await expect(page.locator("text=Account created successfully")).toBeVisible();
-		await expect(page).toHaveURL("/login");
+		await expect(page).toHaveURL("/dashboard/assignments");
 	});
 
-	test("should login immediately after signup", async ({ page }) => {
+	test("should be authenticated immediately after signup", async ({ page }) => {
 		const acc = account(13);
 		await page.goto("/signup");
 		await fillSignupAccountStep(page, acc);
 		await page.locator('button:has-text("Next")').click();
-		await fillSignupPersonalStep(page, { age: "20", jlptLabel: "N5 (Beginner)" });
+		await fillSignupPersonalStep(page, { age: "20" });
 		await page.locator('button:has-text("Next")').click();
-		await fillSignupAcademicStep(page, {
-			studyGroup: "Control",
-			japaneseLearningDuration: "6",
-			mediaConsumption: "2",
-		});
+		await fillSignupAcademicStep(page);
 		await page.locator('button:has-text("Next")').click();
 		await completeConsentStep(page);
 		await page.locator('button:has-text("Create Account")').click();
-		await expect(page).toHaveURL("/login");
-
-		await loginWithStudentId(page, acc.studentId, acc.password);
 		await expect(page).toHaveURL("/dashboard/assignments");
 	});
 
@@ -79,20 +67,14 @@ test.describe("Signup - Complete Flow with Auth", () => {
 		await page.goto("/signup");
 		await fillSignupAccountStep(page, acc);
 		await page.locator('button:has-text("Next")').click();
-		await fillSignupPersonalStep(page, { age: "25", jlptLabel: "N3 (Intermediate)" });
+		await fillSignupPersonalStep(page, { age: "25" });
 		await page.locator('button:has-text("Next")').click();
-		await fillSignupAcademicStep(page, {
-			studyGroup: "Experiment",
-			japaneseLearningDuration: "24",
-			mediaConsumption: "8",
-		});
+		await fillSignupAcademicStep(page);
 		await page.locator('button:has-text("Next")').click();
 		await completeConsentStep(page);
 		await page.locator('button:has-text("Create Account")').click();
-		await expect(page).toHaveURL("/login");
-
-		await loginWithStudentId(page, acc.studentId, acc.password);
 		await expect(page).toHaveURL("/dashboard/assignments");
+
 		await page.reload();
 		await expect(page).toHaveURL("/dashboard/assignments");
 	});
@@ -105,19 +87,12 @@ test.describe("Signup - Complete Flow with Auth", () => {
 		await page1.goto("/signup");
 		await fillSignupAccountStep(page1, acc);
 		await page1.locator('button:has-text("Next")').click();
-		await fillSignupPersonalStep(page1, { age: "21", jlptLabel: "N4 (Elementary)" });
+		await fillSignupPersonalStep(page1, { age: "21" });
 		await page1.locator('button:has-text("Next")').click();
-		await fillSignupAcademicStep(page1, {
-			studyGroup: "Control",
-			japaneseLearningDuration: "12",
-			mediaConsumption: "5",
-		});
+		await fillSignupAcademicStep(page1);
 		await page1.locator('button:has-text("Next")').click();
 		await completeConsentStep(page1);
 		await page1.locator('button:has-text("Create Account")').click();
-		await expect(page1).toHaveURL("/login");
-
-		await loginWithStudentId(page1, acc.studentId, acc.password);
 		await expect(page1).toHaveURL("/dashboard/assignments");
 
 		const context2 = await browser.newContext();
@@ -134,19 +109,12 @@ test.describe("Signup - Complete Flow with Auth", () => {
 		await page.goto("/signup");
 		await fillSignupAccountStep(page, acc);
 		await page.locator('button:has-text("Next")').click();
-		await fillSignupPersonalStep(page, { age: "23", jlptLabel: "N4 (Elementary)" });
+		await fillSignupPersonalStep(page, { age: "23" });
 		await page.locator('button:has-text("Next")').click();
-		await fillSignupAcademicStep(page, {
-			studyGroup: "Experiment",
-			japaneseLearningDuration: "18",
-			mediaConsumption: "6",
-		});
+		await fillSignupAcademicStep(page);
 		await page.locator('button:has-text("Next")').click();
 		await completeConsentStep(page);
 		await page.locator('button:has-text("Create Account")').click();
-		await expect(page).toHaveURL("/login");
-
-		await loginWithStudentId(page, acc.studentId, acc.password);
 		await expect(page).toHaveURL("/dashboard/assignments");
 
 		await page.goto("/signup");

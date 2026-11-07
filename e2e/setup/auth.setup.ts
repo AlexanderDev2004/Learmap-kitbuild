@@ -11,6 +11,8 @@ async function signInAndSaveState(
 	targetUrl: string,
 	storagePath: string,
 ) {
+	// Relative fetch() cannot resolve on about:blank; land on the app first.
+	await page.goto("/");
 	const response = await page.evaluate(
 		async ({ email, password }) => {
 			const res = await fetch("/api/auth/sign-in/email", {

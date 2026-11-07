@@ -6,36 +6,25 @@ export type WhitelistAccount = {
 	password: string;
 };
 
-export const whitelistAccounts = [
-	{ studentId: "20260001", name: "Tanaka Hanako", password: "password123" },
-	{ studentId: "20260002", name: "Suzuki Ken", password: "password123" },
-	{ studentId: "20260003", name: "Sato Yui", password: "password123" },
-	{ studentId: "20260004", name: "Yamada Haru", password: "authpassword123" },
-	{ studentId: "20260005", name: "Kobayashi Mei", password: "immediate123" },
-	{ studentId: "20260006", name: "Ito Rina", password: "persist123" },
-	{ studentId: "20260007", name: "Nakamura Ren", password: "isolated123" },
-	{ studentId: "20260008", name: "Watanabe Aya", password: "access123" },
-	{ studentId: "20260009", name: "Takahashi Yuna", password: "testpassword123" },
-	{ studentId: "20260010", name: "Matsumoto Sora", password: "mypassword123" },
-	{ studentId: "20260011", name: "Kato Mio", password: "progress123" },
-	{ studentId: "20260012", name: "Fujita Rei", password: "back123456" },
-	{ studentId: "20260013", name: "Sakai Nao", password: "authflow123" },
-	{ studentId: "20260014", name: "Arai Kiko", password: "persist999" },
-	{ studentId: "20260015", name: "Mori Yuna", password: "isolate999" },
-	{ studentId: "20260016", name: "Okada Rei", password: "signup888" },
-	{ studentId: "20260017", name: "Hayashi Mei", password: "signup777" },
-	{ studentId: "20260018", name: "Ishikawa Rio", password: "signup666" },
-	{ studentId: "20260019", name: "Murakami Ao", password: "signup555" },
-	{ studentId: "20260020", name: "Shimizu Hina", password: "signup444" },
-] as const;
+// Matches the e2e whitelist entries inserted by scripts/seed (student IDs
+// 98000001-98000020). Entries get consumed by signup, so each spec uses a
+// distinct account.
+export const whitelistAccounts: WhitelistAccount[] = Array.from({ length: 20 }, (_, i) => {
+	const n = String(i + 1).padStart(2, "0");
+	return {
+		studentId: `980000${n}`,
+		name: `E2E Student ${n}`,
+		password: "password123",
+	};
+});
 
 export async function selectWhitelistAccount(
 	page: Page,
 	account: Pick<WhitelistAccount, "studentId" | "name">,
 ) {
-	await page.locator("#studentId").click();
-	await page.getByPlaceholder("Search your name or student ID").fill(account.studentId);
-	await page.getByText(`${account.name} (${account.studentId})`, { exact: true }).click();
+	await page.locator('[data-slot="popover-trigger"]').first().click();
+	await page.getByPlaceholder("Search Name (ID)...").fill(account.name);
+	await page.getByRole("option", { name: `${account.name} (${account.studentId})` }).click();
 }
 
 export async function fillSignupAccountStep(page: Page, account: WhitelistAccount) {
@@ -44,40 +33,32 @@ export async function fillSignupAccountStep(page: Page, account: WhitelistAccoun
 	await page.locator("#confirmPassword").fill(account.password);
 }
 
-export async function fillSignupPersonalStep(
-	page: Page,
-	values: { age: string; jlptLabel: string },
-) {
+export async function fillSignupPersonalStep(page: Page, values: { age: string }) {
 	await page.locator("#age").fill(values.age);
-	await page.locator("#jlptLevel").click();
-	await page.getByText(values.jlptLabel, { exact: true }).click();
 }
 
-export async function fillSignupAcademicStep(
-	page: Page,
-	values: {
-		studyGroup?: string;
-		japaneseLearningDuration?: string;
-		previousJapaneseScore?: string;
-		mediaConsumption?: string;
-		motivation?: string;
-	},
-) {
-	if (values.studyGroup) {
-		await page.locator("#studyGroup").click();
-		await page.getByText(values.studyGroup, { exact: true }).click();
+export async function fillSignupAcademicStep(page: Page, values: { cohort?: string } = {}) {
+	await page.locator('button:has-text("Select your cohort")').click();
+	if (values.cohort) {
+		await page.getByText(values.cohort, { exact: true }).first().click();
+	} else {
+		// Any cohort satisfies the required field; avoid coupling specs to seed data.
+		await page
+			.locator("[role=option], [data-slot=select-item], [data-slot=command-item]")
+			.first()
+			.click();
 	}
-	if (values.japaneseLearningDuration !== undefined)
-		await page.locator("#japaneseLearningDuration").fill(values.japaneseLearningDuration);
-	if (values.previousJapaneseScore !== undefined)
-		await page.locator("#previousJapaneseScore").fill(values.previousJapaneseScore);
-	if (values.mediaConsumption !== undefined)
-		await page.locator("#mediaConsumption").fill(values.mediaConsumption);
-	if (values.motivation !== undefined) await page.locator("#motivation").fill(values.motivation);
 }
 
 export async function completeConsentStep(page: Page) {
 	await page.locator("#consentGiven").click();
+}
+
+export async function logout(page: Page) {
+	const trigger = page.locator('button[aria-haspopup="menu"]').filter({ hasText: "@" });
+	await trigger.click();
+	await page.getByRole("menuitem", { name: "Log out" }).click();
+	await page.waitForURL("**/login");
 }
 
 export async function loginWithStudentId(page: Page, studentId: string, password: string) {
