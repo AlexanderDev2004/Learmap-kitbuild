@@ -468,7 +468,6 @@ export const getFormResponses = Effect.fn("getFormResponses")(function* (
 					id: users.id,
 					name: users.name,
 					email: users.email,
-					previousJapaneseScore: users.previousJapaneseScore,
 				},
 			})
 			.from(formResponses)

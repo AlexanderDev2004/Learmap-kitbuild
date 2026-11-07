@@ -23,11 +23,10 @@ function mean(nums: number[]): number {
 async function main() {
 	// ── 1. Students ──────────────────────────────────────────────────────────
 	const { rows: students } = await db.execute(
-		`SELECT id, email, name, student_id, age, jlpt_level,
-						japanese_learning_duration, previous_japanese_score,
-						media_consumption, motivation, study_group, consent_given
-				FROM user WHERE role = 'student'
-				ORDER BY email`,
+		`SELECT id, email, name, student_id, age,
+					motivation, study_group, consent_given
+			FROM user WHERE role = 'student'
+			ORDER BY email`,
 	);
 	// ── 2. Forms ─────────────────────────────────────────────────────────────
 	const { rows: forms } = await db.execute("SELECT id, title, type FROM forms");
@@ -131,10 +130,6 @@ async function main() {
 			name: s.name,
 			studentId: s.student_id,
 			age: s.age,
-			jlptLevel: s.jlpt_level,
-			studyDurationMonths: s.japanese_learning_duration,
-			prevScore: s.previous_japanese_score,
-			mediaHoursWeek: s.media_consumption,
 			motivation: s.motivation,
 			studyGroup: s.study_group,
 			consentGiven: s.consent_given,

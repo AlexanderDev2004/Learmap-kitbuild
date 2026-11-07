@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
 	id: text("id").primaryKey(),
@@ -18,12 +18,6 @@ export const user = sqliteTable("user", {
 	deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
 	role: text("role"),
 	age: integer("age"),
-	jlptLevel: text("jlpt_level", {
-		enum: ["N5", "N4", "N3", "N2", "N1", "None"],
-	}),
-	japaneseLearningDuration: integer("japanese_learning_duration"), // in months
-	previousJapaneseScore: real("previous_japanese_score"),
-	mediaConsumption: real("media_consumption"), // hours/week
 	motivation: text("motivation"),
 	banned: integer("banned", { mode: "boolean" }).default(false),
 	banReason: text("ban_reason"),

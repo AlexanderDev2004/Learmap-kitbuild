@@ -95,15 +95,6 @@ export const updateUser = Effect.fn("updateUser")(
 			if (data.email !== undefined) updateData.email = data.email;
 			if (data.studentId !== undefined) updateData.studentId = data.studentId;
 			if (data.age !== undefined) updateData.age = data.age;
-			if (data.jlptLevel !== undefined) updateData.jlptLevel = data.jlptLevel;
-			if (data.japaneseLearningDuration !== undefined) {
-				updateData.japaneseLearningDuration = data.japaneseLearningDuration;
-			}
-			if (data.previousJapaneseScore !== undefined) {
-				updateData.previousJapaneseScore = data.previousJapaneseScore;
-			}
-			if (data.mediaConsumption !== undefined)
-				updateData.mediaConsumption = data.mediaConsumption;
 			if (data.motivation !== undefined) updateData.motivation = data.motivation;
 			if (data.studyGroup !== undefined) updateData.studyGroup = data.studyGroup;
 

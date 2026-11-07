@@ -15,7 +15,7 @@ import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { extractFormErrorMessages } from "@/lib/form-error-messages";
 import { cn } from "@/lib/utils";
 import { signUpMachine } from "@/machines/signup.machine";
-import { AuthRpc, type SignUpInput } from "@/server/rpc/auth";
+import { AuthRpc } from "@/server/rpc/auth";
 import { getMe } from "@/server/rpc/profile";
 import { WhitelistRpc } from "@/server/rpc/whitelist";
 
@@ -63,7 +63,6 @@ type FormSnapshotValues = {
 	password: string;
 	confirmPassword: string;
 	age: number | null;
-	jlptLevel: string;
 	cohortId: string;
 };
 
@@ -71,7 +70,7 @@ function selectSignUpStepSnapshot(
 	state: FormSnapshotState,
 	whitelistEntries: Array<WhitelistEntry>,
 ): SignUpStepSnapshot {
-	const { studentId, password, confirmPassword, age, jlptLevel, cohortId } =
+	const { studentId, password, confirmPassword, age, cohortId } =
 		state.values as FormSnapshotValues;
 
 	const whitelistCohortId = studentId
@@ -89,10 +88,8 @@ function selectSignUpStepSnapshot(
 			passwordsMatch: password === confirmPassword,
 		},
 		personal: {
-			filled: age !== null && !!jlptLevel,
-			errors:
-				(state.fieldMeta.age?.errors.length ?? 0) +
-				(state.fieldMeta.jlptLevel?.errors.length ?? 0),
+			filled: age !== null,
+			errors: state.fieldMeta.age?.errors.length ?? 0,
 		},
 		academic: {
 			filled: !!effectiveCohortId,
@@ -205,11 +202,7 @@ function SignUpPage() {
 			password: "",
 			confirmPassword: "",
 			age: null as number | null,
-			jlptLevel: "None" as SignUpInput["jlptLevel"],
 			cohortId: "",
-			japaneseLearningDuration: null as number | null,
-			previousJapaneseScore: null as number | null,
-			mediaConsumption: null as number | null,
 			motivation: null as string | null,
 			consentGiven: false,
 		},
@@ -248,11 +241,7 @@ function SignUpPage() {
 				studentId: selectedWhitelist.studentId,
 				password: value.password,
 				age: value.age,
-				jlptLevel: value.jlptLevel,
 				cohortId: effectiveCohortId,
-				japaneseLearningDuration: value.japaneseLearningDuration,
-				previousJapaneseScore: value.previousJapaneseScore,
-				mediaConsumption: value.mediaConsumption,
 				motivation: value.motivation,
 				consentGiven: value.consentGiven,
 			});

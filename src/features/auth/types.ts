@@ -2,38 +2,13 @@ import { Schema } from "effect";
 import { BookOpenIcon, CheckCircleIcon, SchoolIcon, UserIcon } from "lucide-react";
 
 import { NonEmpty, Password } from "@/lib/validation-schemas";
-import { JlptLevelSchema } from "@/server/rpc/auth";
-
-export const jlptOptions = [
-	{ id: "None", label: "None (No prior experience)" },
-	{ id: "N5", label: "Beginner" },
-	{ id: "N4", label: "Elementary" },
-	{ id: "N3", label: "Intermediate" },
-	{ id: "N2", label: "Pre-Advanced" },
-	{ id: "N1", label: "Advanced" },
-];
-
-/**
- * Display label for a stored experience level. The stored values keep their
- * legacy ids ("N5".."N1", "None") for data compatibility; the UI presents
- * them as domain-agnostic levels so the platform works for any subject
- * (languages, science, programming, ...).
- */
-export function experienceLevelLabel(level: string | null | undefined): string {
-	if (!level) return "";
-	return jlptOptions.find((option) => option.id === level)?.label ?? level;
-}
 
 export const SignUpSchema = Schema.Struct({
 	studentId: NonEmpty("Student ID"),
 	password: Password(8),
 	confirmPassword: Schema.String,
 	age: Schema.NullOr(Schema.Number),
-	jlptLevel: JlptLevelSchema,
 	cohortId: Schema.String,
-	japaneseLearningDuration: Schema.NullOr(Schema.Number),
-	previousJapaneseScore: Schema.NullOr(Schema.Number),
-	mediaConsumption: Schema.NullOr(Schema.Number),
 	motivation: Schema.NullOr(Schema.String),
 	consentGiven: Schema.Boolean,
 }).pipe(

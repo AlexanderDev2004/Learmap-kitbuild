@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Guard } from "@/features/auth/components/Guard";
-import { experienceLevelLabel } from "@/features/auth/types";
-import { JlptLevel, ProfileSchema } from "@/features/profile/lib/profile-service";
+import { ProfileSchema } from "@/features/profile/lib/profile-service";
 import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { authClient } from "@/lib/auth-client";
 import { getMe, ProfileRpc } from "@/server/rpc/profile";
@@ -42,10 +41,6 @@ function ProfilePage() {
 		defaultValues: {
 			name: me?.name ?? "",
 			age: me?.age ?? null,
-			jlptLevel: me?.jlptLevel ?? "None",
-			japaneseLearningDuration: me?.japaneseLearningDuration ?? null,
-			previousJapaneseScore: me?.previousJapaneseScore ?? null,
-			mediaConsumption: me?.mediaConsumption ?? null,
 			motivation: me?.motivation ?? null,
 		},
 		validators: {
@@ -109,16 +104,6 @@ function ProfilePage() {
 									</Label>
 									<p className="text-sm font-medium capitalize">{me.role}</p>
 								</div>
-								{me.jlptLevel && me.jlptLevel !== "None" && (
-									<div>
-										<Label className="text-xs text-muted-foreground uppercase tracking-wide">
-											Experience Level
-										</Label>
-										<p className="text-sm font-medium">
-											{experienceLevelLabel(me.jlptLevel)}
-										</p>
-									</div>
-								)}
 							</div>
 						</div>
 
@@ -200,111 +185,7 @@ function ProfilePage() {
 									<h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
 										Learning Profile
 									</h3>
-									<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-										<form.Field name="jlptLevel">
-											{(field) => (
-												<div className="space-y-1.5">
-													<Label htmlFor="jlptLevel">
-														Experience Level
-													</Label>
-													<select
-														id="jlptLevel"
-														className="w-full h-10 border border-input bg-background px-3 py-2 text-sm"
-														value={field.state.value ?? "None"}
-														onChange={(e) =>
-															field.handleChange(
-																e.target.value as JlptLevel,
-															)
-														}
-													>
-														<option value="None">
-															None (No prior experience)
-														</option>
-														<option value="N5">Beginner</option>
-														<option value="N4">Elementary</option>
-														<option value="N3">Intermediate</option>
-														<option value="N2">Pre-Advanced</option>
-														<option value="N1">Advanced</option>
-													</select>
-												</div>
-											)}
-										</form.Field>
-
-										<form.Field name="japaneseLearningDuration">
-											{(field) => (
-												<div className="space-y-1.5">
-													<Label htmlFor="duration">
-														Duration (months)
-													</Label>
-													<Input
-														id="duration"
-														type="number"
-														placeholder="e.g., 12"
-														value={field.state.value ?? ""}
-														onChange={(e) =>
-															field.handleChange(
-																e.target.value
-																	? Number(e.target.value)
-																	: null,
-															)
-														}
-													/>
-												</div>
-											)}
-										</form.Field>
-
-										<form.Field name="previousJapaneseScore">
-											{(field) => (
-												<div className="space-y-1.5">
-													<Label htmlFor="prevScore">
-														Previous Score (0-100)
-													</Label>
-													<Input
-														id="prevScore"
-														type="number"
-														step="0.1"
-														placeholder="e.g., 75.5"
-														value={field.state.value ?? ""}
-														onChange={(e) =>
-															field.handleChange(
-																e.target.value
-																	? Number(e.target.value)
-																	: null,
-															)
-														}
-													/>
-												</div>
-											)}
-										</form.Field>
-									</div>
-
-									<div className="mt-4">
-										<form.Field name="mediaConsumption">
-											{(field) => (
-												<div className="space-y-1.5">
-													<Label htmlFor="media">
-														Media Consumption (hours/week)
-													</Label>
-													<Input
-														id="media"
-														type="number"
-														step="0.1"
-														placeholder="e.g., 5.5"
-														value={field.state.value ?? ""}
-														onChange={(e) =>
-															field.handleChange(
-																e.target.value
-																	? Number(e.target.value)
-																	: null,
-															)
-														}
-													/>
-												</div>
-											)}
-										</form.Field>
-									</div>
-
-									<div className="mt-4">
+									<div>
 										<form.Field name="motivation">
 											{(field) => (
 												<div className="space-y-1.5">

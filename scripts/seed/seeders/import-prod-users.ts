@@ -120,17 +120,6 @@ function importAll() {
 					updatedAt: new Date(row.updated_at as number),
 					role: row.role as string | null,
 					age: row.age as number | null,
-					jlptLevel: (row.jlpt_level ?? null) as
-						| "N5"
-						| "N4"
-						| "N3"
-						| "N2"
-						| "N1"
-						| "None"
-						| null,
-					japaneseLearningDuration: row.japanese_learning_duration as number | null,
-					previousJapaneseScore: row.previous_japanese_score as number | null,
-					mediaConsumption: row.media_consumption as number | null,
 					motivation: row.motivation as string | null,
 					banned: Boolean((row.banned as number) ?? 0),
 					banReason: row.ban_reason as string | null,

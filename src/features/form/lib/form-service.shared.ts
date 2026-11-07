@@ -492,7 +492,6 @@ export const ResponseUserSchema = Schema.Struct({
 	id: Schema.String,
 	name: Schema.NullOr(Schema.String),
 	email: Schema.String,
-	previousJapaneseScore: Schema.NullOr(Schema.Number),
 });
 
 export const FormResponseOutputSchema = Schema.Struct({

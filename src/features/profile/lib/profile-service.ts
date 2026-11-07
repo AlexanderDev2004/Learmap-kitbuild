@@ -8,16 +8,8 @@ import { user } from "@/server/db/schema/auth-schema";
 export const ProfileSchema = Schema.Struct({
 	name: NonEmpty("Name"),
 	age: Schema.NullOr(Schema.Number),
-	jlptLevel: Schema.Union(Schema.Literal("N5", "N4", "N3", "N2", "N1", "None")),
-	japaneseLearningDuration: Schema.NullOr(Schema.Number),
-	previousJapaneseScore: Schema.NullOr(Schema.Number),
-	mediaConsumption: Schema.NullOr(Schema.Number),
 	motivation: Schema.NullOr(Schema.String),
 });
-
-export const JlptLevelSchema = Schema.Union(Schema.Literal("N5", "N4", "N3", "N2", "N1", "None"));
-
-export type JlptLevel = typeof JlptLevelSchema.Type;
 
 export const UpdateProfileInput = Schema.partial(ProfileSchema);
 
@@ -48,16 +40,6 @@ export const updateProfile = Effect.fn("updateProfile")(function* (
 		.set({
 			...(data.name !== undefined && { name: data.name }),
 			...(data.age !== undefined && { age: data.age }),
-			...(data.jlptLevel !== undefined && { jlptLevel: data.jlptLevel }),
-			...(data.japaneseLearningDuration !== undefined && {
-				japaneseLearningDuration: data.japaneseLearningDuration,
-			}),
-			...(data.previousJapaneseScore !== undefined && {
-				previousJapaneseScore: data.previousJapaneseScore,
-			}),
-			...(data.mediaConsumption !== undefined && {
-				mediaConsumption: data.mediaConsumption,
-			}),
 			...(data.motivation !== undefined && { motivation: data.motivation }),
 		})
 		.where(eq(user.id, userId));
