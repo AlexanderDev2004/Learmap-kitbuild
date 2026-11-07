@@ -17,6 +17,9 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 
 		return betterAuth({
 			baseURL: config.siteUrl,
+			rateLimit: {
+				enabled: config.authRateLimitEnabled,
+			},
 			trustedOrigins: [
 				config.siteUrl,
 				"http://localhost:5173",
@@ -53,22 +56,6 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 			user: {
 				additionalFields: {
 					age: {
-						type: "number",
-						required: false,
-					},
-					jlptLevel: {
-						type: "string",
-						required: false,
-					},
-					japaneseLearningDuration: {
-						type: "number",
-						required: false,
-					},
-					previousJapaneseScore: {
-						type: "number",
-						required: false,
-					},
-					mediaConsumption: {
 						type: "number",
 						required: false,
 					},
@@ -110,15 +97,6 @@ export const AuthUser = Schema.Struct({
 	studentId: Schema.optionalWith(Schema.String, { nullable: true }),
 	image: Schema.optionalWith(Schema.String, { nullable: true }),
 	age: Schema.optionalWith(Schema.Number, { nullable: true }),
-	jlptLevel: Schema.optionalWith(
-		Schema.Union(Schema.Literal("N5", "N4", "N3", "N2", "N1", "None")),
-		{ nullable: true },
-	),
-	japaneseLearningDuration: Schema.optionalWith(Schema.Number, {
-		nullable: true,
-	}),
-	previousJapaneseScore: Schema.optionalWith(Schema.Number, { nullable: true }),
-	mediaConsumption: Schema.optionalWith(Schema.Number, { nullable: true }),
 	motivation: Schema.optionalWith(Schema.String, { nullable: true }),
 	studyGroup: Schema.optionalWith(Schema.Union(Schema.Literal("experiment", "control")), {
 		nullable: true,

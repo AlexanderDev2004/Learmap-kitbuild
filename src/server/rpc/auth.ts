@@ -2,6 +2,7 @@ import { queryOptions, mutationOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { Data, Duration, Effect, Schema } from "effect";
 
+import { ServerConfig } from "@/config";
 import { claimWhitelistEntry } from "@/features/whitelist/lib/whitelist-service.mutations";
 import { getWhitelistEntryByStudentId } from "@/features/whitelist/lib/whitelist-service.queries";
 import { WhitelistAlreadyClaimedError } from "@/features/whitelist/lib/whitelist-service.shared";
@@ -23,17 +24,11 @@ import {
 	logAndReturnDefect,
 } from "../rpc-helper";
 
-export const JlptLevelSchema = Schema.Union(Schema.Literal("N5", "N4", "N3", "N2", "N1", "None"));
-
 export const SignUpInput = Schema.Struct({
 	studentId: NonEmpty("Student ID"),
 	password: Password(8),
 	age: Schema.NullOr(Schema.Number),
-	jlptLevel: JlptLevelSchema,
 	cohortId: NonEmpty("Cohort"),
-	japaneseLearningDuration: Schema.NullOr(Schema.Number),
-	previousJapaneseScore: Schema.NullOr(Schema.Number),
-	mediaConsumption: Schema.NullOr(Schema.Number),
 	motivation: Schema.NullOr(Schema.String),
 	consentGiven: Schema.Boolean,
 }).pipe(
@@ -78,9 +73,14 @@ export const signUpRpc = createServerFn({ method: "POST" })
 	.handler(({ data, context }) =>
 		AppRuntime.runPromise(
 			Effect.gen(function* () {
+				const config = yield* ServerConfig;
 				const rateLimiter = yield* RateLimiter;
 				const ip = context.clientIp ?? "unknown";
-				const allowed = yield* rateLimiter.check(`signup:${ip}`, 5, Duration.minutes(1));
+				const allowed = yield* rateLimiter.check(
+					`signup:${ip}`,
+					config.signupRateLimitMax,
+					Duration.minutes(1),
+				);
 				if (!allowed) {
 					return yield* Rpc.err(
 						"Too many sign-up attempts. Please try again later.",
@@ -107,11 +107,6 @@ export const signUpRpc = createServerFn({ method: "POST" })
 								password: data.password,
 								age: data.age ?? undefined,
 								studentId: whitelist.studentId,
-								jlptLevel: data.jlptLevel,
-								japaneseLearningDuration:
-									data.japaneseLearningDuration ?? undefined,
-								previousJapaneseScore: data.previousJapaneseScore ?? undefined,
-								mediaConsumption: data.mediaConsumption ?? undefined,
 								motivation: data.motivation ?? undefined,
 								// Randomization is decided at whitelist import time;
 								// signup just carries it over. Unassigned rows (null
