@@ -24,7 +24,8 @@ function getFriendlyAuthErrorMessage(err: unknown) {
 	if (
 		msg.includes("accountnotfound") ||
 		msg.includes("no account") ||
-		msg.includes("unknown identifier")
+		msg.includes("unknown identifier") ||
+		msg.includes("user not found")
 	) {
 		return "Account not found. Check your student ID / email.";
 	}
