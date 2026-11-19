@@ -87,6 +87,11 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
+		// Pre-bundle these in dev. Without them one page pulls ~250 script
+		// requests (one per module), which dominates load time over a portal or
+		// tunnel with real latency; prebundling collapses each package into a
+		// handful of chunks. Dev only — production build is unaffected.
+		include: ["better-auth", "better-auth/react"],
 		// Exclude TanStack Start packages from Vite's dependency optimization
 		// to prevent issues with virtual imports (#tanstack-router-entry, etc.)
 		exclude: [
