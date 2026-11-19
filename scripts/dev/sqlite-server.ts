@@ -20,9 +20,10 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { createRequire } from "node:module";
 
 // `libsql` is a CJS package with `export =`; createRequire avoids needing
-// esModuleInterop just for this dev script. pnpm resolves it at runtime from
-// its virtual store, but tsc cannot, so type it structurally instead of via
-// `typeof import("libsql")`.
+// esModuleInterop just for this dev script. pnpm links only the packages this
+// project declares, so `libsql` is resolved through `@libsql/client`, which
+// does declare it; tsc cannot type it, so describe the surface structurally
+// instead of via `typeof import("libsql")`.
 interface LibsqlStatement {
 	reader: boolean;
 	columns(): { name: string; type?: string | null }[];
@@ -37,8 +38,8 @@ interface LibsqlDatabase {
 	close(): void;
 }
 
-const require = createRequire(import.meta.url);
-const DatabaseLibsql = require("libsql") as new (
+const requireFromClient = createRequire(createRequire(import.meta.url).resolve("@libsql/client"));
+const DatabaseLibsql = requireFromClient("libsql") as new (
 	path: string,
 	options?: { fileMustExist?: boolean },
 ) => LibsqlDatabase;
