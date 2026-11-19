@@ -6,6 +6,8 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig, type PluginOption } from "vite-plus";
 
+import { localDbServer } from "./scripts/dev/local-db-plugin.ts";
+
 export default defineConfig({
 	staged: {
 		"*": "vp check --fix",
@@ -102,6 +104,7 @@ export default defineConfig({
 	},
 
 	plugins: [
+		localDbServer(),
 		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		tailwindcss(),
 		tanstackStart({

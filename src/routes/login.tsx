@@ -32,6 +32,9 @@ function getFriendlyAuthErrorMessage(err: unknown) {
 	if (msg.includes("rate") && msg.includes("limit")) {
 		return "Too many attempts. Please wait a moment and try again.";
 	}
+	if (msg.includes("unavailable")) {
+		return "Sign-in is temporarily unavailable. Please try again in a moment.";
+	}
 	if (msg.includes("network") || msg.includes("fetch") || msg.includes("failed to fetch")) {
 		return "Network error. Check your connection and try again.";
 	}

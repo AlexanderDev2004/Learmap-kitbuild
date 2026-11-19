@@ -7,6 +7,9 @@ import { ServerConfig } from "@/config";
 const SqlRemote = Layer.unwrapEffect(
 	Effect.gen(function* () {
 		const config = yield* ServerConfig;
+		// Log the endpoint (without credentials) so it is obvious which database
+		// the dev server is talking to when queries fail.
+		yield* Effect.log(`Database endpoint: ${databaseEndpoint(config.databaseUrl)}`);
 		return LibsqlClient.layer({
 			url: config.databaseUrl,
 			authToken: config.dbAuthToken,
@@ -30,6 +33,16 @@ const SqlLocal = Layer.unwrapEffect(
 const SqlTest = LibsqlClient.layer({
 	url: "file:test.db",
 });
+
+/** Protocol + host only, so logs never include credentials or the auth token. */
+function databaseEndpoint(url: string): string {
+	try {
+		const parsed = new URL(url);
+		return `${parsed.protocol}//${parsed.host}`;
+	} catch {
+		return "(invalid URL)";
+	}
+}
 
 const SqlLive = Layer.unwrapEffect(
 	Effect.gen(function* () {

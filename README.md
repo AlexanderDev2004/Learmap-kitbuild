@@ -223,7 +223,10 @@ vp install
 cp .env.example .env
 # Edit .env with your credentials
 
-# First time: create the schema and load demo data
+# First time: start the local database, then create the schema and demo data
+pnpm run db:server   # keep it running; migrations need it
+
+# In another terminal:
 pnpm run db:migrate
 pnpm run db:seed
 
@@ -231,12 +234,13 @@ pnpm run db:seed
 pnpm run dev
 ```
 
-`pnpm run dev` = `vp dev` plus a small LibSQL-compatible HTTP server
-(`scripts/dev/sqlite-server.ts`) that is started automatically when nothing is
-listening on `TURSO_DATABASE_URL`. The Workers runtime used by `vp dev` cannot
-open `file:` SQLite URLs, so local development talks to sqld over HTTP â€” with
-no Docker and no Turso account. If you prefer a real sqld instance (Linux/WSL),
-start Docker first and it will be reused as-is:
+`pnpm run dev` is `vp dev`. The dev server starts a small LibSQL-compatible HTTP
+server (`scripts/dev/sqlite-server.ts`) automatically when `TURSO_DATABASE_URL`
+points at a local endpoint that is not listening yet, so `pnpm run db:server`
+only has to be started manually before the first migrate/seed. The Workers
+runtime used by `vp dev` cannot open `file:` SQLite URLs, so local development
+talks to sqld over HTTP â€” with no Docker and no Turso account. If you prefer a
+real sqld instance (Linux/WSL), start Docker first and it will be reused as-is:
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d
