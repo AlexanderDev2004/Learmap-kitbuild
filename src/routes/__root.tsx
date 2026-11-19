@@ -35,7 +35,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			isDev && !disableReactScan
 				? [
 						{
-							src: "https://cdn.jsdelivr.net/npm/react-scan/dist/auto.global.js",
+							// Pinned: react-scan 0.5.6+ bundles react-grab 0.1.32, whose
+							// unconditional update check logs "react-grab is outdated"
+							// on every page load with no opt-out (react-scan#472).
+							// 0.5.5 is the last release without it.
+							src: "https://cdn.jsdelivr.net/npm/react-scan@0.5.5/dist/auto.global.js",
 						},
 					]
 				: [],
