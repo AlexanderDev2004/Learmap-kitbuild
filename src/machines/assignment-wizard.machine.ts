@@ -2,7 +2,7 @@ import { setup, assign } from "xstate";
 
 export type WizardFields = {
 	basic: { title: string; description: string };
-	config: { goalMapId: string; startDate: string; endDate: string };
+	config: { goalMapId: string; segmentModel: string; startDate: string; endDate: string };
 	procedure: {
 		preTestFormId: string;
 		postTestFormId: string;
@@ -32,7 +32,7 @@ export type WizardEvent =
 
 const initialFields: WizardFields = {
 	basic: { title: "", description: "" },
-	config: { goalMapId: "", startDate: "", endDate: "" },
+	config: { goalMapId: "", segmentModel: "both", startDate: "", endDate: "" },
 	procedure: {
 		preTestFormId: "",
 		postTestFormId: "",

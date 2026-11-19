@@ -371,6 +371,7 @@ export const getAssignmentById = Effect.fn("getAssignmentById")(function* (assig
 			delayedPostTestFormId: assignments.delayedPostTestFormId,
 			questionnaireFormId: assignments.questionnaireFormId,
 			delayedPostTestDelayDays: assignments.delayedPostTestDelayDays,
+			segmentModel: assignments.segmentModel,
 			createdBy: assignments.createdBy,
 			createdAt: assignments.createdAt,
 			updatedAt: assignments.updatedAt,

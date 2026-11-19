@@ -8,6 +8,12 @@ export const CreateAssignmentInput = Schema.Struct({
 		nullable: true,
 	}),
 	goalMapId: NonEmpty("Goal map ID"),
+	// Segmentation model shown to this assignment's learners. Defaults to
+	// "both" so assignments created before this field existed keep showing
+	// every segment defined on the goal map.
+	segmentModel: Schema.optionalWith(Schema.Literal("paragraph", "depth-topic", "both", "none"), {
+		default: () => "both" as const,
+	}),
 	layout: Schema.optionalWith(Schema.Literal("preset", "random"), {
 		default: () => "random" as const,
 	}),

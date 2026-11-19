@@ -4,7 +4,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { exportAnalyticsData } from "./analytics-service.mutations";
 
 const mockAnalytics = {
-	assignment: { title: "Test Assignment" },
+	assignment: { title: "Test Assignment", segmentModel: "paragraph" },
 	goalMap: { id: "gm-1", title: "Test Goal Map" },
 	learners: [
 		{
@@ -31,6 +31,9 @@ const mockAnalytics = {
 			postTestTotal: 5,
 			postTestScore: 100,
 			postTestDurationSeconds: 90,
+			segmentModel: "paragraph" as const,
+			segmentsVisited: 4,
+			segmentTimeSeconds: 300,
 		},
 		{
 			userId: "u2",
@@ -56,6 +59,9 @@ const mockAnalytics = {
 			postTestTotal: null,
 			postTestScore: null,
 			postTestDurationSeconds: null,
+			segmentModel: "paragraph" as const,
+			segmentsVisited: 0,
+			segmentTimeSeconds: null,
 		},
 	],
 	notStartedLearners: [
@@ -102,10 +108,12 @@ describe("exportAnalyticsData", () => {
 		// Targeted students who never started still get a row.
 		expect(result.data).toContain("u3");
 		expect(result.data).toContain("not_started");
-		// Header row: UserID first, PostTestDurationSeconds last (Papa uses CRLF).
+		// Header row: UserID first, segment-usage columns last (Papa uses CRLF).
 		const header = result.data.split(/\r?\n/)[0];
 		expect(header.startsWith("UserID,UserEmail,UserName")).toBe(true);
-		expect(header.endsWith("PostTestDurationSeconds")).toBe(true);
+		expect(header.endsWith("SegmentModel,SegmentsVisited,SegmentTimeSeconds")).toBe(true);
+		// Segment treatment and logged usage travel with each learner row.
+		expect(result.data).toContain(",paragraph,4,300");
 	});
 
 	it("should export as JSON with all sections", () => {

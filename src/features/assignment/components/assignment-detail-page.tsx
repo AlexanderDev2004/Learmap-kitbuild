@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditFormsDialog } from "@/features/assignment/components/edit-forms-dialog";
 import { EditTargetsDialog } from "@/features/assignment/components/edit-targets-dialog";
+import { SEGMENT_MODEL_LABELS } from "@/lib/segment-model";
 import { cn } from "@/lib/utils";
 
 interface FormInfo {
@@ -50,6 +51,7 @@ export interface AssignmentDetailPageProps {
 		description: string | null;
 		goalMapId: string;
 		goalMapTitle: string | null;
+		segmentModel: "paragraph" | "depth-topic" | "both" | "none";
 		startDate: Date | null;
 		dueAt: Date | null;
 		preTestFormId: string | null;
@@ -113,6 +115,9 @@ export function AssignmentDetailPage({ assignment }: AssignmentDetailPageProps) 
 						<h1 className="text-2xl font-medium truncate font-heading">
 							{assignment.title}
 						</h1>
+						<Badge variant="secondary">
+							{SEGMENT_MODEL_LABELS[assignment.segmentModel]}
+						</Badge>
 					</div>
 					{assignment.description && (
 						<p className="text-muted-foreground max-w-2xl">{assignment.description}</p>

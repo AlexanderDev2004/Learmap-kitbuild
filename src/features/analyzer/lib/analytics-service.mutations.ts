@@ -35,6 +35,9 @@ export const exportAnalyticsData = Effect.fn("exportAnalyticsData")(function* (
 				"PostTestTotal",
 				"PostTestScore",
 				"PostTestDurationSeconds",
+				"SegmentModel",
+				"SegmentsVisited",
+				"SegmentTimeSeconds",
 			],
 		];
 
@@ -43,7 +46,7 @@ export const exportAnalyticsData = Effect.fn("exportAnalyticsData")(function* (
 		// so the file can be analyzed directly in Excel/R/SPSS.
 		const value = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
 		const analytics = input.analytics as {
-			assignment: { title: string };
+			assignment: { title: string; segmentModel: string };
 			learners: Array<Record<string, unknown>>;
 			notStartedLearners?: Array<Record<string, unknown>> | null;
 		};
@@ -74,6 +77,9 @@ export const exportAnalyticsData = Effect.fn("exportAnalyticsData")(function* (
 				value(learner.postTestTotal),
 				value(learner.postTestScore),
 				value(learner.postTestDurationSeconds),
+				value(learner.segmentModel),
+				value(learner.segmentsVisited),
+				value(learner.segmentTimeSeconds),
 			]);
 		}
 
@@ -102,6 +108,9 @@ export const exportAnalyticsData = Effect.fn("exportAnalyticsData")(function* (
 				"",
 				"",
 				"",
+				"",
+				"",
+				value(analytics.assignment.segmentModel),
 				"",
 				"",
 			]);

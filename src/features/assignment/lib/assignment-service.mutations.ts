@@ -95,6 +95,7 @@ export const createAssignment = Effect.fn("createAssignment")(function* (
 		postTestFormId: data.postTestFormId,
 		delayedPostTestFormId: data.delayedPostTestFormId,
 		delayedPostTestDelayDays: data.delayedPostTestDelayDays,
+		segmentModel: data.segmentModel,
 		createdBy: userId,
 	});
 

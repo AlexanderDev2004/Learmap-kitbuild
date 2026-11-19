@@ -1,4 +1,7 @@
-import type { Node, Edge } from "@/features/learner-map/lib/comparator";
+// Only the fields this segmentation reads. Goal-map JSON (from the DB, a seed,
+// or the editor) satisfies this structurally, so callers need no casts.
+type DepthNode = { id: string; type?: string };
+type DepthEdge = { source: string; target: string };
 
 /**
  * Depth-topic segmentation: group concept (text) nodes of a goal map by
@@ -9,7 +12,10 @@ import type { Node, Edge } from "@/features/learner-map/lib/comparator";
  *
  * Returns an ordered array of node-id groups (index 0 = most general).
  */
-export function computeDepthSegments(nodes: Node[], edges: Edge[]): string[][] {
+export function computeDepthSegments(
+	nodes: readonly DepthNode[],
+	edges: readonly DepthEdge[],
+): string[][] {
 	const textNodes = nodes.filter((n) => n.type === "text");
 	const textIds = new Set(textNodes.map((n) => n.id));
 

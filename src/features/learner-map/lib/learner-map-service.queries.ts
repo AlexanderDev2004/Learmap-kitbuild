@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { PerLinkDiagnosisSchema } from "@/features/analyzer/lib/analytics-service.shared";
+import { filterSegmentsByModel } from "@/lib/segment-model";
 import { parseJson, roundToDecimals, safeParseJson } from "@/lib/utils";
 import { Database } from "@/server/db/client";
 import {
@@ -201,6 +202,7 @@ export const getAssignmentForStudent = Effect.fn("getAssignmentForStudent")(func
 				postTestFormId: assignments.postTestFormId,
 				delayedPostTestFormId: assignments.delayedPostTestFormId,
 				delayedPostTestDelayDays: assignments.delayedPostTestDelayDays,
+				segmentModel: assignments.segmentModel,
 			},
 			kit: {
 				// Alias joined columns: unaliased, kits.id / learner_maps.id both
@@ -310,7 +312,10 @@ export const getAssignmentForStudent = Effect.fn("getAssignmentForStudent")(func
 			edges: kitEdges,
 		},
 		materialText: result.assignment.readingMaterial || materialText || null,
-		segments,
+		// Only the segments belonging to this assignment's segmentation model
+		// reach the learner; the control condition ("none") gets none, so the
+		// editor shows the full map with no segment bar.
+		segments: filterSegmentsByModel(segments, result.assignment.segmentModel),
 		learnerMap: result.learnerMap
 			? {
 					id: result.learnerMap.id,

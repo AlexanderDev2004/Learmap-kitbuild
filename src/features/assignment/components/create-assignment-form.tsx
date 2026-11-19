@@ -7,9 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { parseDateInput } from "@/lib/date-utils";
+import { SEGMENT_MODEL_LABELS, SEGMENT_MODELS, type SegmentModel } from "@/lib/segment-model";
 import { assignmentWizardMachine } from "@/machines/assignment-wizard.machine";
 import { AssignmentRpc } from "@/server/rpc/assignment";
 import { FormRpc } from "@/server/rpc/form";
@@ -80,6 +88,7 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 				cohortIds: ctx.assignment.selectedCohorts,
 				description: ctx.basic.description.trim() || undefined,
 				goalMapId: ctx.config.goalMapId,
+				segmentModel: ctx.config.segmentModel as SegmentModel,
 				layout: "random",
 				startDate: parseDateInput(ctx.config.startDate) ?? Date.now(),
 				endDate: parseDateInput(ctx.config.endDate),
@@ -166,6 +175,30 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 							placeholder="Select a goal map"
 							searchPlaceholder="Search goal maps..."
 						/>
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="segmentModel">Segmentation Model *</Label>
+						<Select
+							value={ctx.config.segmentModel}
+							onValueChange={(v) =>
+								send({ type: "SET_CONFIG", field: "segmentModel", value: v })
+							}
+						>
+							<SelectTrigger id="segmentModel" className="w-full">
+								<SelectValue placeholder="Select a segmentation model" />
+							</SelectTrigger>
+							<SelectContent>
+								{SEGMENT_MODELS.map((model) => (
+									<SelectItem key={model} value={model}>
+										{SEGMENT_MODEL_LABELS[model]}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<p className="text-xs text-muted-foreground">
+							Segments shown to this assignment&apos;s learners. Choose &quot;Tanpa
+							segmentasi&quot; for the control group.
+						</p>
 					</div>
 					<div className="grid grid-cols-2 gap-4">
 						<div className="space-y-2">

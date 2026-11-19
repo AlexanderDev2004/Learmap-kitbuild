@@ -20,6 +20,7 @@ import {
 	kits,
 	learnerMaps,
 	questions,
+	segmentActivity,
 } from "@/server/db/schema/app-schema";
 import { cohortMembers, user } from "@/server/db/schema/auth-schema";
 
@@ -56,6 +57,7 @@ export const getTeacherAssignments = Effect.fn("getTeacherAssignments")(function
 			// Alias: an unaliased kits.id would collide with assignments.id on
 			// the "id" result column and overwrite it (see goal-map-service.queries).
 			kitId: sql<string | null>`kits.id`.as("kit_id"),
+			segmentModel: assignments.segmentModel,
 			createdAt: assignments.createdAt,
 			dueAt: assignments.dueAt,
 			submissionCount: count(learnerMaps.id),
@@ -86,6 +88,7 @@ export const getTeacherAssignments = Effect.fn("getTeacherAssignments")(function
 		goalMapId: row.goalMapId,
 		goalMapTitle: row.goalMapTitle,
 		kitId: row.kitId,
+		segmentModel: row.segmentModel,
 		totalSubmissions: Number(row.submissionCount ?? 0),
 		avgScore: row.avgScore ? Number(row.avgScore) : null,
 		createdAt: row.createdAt?.getTime() ?? 0,
@@ -108,6 +111,7 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 			kitId: assignments.kitId,
 			preTestFormId: assignments.preTestFormId,
 			postTestFormId: assignments.postTestFormId,
+			segmentModel: assignments.segmentModel,
 			createdAt: assignments.createdAt,
 			dueAt: assignments.dueAt,
 		})
@@ -176,6 +180,31 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 		.leftJoin(diagnoses, eq(diagnoses.learnerMapId, learnerMaps.id))
 		.where(and(eq(learnerMaps.assignmentId, input.assignmentId), isNull(learnerMaps.deletedAt)))
 		.orderBy(desc(learnerMaps.attempt), desc(learnerMaps.updatedAt));
+
+	// Segment usage logged by the editor: how many distinct segments each
+	// learner opened and how long they stayed. This is the compliance side of
+	// the segmentation comparison — a score alone cannot tell whether the
+	// learner actually worked segment by segment.
+	const segmentUsageRows = yield* db
+		.select({
+			userId: segmentActivity.userId,
+			segmentId: segmentActivity.segmentId,
+			totalMs: segmentActivity.totalMs,
+		})
+		.from(segmentActivity)
+		.where(
+			and(
+				eq(segmentActivity.assignmentId, input.assignmentId),
+				isNull(segmentActivity.deletedAt),
+			),
+		);
+	const segmentUsageByUser = new Map<string, { segments: number; totalMs: number }>();
+	for (const row of segmentUsageRows) {
+		const usage = segmentUsageByUser.get(row.userId) ?? { segments: 0, totalMs: 0 };
+		usage.segments += 1;
+		usage.totalMs += row.totalMs;
+		segmentUsageByUser.set(row.userId, usage);
+	}
 
 	const testFormIds = [assignment.preTestFormId, assignment.postTestFormId].filter(
 		(formId): formId is string => formId !== null,
@@ -315,6 +344,11 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 					postTestTotal: postTest?.total ?? null,
 					postTestScore: postTest?.score ?? null,
 					postTestDurationSeconds: postTest?.durationSeconds ?? null,
+					segmentModel: assignment.segmentModel,
+					segmentsVisited: segmentUsageByUser.get(lm.userId)?.segments ?? 0,
+					segmentTimeSeconds: segmentUsageByUser.has(lm.userId)
+						? Math.round((segmentUsageByUser.get(lm.userId)?.totalMs ?? 0) / 1000)
+						: null,
 				});
 			}),
 		),
@@ -389,6 +423,7 @@ export const getAnalyticsForAssignment = Effect.fn("getAnalyticsForAssignment")(
 			goalMapId: assignment.goalMapId,
 			goalMapTitle: goalMap.title,
 			kitId: assignment.kitId,
+			segmentModel: assignment.segmentModel,
 			totalSubmissions: summary.submittedCount,
 			createdAt: assignment.createdAt?.getTime() ?? 0,
 			dueAt: assignment.dueAt?.getTime() ?? null,

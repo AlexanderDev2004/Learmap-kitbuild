@@ -1,9 +1,16 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { randomString, safeParseJson } from "@/lib/utils";
 import { Database } from "@/server/db/client";
-import { assignments, diagnoses, goalMaps, learnerMaps } from "@/server/db/schema/app-schema";
+import {
+	assignments,
+	diagnoses,
+	goalMaps,
+	learnerMaps,
+	mapSegments,
+	segmentActivity,
+} from "@/server/db/schema/app-schema";
 
 import { compareMaps, EdgeSchema, NodeSchema } from "./comparator";
 import {
@@ -13,8 +20,10 @@ import {
 	LearnerMapNotFoundError,
 	NoPreviousAttemptError,
 	PreviousAttemptNotSubmittedError,
+	RecordSegmentActivityInput,
 	requireAssignmentCondition,
 	requireAssignmentMembership,
+	SegmentNotFoundError,
 	SubmitLearnerMapInput,
 	StartNewAttemptInput,
 	SubmitControlTextInput,
@@ -352,6 +361,83 @@ export const submitControlText = Effect.fn("submitControlText")(function* (
 			submittedAt: new Date(),
 		});
 	}
+
+	return true;
+});
+
+// Upper bound for one reported stay on a segment. The client reports elapsed
+// wall-clock time, so a tab left open overnight would otherwise dwarf every
+// real measurement.
+const MAX_SEGMENT_STAY_MS = 15 * 60 * 1000;
+
+/**
+ * Log that the learner worked a segment: bump its visit count and add the time
+ * spent since the previous segment switch. Rows are per assignment + learner +
+ * segment, so they exist before the first draft save and survive attempts.
+ */
+export const recordSegmentActivity = Effect.fn("recordSegmentActivity")(function* (
+	userId: string,
+	data: RecordSegmentActivityInput,
+) {
+	const db = yield* Database;
+
+	const assignmentRows = yield* db
+		.select({ id: assignments.id, goalMapId: assignments.goalMapId })
+		.from(assignments)
+		.where(and(eq(assignments.id, data.assignmentId), isNull(assignments.deletedAt)))
+		.limit(1);
+	const assignment = assignmentRows[0];
+	if (!assignment) {
+		return yield* new AssignmentNotFoundError({ assignmentId: data.assignmentId });
+	}
+
+	yield* requireAssignmentMembership(userId, data.assignmentId);
+
+	// The segment must belong to this assignment's goal map: a client could
+	// otherwise log time against another map's segment and skew per-segment
+	// comparisons.
+	const segmentRows = yield* db
+		.select({ id: mapSegments.id })
+		.from(mapSegments)
+		.where(
+			and(
+				eq(mapSegments.id, data.segmentId),
+				eq(mapSegments.goalMapId, assignment.goalMapId),
+				isNull(mapSegments.deletedAt),
+			),
+		)
+		.limit(1);
+	if (!segmentRows[0]) {
+		return yield* new SegmentNotFoundError({ segmentId: data.segmentId });
+	}
+
+	const durationMs = Math.min(Math.max(0, Math.round(data.durationMs)), MAX_SEGMENT_STAY_MS);
+	const now = new Date();
+
+	yield* db
+		.insert(segmentActivity)
+		.values({
+			id: randomString(),
+			assignmentId: data.assignmentId,
+			userId,
+			segmentId: data.segmentId,
+			visits: 1,
+			totalMs: durationMs,
+			firstViewedAt: now,
+			lastViewedAt: now,
+		})
+		.onConflictDoUpdate({
+			target: [
+				segmentActivity.assignmentId,
+				segmentActivity.userId,
+				segmentActivity.segmentId,
+			],
+			set: {
+				visits: sql`${segmentActivity.visits} + 1`,
+				totalMs: sql`${segmentActivity.totalMs} + ${durationMs}`,
+				lastViewedAt: now,
+			},
+		});
 
 	return true;
 });

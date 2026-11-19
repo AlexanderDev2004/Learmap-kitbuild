@@ -1,6 +1,8 @@
 import { relations, sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 
+import { SEGMENT_MODELS } from "@/lib/segment-model";
+
 import { cohorts, user } from "./auth-schema";
 
 const timestamps = {
@@ -116,6 +118,10 @@ export const assignments = sqliteTable(
 			onDelete: "set null",
 		}),
 		delayedPostTestDelayDays: integer("delayed_post_test_delay_days").default(7),
+		// Which segmentation model this assignment's learners see. "both" keeps
+		// the pre-existing behaviour (every segment defined on the goal map);
+		// "none" is the control condition: full map, no segment bar.
+		segmentModel: text("segment_model", { enum: SEGMENT_MODELS }).notNull().default("both"),
 		createdBy: text("created_by").notNull(),
 		...timestamps,
 	},
@@ -173,6 +179,38 @@ export const mapSegments = sqliteTable(
 		...timestamps,
 	},
 	(table) => [index("map_segments_goalMapId_idx").on(table.goalMapId)],
+);
+
+// Per-learner segment usage: how often each segment was opened and how long
+// the learner spent on it. Research logging — it records treatment compliance
+// (did the learner actually work segment by segment?) and per-segment time,
+// which the map score alone cannot show. Keyed by assignment + user so a row
+// exists even before the learner saves a draft.
+export const segmentActivity = sqliteTable(
+	"segment_activity",
+	{
+		id: text("id").primaryKey(),
+		assignmentId: text("assignment_id")
+			.notNull()
+			.references(() => assignments.id, { onDelete: "cascade" }),
+		userId: text("user_id").notNull(),
+		segmentId: text("segment_id")
+			.notNull()
+			.references(() => mapSegments.id, { onDelete: "cascade" }),
+		visits: integer("visits").notNull().default(0),
+		totalMs: integer("total_ms").notNull().default(0),
+		firstViewedAt: integer("first_viewed_at", { mode: "timestamp_ms" }).notNull(),
+		lastViewedAt: integer("last_viewed_at", { mode: "timestamp_ms" }).notNull(),
+		...timestamps,
+	},
+	(table) => [
+		unique("segment_activity_assignment_user_segment_unique").on(
+			table.assignmentId,
+			table.userId,
+			table.segmentId,
+		),
+		index("segment_activity_assignmentId_idx").on(table.assignmentId),
+	],
 );
 
 export const learnerMaps = sqliteTable(

@@ -1,18 +1,28 @@
 /**
- * Java research seed — for the thesis experiment.
+ * Java research seed — three-group experiment (Kelas A vs B vs control).
  *
  * Creates a complete "Pemrograman Java" research demo on top of the base seed:
  *   - Topic "Goal Maps for Pemrograman JAVA" + reading text (4 paragraphs)
- *     + goal map (12 propositions)
- *   - Pre-test / post-test forms (10 MCQ about Java) + a perception
+ *     + goal map
+ *   - Pre-test / post-test / delayed test (10 MCQ about Java) + perception
  *     questionnaire (7 Likert items + 1 open question)
- *   - TWO assignments over the SAME goal map, differing only in segmentation:
- *       Java 1 — kit segmented by PARAGRAPH structure (Segmenting by Paragraph)
- *       Java 2 — kit segmented by TOPIC DEPTH (Segmenting by Depth-Topic)
- *     Node colors visualize the segments (red/amber/sky/green).
+ *   - ONE goal map, ONE kit, and BOTH segmentation models stored as segments:
+ *       P1-P4 (type "paragraph")   — follows the reading structure
+ *       D1-Dn (type "depth-topic") — computed from the goal-map hierarchy
+ *   - THREE assignments over that single kit, differing only in segmentModel:
+ *       Java 1 — "paragraph"   (Kelas A)
+ *       Java 2 — "depth-topic" (Kelas B)
+ *       Java 3 — "none"        (Kelas C, control: full map, no segment bar)
+ *     Every group gets the same kit nodes and colors, so the only treatment
+ *     difference is the segmentation shown to the learner.
  *   - Each assignment targets its own cohort:
- *       "Java 1 Belajar Java - Paragraph" and "Java 2 Belajar Java - Depth-Topic"
+ *       "Java 1 Belajar Java - Paragraph"
+ *       "Java 2 Belajar Java - Depth-Topic"
+ *       "Java 3 Belajar Java - Kontrol"
  *     (cohorts are reused when they already exist — safe to re-run).
+ *
+ * All three cohorts are experiment-condition users: Kelas C is a control for
+ * SEGMENTATION, not for the kit-build activity itself.
  *
  * Run AFTER `db:seed` (idempotent):
  *   pnpm run db:seed:java
@@ -20,8 +30,10 @@
 import { eq, inArray } from "drizzle-orm";
 import { Effect, Layer, Logger } from "effect";
 
+import { computeDepthSegments } from "@/features/goal-map/lib/segmentation";
 import { Auth } from "@/lib/auth";
 import { RateLimiter } from "@/lib/rate-limiter";
+import { type SegmentModel, type SegmentType } from "@/lib/segment-model";
 import { randomString } from "@/lib/utils";
 import { Database, DatabaseLive } from "@/server/db/client";
 import {
@@ -30,6 +42,7 @@ import {
 	forms,
 	goalMaps,
 	kits,
+	mapSegments,
 	questions,
 	texts,
 	topics,
@@ -44,53 +57,47 @@ const TOPIC_TITLE = "Goal Maps for Pemrograman JAVA";
 
 const COHORT_PARAGRAF = "Java 1 Belajar Java - Paragraph";
 const COHORT_DEPTH = "Java 2 Belajar Java - Depth-Topic";
+const COHORT_KONTROL = "Java 3 Belajar Java - Kontrol";
 
 // ---------------------------------------------------------------------------
-// Segment colorings — the two research treatments over the SAME goal map.
-// Colors match the kit text-node palette (red/amber/sky/green).
+// Segmentation — the two thesis models over the SAME goal map.
 // ---------------------------------------------------------------------------
 
-/** Java 1: segments follow the READING PARAGRAPH structure. */
-const PARAGRAF_NODE_COLORS: Record<string, string> = {
-	// Segmen 1 — Pengertian Java & JVM (paragraf 1)
-	java: "red",
-	jvm: "red",
-	// Segmen 2 — Kompilasi & eksekusi (paragraf 2)
-	"source-code": "amber",
-	compiler: "amber",
-	bytecode: "amber",
-	// Segmen 3 — Struktur program & OOP (paragraf 3)
-	class: "sky",
-	"main-method": "sky",
-	method: "sky",
-	objek: "sky",
-	// Segmen 4 — Variabel, tipe data, library, output (paragraf 4)
-	variabel: "green",
-	"tipe-data": "green",
-	library: "green",
-	output: "green",
-};
+type SegmentSeed = { name: string; type: SegmentType; color: string; nodeIds: string[] };
 
-/** Java 2: segments follow the TOPIC DEPTH hierarchy (umum → spesifik). */
-const DEPTH_NODE_COLORS: Record<string, string> = {
-	// Level 0–1 — konsep inti (akar hierarki)
-	java: "red",
-	jvm: "red",
-	bytecode: "red",
-	class: "red",
-	variabel: "red",
-	// Level 2 — konsep menengah
-	"source-code": "amber",
-	compiler: "amber",
-	method: "amber",
-	objek: "amber",
-	"tipe-data": "amber",
-	// Level 3 — konsep rincian
-	"main-method": "sky",
-	output: "sky",
-	// Level 4 — paling spesifik
-	library: "green",
-};
+/** The three research arms; each maps to one cohort and one assignment. */
+type GroupKey = Extract<SegmentModel, "paragraph" | "depth-topic" | "none">;
+
+/** Kelas A: segments follow the READING PARAGRAPH structure. */
+const PARAGRAPH_SEGMENTS: SegmentSeed[] = [
+	{
+		name: "P1 — Pengertian Java & JVM",
+		type: "paragraph",
+		color: "#dc2626",
+		nodeIds: ["java", "jvm"],
+	},
+	{
+		name: "P2 — Kompilasi & Eksekusi",
+		type: "paragraph",
+		color: "#d97706",
+		nodeIds: ["source-code", "compiler", "bytecode"],
+	},
+	{
+		name: "P3 — Struktur Program & OOP",
+		type: "paragraph",
+		color: "#0284c7",
+		nodeIds: ["class", "main-method", "method", "objek"],
+	},
+	{
+		name: "P4 — Variabel, Tipe Data & Library",
+		type: "paragraph",
+		color: "#16a34a",
+		nodeIds: ["variabel", "tipe-data", "output", "library"],
+	},
+];
+
+/** Kelas B: one color per hierarchy level, ordered general → specific. */
+const DEPTH_LEVEL_COLORS = ["#2563eb", "#0891b2", "#9333ea", "#db2777", "#65a30d"] as const;
 
 type SeedQuestion =
 	| {
@@ -282,7 +289,7 @@ function ensureUser(input: {
 function upsertMcqForm(input: {
 	title: string;
 	description: string;
-	type: "pre_test" | "post_test";
+	type: "pre_test" | "post_test" | "delayed_test";
 	teacherId: string;
 	questions_: SeedQuestion[];
 }) {
@@ -469,10 +476,11 @@ const program = Effect.gen(function* () {
 	});
 
 	// 2. Cohorts (reuse when they already exist — the lecturer created them) ---
-	const cohortIds: Record<"paragraf" | "depth", string> = { paragraf: "", depth: "" };
+	const cohortIds: Record<GroupKey, string> = { paragraph: "", "depth-topic": "", none: "" };
 	for (const [name, key] of [
-		[COHORT_PARAGRAF, "paragraf"],
-		[COHORT_DEPTH, "depth"],
+		[COHORT_PARAGRAF, "paragraph"],
+		[COHORT_DEPTH, "depth-topic"],
+		[COHORT_KONTROL, "none"],
 	] as const) {
 		const existing = yield* db.select().from(cohorts).where(eq(cohorts.name, name)).limit(1);
 		if (existing[0]) {
@@ -564,7 +572,44 @@ const program = Effect.gen(function* () {
 		yield* Effect.log("  Created goal map: Pemrograman Java");
 	}
 
-	// 5. Forms: pre-test, post-test, perception questionnaire -------------------
+	// 5. Segments — both models on the same goal map -----------------------------
+	// Depth levels come from the same algorithm the product uses for
+	// "auto-segment by depth", so the seeded treatment matches the feature.
+	const depthSegments: SegmentSeed[] = computeDepthSegments(material.nodes, material.edges).map(
+		(nodeIds, index) => ({
+			name: `D${index + 1} — Level ${index}${index === 0 ? " (Konsep Inti)" : ""}`,
+			type: "depth-topic",
+			color: DEPTH_LEVEL_COLORS[index % DEPTH_LEVEL_COLORS.length],
+			nodeIds,
+		}),
+	);
+
+	const existingSegments = yield* db
+		.select()
+		.from(mapSegments)
+		.where(eq(mapSegments.goalMapId, goalMapId));
+	for (const [index, seg] of [...PARAGRAPH_SEGMENTS, ...depthSegments].entries()) {
+		const match = existingSegments.find((row) => row.name === seg.name);
+		const values = {
+			goalMapId,
+			name: seg.name,
+			type: seg.type,
+			orderIndex: index,
+			color: seg.color,
+			nodeIds: seg.nodeIds,
+			deletedAt: null,
+		};
+		if (match) {
+			yield* db.update(mapSegments).set(values).where(eq(mapSegments.id, match.id));
+		} else {
+			yield* db.insert(mapSegments).values({ id: randomString(), ...values });
+		}
+	}
+	yield* Effect.log(
+		`  Segments ready: ${PARAGRAPH_SEGMENTS.length} Paragraf + ${depthSegments.length} Depth-Topic`,
+	);
+
+	// 6. Forms: pre-test, post-test, delayed test, perception questionnaire -----
 	const preTestFormId = yield* upsertMcqForm({
 		title: "Pemrograman Java Pre-Test",
 		description:
@@ -581,68 +626,34 @@ const program = Effect.gen(function* () {
 		teacherId,
 		questions_: JAVA_TEST_QUESTIONS,
 	});
-	yield* upsertPerceptionForm({
+	const delayedTestFormId = yield* upsertMcqForm({
+		title: "Pemrograman Java Delayed Test",
+		description:
+			"10 soal pilihan ganda tentang bacaan Pemrograman Java — dikerjakan setelah jeda untuk mengukur retensi.",
+		type: "delayed_test",
+		teacherId,
+		questions_: JAVA_TEST_QUESTIONS,
+	});
+	const questionnaireFormId = yield* upsertPerceptionForm({
 		teacherId,
 		questions_: PERCEPTION_QUESTIONS,
 	});
-	yield* Effect.log("  Forms ready: Pre-Test, Post-Test, Kuesioner Persepsi");
+	yield* Effect.log("  Forms ready: Pre-Test, Post-Test, Delayed Test, Kuesioner Persepsi");
 
-	// 6. Two kits over the SAME goal map — one per segmentation model -----------
-	const recolor = (colors: Record<string, string>) =>
-		goalMapData.nodes.map((node) => {
-			const typed = node as { id: string; type: string; data: { label: string } };
-			if (typed.type !== "text") return typed;
-			return { ...typed, data: { ...typed.data, color: colors[typed.id] } };
-		});
-
-	const kitDefs = [
-		{
-			name: "Pemrograman Java Kit — Segmen Paragraf",
-			colors: PARAGRAF_NODE_COLORS,
-			key: "paragraf" as const,
-			assignmentTitle: "Pemrograman Java — Java 1 (Segmen Paragraf)",
-			assignmentDescription:
-				"Kit dipecah mengikuti struktur PARAGRAF materi: merah = paragraf 1 (pengertian Java & JVM), kuning = paragraf 2 (kompilasi & eksekusi), biru = paragraf 3 (struktur program & OOP), hijau = paragraf 4 (variabel, tipe data, library, output).",
-		},
-		{
-			name: "Pemrograman Java Kit — Segmen Depth-Topic",
-			colors: DEPTH_NODE_COLORS,
-			key: "depth" as const,
-			assignmentTitle: "Pemrograman Java — Java 2 (Segmen Depth-Topic)",
-			assignmentDescription:
-				"Kit dipecah mengikuti KEDALAMAN HIERARKI topik (umum → spesifik): merah = konsep inti, kuning = konsep menengah, biru = konsep rincian, hijau = paling spesifik.",
-		},
-	];
-
-	const startDate = new Date(Date.now() - 60 * 60 * 1000);
-	const dueAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-	for (const def of kitDefs) {
-		const kitNodes = recolor(def.colors);
-
-		const existingKit = yield* db.select().from(kits).where(eq(kits.name, def.name)).limit(1);
-		let kitId: string;
-		if (existingKit[0]) {
-			kitId = existingKit[0].id;
-			yield* db
-				.update(kits)
-				.set({
-					name: def.name,
-					layout: "preset",
-					enabled: true,
-					goalMapId,
-					teacherId,
-					textId,
-					nodes: kitNodes,
-					edges: [],
-				})
-				.where(eq(kits.id, kitId));
-		} else {
-			kitId = randomString();
-			yield* db.insert(kits).values({
-				id: kitId,
-				kitId: randomString(),
-				name: def.name,
+	// 7. ONE kit for all three groups -------------------------------------------
+	// Same nodes and colors for every arm: the only difference between groups
+	// is the segmentation their assignment exposes.
+	const kitName = "Pemrograman Java Kit — A/B/C";
+	const kitNodes = goalMapData.nodes.filter(
+		(node) => node.type === "text" || node.type === "connector",
+	);
+	const existingKit = yield* db.select().from(kits).where(eq(kits.name, kitName)).limit(1);
+	let kitId: string;
+	if (existingKit[0]) {
+		kitId = existingKit[0].id;
+		yield* db
+			.update(kits)
+			.set({
 				layout: "preset",
 				enabled: true,
 				goalMapId,
@@ -650,26 +661,74 @@ const program = Effect.gen(function* () {
 				textId,
 				nodes: kitNodes,
 				edges: [],
-			});
-		}
-		yield* Effect.log(`  Kit ready: ${def.name}`);
+			})
+			.where(eq(kits.id, kitId));
+	} else {
+		kitId = randomString();
+		yield* db.insert(kits).values({
+			id: kitId,
+			kitId: randomString(),
+			name: kitName,
+			layout: "preset",
+			enabled: true,
+			goalMapId,
+			teacherId,
+			textId,
+			nodes: kitNodes,
+			edges: [],
+		});
+	}
+	yield* Effect.log(`  Kit ready: ${kitName} (shared by Kelas A, B, C)`);
 
+	// 8. Three assignments over that kit — one per research arm ------------------
+	const startDate = new Date(Date.now() - 60 * 60 * 1000);
+	const dueAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+	const assignmentDefs: Array<{
+		key: GroupKey;
+		title: string;
+		description: string;
+	}> = [
+		{
+			key: "paragraph",
+			title: "Pemrograman Java — Java 1 (Segmen Paragraf)",
+			description:
+				"KELAS A. Kit sama dengan kelompok lain; segmen mengikuti struktur PARAGRAF bacaan: merah = paragraf 1 (pengertian Java & JVM), kuning = paragraf 2 (kompilasi & eksekusi), biru = paragraf 3 (struktur program & OOP), hijau = paragraf 4 (variabel, tipe data, output, library).",
+		},
+		{
+			key: "depth-topic",
+			title: "Pemrograman Java — Java 2 (Segmen Depth-Topic)",
+			description:
+				"KELAS B. Kit sama dengan kelompok lain; segmen mengikuti KEDALAMAN HIERARKI topik dari konsep inti ke konsep paling rinci.",
+		},
+		{
+			key: "none",
+			title: "Pemrograman Java — Java 3 (Kontrol, Tanpa Segmen)",
+			description:
+				"KELAS C (kontrol segmentasi). Kit dan aktivitas sama, tetapi peta ditampilkan utuh tanpa bilah segmen — pembanding untuk melihat apakah segmentasi itu sendiri membantu.",
+		},
+	];
+
+	for (const def of assignmentDefs) {
 		const existingAssignment = yield* db
 			.select()
 			.from(assignments)
-			.where(eq(assignments.title, def.assignmentTitle))
+			.where(eq(assignments.title, def.title))
 			.limit(1);
 		const assignmentValues = {
 			goalMapId,
 			kitId,
-			title: def.assignmentTitle,
-			description: def.assignmentDescription,
+			title: def.title,
+			description: def.description,
 			readingMaterial: material.content,
 			timeLimitMinutes: 30,
 			startDate,
 			dueAt,
 			preTestFormId,
 			postTestFormId,
+			delayedPostTestFormId: delayedTestFormId,
+			questionnaireFormId,
+			segmentModel: def.key,
 			createdBy: teacherId,
 		};
 		let assignmentId: string;
@@ -684,8 +743,8 @@ const program = Effect.gen(function* () {
 			yield* db.insert(assignments).values({ id: assignmentId, ...assignmentValues });
 		}
 
-		// Target this assignment to its cohort so each group only sees its own
-		// segmentation variant: Java 1 (paragraf) / Java 2 (depth-topic).
+		// Target this assignment to its cohort so each class sees only its own
+		// segmentation variant.
 		yield* db.delete(assignmentTargets).where(eq(assignmentTargets.assignmentId, assignmentId));
 		yield* db.insert(assignmentTargets).values({
 			id: randomString(),
@@ -693,7 +752,7 @@ const program = Effect.gen(function* () {
 			cohortId: cohortIds[def.key],
 			userId: null,
 		});
-		yield* Effect.log(`  Assignment ready: ${def.assignmentTitle}`);
+		yield* Effect.log(`  Assignment ready: ${def.title} (segmentModel=${def.key})`);
 	}
 
 	yield* Effect.log("--- Seed Pemrograman Java selesai ---");

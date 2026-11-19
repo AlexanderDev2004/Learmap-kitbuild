@@ -62,12 +62,22 @@ class LearnerMapNotFoundError extends Data.TaggedError("LearnerMapNotFoundError"
 	readonly learnerMapId: string;
 }> {}
 
+export const SegmentModelSchema = Schema.Union(
+	Schema.Literal("paragraph"),
+	Schema.Literal("depth-topic"),
+	Schema.Literal("both"),
+	Schema.Literal("none"),
+);
+
 export const TeacherAssignmentSchema = Schema.Struct({
 	id: Schema.String,
 	title: Schema.String,
 	goalMapId: Schema.String,
 	goalMapTitle: Schema.optional(Schema.String),
 	kitId: Schema.optional(Schema.String),
+	// Segmentation model this assignment's learners see; "none" marks the
+	// control condition.
+	segmentModel: SegmentModelSchema,
 	totalSubmissions: Schema.Number,
 	avgScore: Schema.optional(Schema.Number),
 	createdAt: Schema.Number,
@@ -104,6 +114,11 @@ export const LearnerAnalyticsSchema = Schema.Struct({
 	postTestTotal: Schema.NullOr(Schema.Number),
 	postTestScore: Schema.NullOr(Schema.Number),
 	postTestDurationSeconds: Schema.NullOr(Schema.Number),
+	// Segmentation treatment applied to this learner plus how they used it:
+	// distinct segments opened and total time logged on segments.
+	segmentModel: SegmentModelSchema,
+	segmentsVisited: Schema.Number,
+	segmentTimeSeconds: Schema.NullOr(Schema.Number),
 });
 
 export type LearnerAnalytics = typeof LearnerAnalyticsSchema.Type;

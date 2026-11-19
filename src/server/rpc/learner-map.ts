@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { Effect, Schema } from "effect";
 
 import {
+	recordSegmentActivity,
 	saveLearnerMap,
 	submitLearnerMap,
 	startNewAttempt,
@@ -16,6 +17,7 @@ import {
 } from "@/features/learner-map/lib/learner-map-service.queries";
 import {
 	GetAssignmentForStudentInput,
+	RecordSegmentActivityInput,
 	SaveLearnerMapInput,
 	SubmitLearnerMapInput,
 	GetDiagnosisInput,
@@ -172,6 +174,28 @@ export const getPeerStatsRpc = createServerFn()
 		),
 	);
 
+export const recordSegmentActivityRpc = createServerFn({ method: "POST" })
+	.middleware([authMiddleware])
+	.inputValidator((raw) => Schema.decodeUnknownSync(RecordSegmentActivityInput)(raw))
+	.handler(({ data, context }) =>
+		AppRuntime.runPromise(
+			recordSegmentActivity(context.user.id, data).pipe(
+				Effect.map(() => Rpc.ok(true)),
+				Effect.withSpan("recordSegmentActivity"),
+				Effect.tapError(logRpcError("recordSegmentActivity")),
+				Effect.catchTags({
+					AssignmentNotFoundError: () => Rpc.notFound("Assignment"),
+					SegmentNotFoundError: () => Rpc.notFound("Segment"),
+					AccessDeniedError: () => Rpc.forbidden("Access denied"),
+				}),
+				Effect.catchAll(logAndReturnError("recordSegmentActivity")),
+				Effect.catchAllDefect(logAndReturnDefect("recordSegmentActivity")),
+				Effect.timeout(TIMEOUT_DURATION),
+				Effect.catchTag("TimeoutException", () => Rpc.err("Request timed out", "TIMEOUT")),
+			),
+		),
+	);
+
 export const submitControlTextRpc = createServerFn({ method: "POST" })
 	.middleware([authMiddleware])
 	.inputValidator((raw) => Schema.decodeUnknownSync(SubmitControlTextInput)(raw))
@@ -210,6 +234,11 @@ export const LearnerMapRpc = {
 		mutationOptions({
 			mutationKey: [...LearnerMapRpc.learnerMaps(), "save"],
 			mutationFn: (data: SaveLearnerMapInput) => saveLearnerMapRpc({ data }),
+		}),
+	recordSegmentActivity: () =>
+		mutationOptions({
+			mutationKey: [...LearnerMapRpc.learnerMaps(), "record-segment-activity"],
+			mutationFn: (data: RecordSegmentActivityInput) => recordSegmentActivityRpc({ data }),
 		}),
 	submitLearnerMap: () =>
 		mutationOptions({

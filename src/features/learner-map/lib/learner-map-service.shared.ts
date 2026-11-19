@@ -86,6 +86,20 @@ export const SubmitControlTextInput = Schema.Struct({
 
 export type SubmitControlTextInput = typeof SubmitControlTextInput.Type;
 
+export const RecordSegmentActivityInput = Schema.Struct({
+	assignmentId: NonEmpty("Assignment ID"),
+	segmentId: NonEmpty("Segment ID"),
+	// Time the learner spent on the segment since the previous switch. The
+	// service clamps it, so an idle tab cannot inflate per-segment time.
+	durationMs: Schema.Number,
+});
+
+export type RecordSegmentActivityInput = typeof RecordSegmentActivityInput.Type;
+
+export class SegmentNotFoundError extends Data.TaggedError("SegmentNotFoundError")<{
+	readonly segmentId: string;
+}> {}
+
 export type ExperimentCondition = "summarizing" | "concept_map";
 
 export function mapStudyGroupToCondition(

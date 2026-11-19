@@ -8,7 +8,7 @@ import type { EdgeChange, NodeChange } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { AlertCircle, BookOpenIcon, InfoIcon, X } from "lucide-react";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -107,6 +107,42 @@ export function LearnerMapEditor() {
 				? null
 				: (segments.find((s) => s.id === selection.id) ?? null);
 
+	// Research logging: report how long the learner stays on each segment so
+	// per-model compliance and time-on-segment can be analysed. Failures stay
+	// silent — logging must never interrupt the learner.
+	const recordSegmentActivity = useRpcMutation(LearnerMapRpc.recordSegmentActivity(), {
+		operation: "record segment activity",
+		showError: false,
+	});
+	const recordSegmentActivityRef = useRef(recordSegmentActivity.mutate);
+	recordSegmentActivityRef.current = recordSegmentActivity.mutate;
+
+	const pendingSegmentRef = useRef<{ id: string; enteredAt: number } | null>(null);
+	const flushSegmentTime = useCallback(() => {
+		const pending = pendingSegmentRef.current;
+		if (!pending) return;
+		pendingSegmentRef.current = null;
+		const durationMs = Date.now() - pending.enteredAt;
+		// Sub-second switches are clicks, not study time.
+		if (durationMs < 1000) return;
+		recordSegmentActivityRef.current({ assignmentId, segmentId: pending.id, durationMs });
+	}, [assignmentId]);
+
+	const activeSegmentId = activeSegment?.id ?? null;
+
+	useEffect(() => {
+		if (!activeSegmentId || isSubmitted) {
+			flushSegmentTime();
+			return;
+		}
+		if (pendingSegmentRef.current?.id === activeSegmentId) return;
+		flushSegmentTime();
+		pendingSegmentRef.current = { id: activeSegmentId, enteredAt: Date.now() };
+	}, [activeSegmentId, isSubmitted, flushSegmentTime]);
+
+	// Leaving the page mid-segment still records that stay.
+	useEffect(() => flushSegmentTime, [flushSegmentTime]);
+
 	const hiddenConceptIds = new Set<string>();
 	if (segments.length > 0 && activeSegment && !isSubmitted) {
 		const activeIds = new Set(activeSegment.nodeIds);
@@ -171,6 +207,8 @@ export function LearnerMapEditor() {
 	]);
 
 	const handleSaveThenSubmit = useCallback(async () => {
+		// Record the final segment stay before the page navigates away.
+		flushSegmentTime();
 		const saveResult = await saveMutation.mutateAsync({
 			assignmentId,
 			nodes: JSON.stringify(nodes),
@@ -190,7 +228,17 @@ export function LearnerMapEditor() {
 		} else {
 			send({ type: "SUBMIT_ERROR" });
 		}
-	}, [nodes, edges, assignmentId, saveMutation, submitMutation, queryClient, navigate, send]);
+	}, [
+		nodes,
+		edges,
+		assignmentId,
+		saveMutation,
+		submitMutation,
+		queryClient,
+		navigate,
+		send,
+		flushSegmentTime,
+	]);
 
 	const onNodesChange = useCallback(
 		(changes: NodeChange<Node>[]) => {
