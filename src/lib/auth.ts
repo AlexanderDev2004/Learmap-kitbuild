@@ -33,6 +33,10 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 				// the IPv6 loopback and Better Auth would reject the origin.
 				"http://[::1]:5173",
 				"http://[::1]:5174",
+				...config.authTrustedOrigins
+					.split(",")
+					.map((origin) => origin.trim())
+					.filter((origin) => origin.length > 0),
 			],
 			database: drizzleAdapter(db, {
 				provider: "sqlite",

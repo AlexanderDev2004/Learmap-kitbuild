@@ -32,6 +32,12 @@ function getFriendlyAuthErrorMessage(err: unknown) {
 	if (msg.includes("rate") && msg.includes("limit")) {
 		return "Too many attempts. Please wait a moment and try again.";
 	}
+	// The auth server rejects requests whose Origin is not in trustedOrigins
+	// (e.g. a portal/tunnel URL, or a LAN IP). Reporting it as a wrong password
+	// sends people hunting for the wrong problem, so name the real cause.
+	if (msg.includes("invalid origin") || msg.includes("missing or null origin")) {
+		return "This address is not allowed to sign in. Open the app from its configured URL, or ask the admin to allow this origin.";
+	}
 	if (msg.includes("unavailable")) {
 		return "Sign-in is temporarily unavailable. Please try again in a moment.";
 	}
