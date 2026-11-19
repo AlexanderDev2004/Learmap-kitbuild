@@ -30,6 +30,7 @@ import { CanvasOnboardingDialog } from "@/features/learner-map/components/canvas
 import { LearnerToolbar } from "@/features/learner-map/components/learner-toolbar";
 import { MaterialDialog } from "@/features/learner-map/components/material-dialog";
 import type { Node, Edge } from "@/features/learner-map/lib/comparator";
+import { sendSegmentActivityBeacon } from "@/features/learner-map/lib/segment-activity-beacon";
 import { useRpcMutation, useRpcQuery } from "@/hooks/use-rpc-query";
 import { useStableSerializedValue } from "@/hooks/use-stable-serialized-value";
 import { toast } from "@/lib/error-toast";
@@ -118,30 +119,57 @@ export function LearnerMapEditor() {
 	recordSegmentActivityRef.current = recordSegmentActivity.mutate;
 
 	const pendingSegmentRef = useRef<{ id: string; enteredAt: number } | null>(null);
-	const flushSegmentTime = useCallback(() => {
-		const pending = pendingSegmentRef.current;
-		if (!pending) return;
-		pendingSegmentRef.current = null;
-		const durationMs = Date.now() - pending.enteredAt;
-		// Sub-second switches are clicks, not study time.
-		if (durationMs < 1000) return;
-		recordSegmentActivityRef.current({ assignmentId, segmentId: pending.id, durationMs });
-	}, [assignmentId]);
+	const flushSegmentTime = useCallback(
+		({ viaBeacon = false }: { viaBeacon?: boolean } = {}) => {
+			const pending = pendingSegmentRef.current;
+			if (!pending) return;
+			pendingSegmentRef.current = null;
+			const durationMs = Date.now() - pending.enteredAt;
+			// Sub-second switches are clicks, not study time.
+			if (durationMs < 1000) return;
+			const payload = { assignmentId, segmentId: pending.id, durationMs };
+			// A beacon survives the document being discarded; when the browser
+			// refuses to queue it, the RPC is still the best remaining option.
+			if (viaBeacon && sendSegmentActivityBeacon(payload)) return;
+			recordSegmentActivityRef.current(payload);
+		},
+		[assignmentId],
+	);
 
 	const activeSegmentId = activeSegment?.id ?? null;
+	const [pageVisible, setPageVisible] = useState(true);
 
 	useEffect(() => {
-		if (!activeSegmentId || isSubmitted) {
-			flushSegmentTime();
+		const onVisibilityChange = () => setPageVisible(document.visibilityState === "visible");
+		onVisibilityChange();
+		document.addEventListener("visibilitychange", onVisibilityChange);
+		return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+	}, []);
+
+	// A stay ends when the segment changes, when the page is hidden, and when the
+	// learner submits. Hiding pauses it instead of counting time away from the
+	// tab, and turning the page visible again starts a fresh stay.
+	useEffect(() => {
+		if (!activeSegmentId || isSubmitted || !pageVisible) {
+			flushSegmentTime({ viaBeacon: !pageVisible });
 			return;
 		}
 		if (pendingSegmentRef.current?.id === activeSegmentId) return;
 		flushSegmentTime();
 		pendingSegmentRef.current = { id: activeSegmentId, enteredAt: Date.now() };
-	}, [activeSegmentId, isSubmitted, flushSegmentTime]);
+	}, [activeSegmentId, isSubmitted, pageVisible, flushSegmentTime]);
 
-	// Leaving the page mid-segment still records that stay.
-	useEffect(() => flushSegmentTime, [flushSegmentTime]);
+	// Navigating away unmounts the editor while the document lives on, so the RPC
+	// below completes. A reload or tab close never unmounts it, and an in-flight
+	// request dies with the document, so `pagehide` hands that stay to the browser.
+	useEffect(() => {
+		const onPageHide = () => flushSegmentTime({ viaBeacon: true });
+		window.addEventListener("pagehide", onPageHide);
+		return () => {
+			window.removeEventListener("pagehide", onPageHide);
+			flushSegmentTime();
+		};
+	}, [flushSegmentTime]);
 
 	const hiddenConceptIds = new Set<string>();
 	if (segments.length > 0 && activeSegment && !isSubmitted) {

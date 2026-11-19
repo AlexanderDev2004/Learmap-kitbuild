@@ -16,6 +16,7 @@ import { Route as SignupIndexRouteImport } from './routes/signup.index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardSheetAnalyticsRouteImport } from './routes/dashboard.sheet-analytics'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard.profile'
+import { Route as ApiSegmentActivityRouteImport } from './routes/api/segment-activity'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as DashboardUsersIndexRouteImport } from './routes/dashboard.users.index'
 import { Route as DashboardGoalMapIndexRouteImport } from './routes/dashboard.goal-map.index'
@@ -72,6 +73,11 @@ const DashboardProfileRoute = DashboardProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => DashboardRoute,
+} as any)
+const ApiSegmentActivityRoute = ApiSegmentActivityRouteImport.update({
+  id: '/api/segment-activity',
+  path: '/api/segment-activity',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/segment-activity': typeof ApiSegmentActivityRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/sheet-analytics': typeof DashboardSheetAnalyticsRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/segment-activity': typeof ApiSegmentActivityRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/sheet-analytics': typeof DashboardSheetAnalyticsRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/segment-activity': typeof ApiSegmentActivityRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/sheet-analytics': typeof DashboardSheetAnalyticsRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -288,6 +297,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/api/health'
+    | '/api/segment-activity'
     | '/dashboard/profile'
     | '/dashboard/sheet-analytics'
     | '/dashboard/'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/api/health'
+    | '/api/segment-activity'
     | '/dashboard/profile'
     | '/dashboard/sheet-analytics'
     | '/dashboard'
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/api/health'
+    | '/api/segment-activity'
     | '/dashboard/profile'
     | '/dashboard/sheet-analytics'
     | '/dashboard/'
@@ -378,6 +390,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiSegmentActivityRoute: typeof ApiSegmentActivityRoute
   SignupIndexRoute: typeof SignupIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiMaterialsImagesGoalMapIdImageIdRoute: typeof ApiMaterialsImagesGoalMapIdImageIdRoute
@@ -433,6 +446,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/profile'
       preLoaderRoute: typeof DashboardProfileRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/api/segment-activity': {
+      id: '/api/segment-activity'
+      path: '/api/segment-activity'
+      fullPath: '/api/segment-activity'
+      preLoaderRoute: typeof ApiSegmentActivityRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/health': {
       id: '/api/health'
@@ -648,6 +668,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiSegmentActivityRoute: ApiSegmentActivityRoute,
   SignupIndexRoute: SignupIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiMaterialsImagesGoalMapIdImageIdRoute:
