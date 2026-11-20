@@ -96,6 +96,7 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 				preTestFormId: ctx.procedure.preTestFormId,
 				postTestFormId: ctx.procedure.postTestFormId || undefined,
 				delayedPostTestFormId: ctx.procedure.delayedPostTestFormId || undefined,
+				questionnaireFormId: ctx.procedure.questionnaireFormId || undefined,
 				delayedPostTestDelayDays: ctx.procedure.delayedPostTestDelayDays,
 			},
 			{
@@ -122,6 +123,7 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 	const pretestForms = formsWithDesc.filter((f) => f.type === "pre_test");
 	const posttestForms = formsWithDesc.filter((f) => f.type === "post_test");
 	const delayedtestForms = formsWithDesc.filter((f) => f.type === "delayed_test");
+	const questionnaireForms = formsWithDesc.filter((f) => f.type === "questionnaire");
 
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
@@ -280,6 +282,20 @@ export function CreateAssignmentForm({ onSuccess, onCancel }: CreateAssignmentFo
 						}
 						forms={delayedtestForms}
 						placeholder="Select a delayed post-test form"
+					/>
+					<FormSelect
+						id="questionnaire"
+						label="Kuesioner"
+						value={ctx.procedure.questionnaireFormId}
+						onChange={(v) =>
+							send({
+								type: "SET_PROCEDURE",
+								field: "questionnaireFormId",
+								value: v,
+							})
+						}
+						forms={questionnaireForms}
+						placeholder="Select a questionnaire form"
 					/>
 					<div className="space-y-2">
 						<Label htmlFor="delayedPostTestDelayDays">Delayed Test Delay (days)</Label>

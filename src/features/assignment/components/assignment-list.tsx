@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
 	CalendarIcon,
 	ClipboardListIcon,
@@ -44,6 +45,7 @@ export interface AssignmentListItem {
 	preTestFormId?: string | null;
 	postTestFormId?: string | null;
 	delayedPostTestFormId?: string | null;
+	questionnaireFormId?: string | null;
 }
 
 type ViewMode = "teacher" | "student";
@@ -431,7 +433,20 @@ function StudentCard({
 					</div>
 				</div>
 
-				<div className="flex items-center shrink-0">
+				<div className="flex items-center gap-2 shrink-0">
+					{assignment.questionnaireFormId && (
+						<Link
+							to="/dashboard/forms/take"
+							search={{
+								formId: assignment.questionnaireFormId,
+								redirectBack: "/dashboard/assignments",
+							}}
+							className="inline-flex items-center rounded-md border border-border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
+						>
+							<ClipboardListIcon className="size-3.5 mr-1" />
+							Kuesioner
+						</Link>
+					)}
 					{showResult ? (
 						<Button
 							variant="outline"

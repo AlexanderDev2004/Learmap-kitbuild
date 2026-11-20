@@ -94,6 +94,7 @@ export const createAssignment = Effect.fn("createAssignment")(function* (
 		preTestFormId: data.preTestFormId,
 		postTestFormId: data.postTestFormId,
 		delayedPostTestFormId: data.delayedPostTestFormId,
+		questionnaireFormId: data.questionnaireFormId ?? null,
 		delayedPostTestDelayDays: data.delayedPostTestDelayDays,
 		segmentModel: data.segmentModel,
 		createdBy: userId,
