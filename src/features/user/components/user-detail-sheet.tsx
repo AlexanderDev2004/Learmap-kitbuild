@@ -1,3 +1,4 @@
+import { Eye, EyeOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,10 @@ type UserDetailSheetProps = {
 	onDelete: (userId: string) => void;
 	onRoleChange: (userId: string, role: string) => void;
 	onSetPassword: (userId: string, newPassword: string) => void;
+	/** Every cohort a user can be put in. */
+	cohorts: { id: string; name: string }[];
+	onCohortChange: (userId: string, cohortId: string, action: "add" | "remove") => void;
+	isUpdatingCohorts?: boolean;
 	isAdmin: boolean;
 	currentUserId: string;
 	isSaving?: boolean;
@@ -56,6 +61,9 @@ export function UserDetailSheet({
 	onDelete,
 	onRoleChange,
 	onSetPassword,
+	cohorts,
+	onCohortChange,
+	isUpdatingCohorts,
 	isAdmin,
 	currentUserId,
 	isSaving,
@@ -69,6 +77,7 @@ export function UserDetailSheet({
 	const [passwordOpen, setPasswordOpen] = useState(false);
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
 
 	useEffect(() => {
 		if (user) {
@@ -86,12 +95,17 @@ export function UserDetailSheet({
 		setPasswordOpen(false);
 		setNewPassword("");
 		setConfirmPassword("");
+		setShowPassword(false);
 	}, [user]);
 
 	if (!user) return null;
 
 	const canModifyRole = isAdmin && user.id !== currentUserId;
 	const canBan = isAdmin && user.id !== currentUserId;
+	// Cohorts this user is not in yet; the select only offers those.
+	const assignableCohorts = cohorts.filter(
+		(cohort) => !user.cohorts.some((assigned) => assigned.id === cohort.id),
+	);
 
 	const handleSave = () => {
 		const changes: Record<string, unknown> = {};
@@ -252,8 +266,17 @@ export function UserDetailSheet({
 						<div className="flex flex-wrap gap-2">
 							{user.cohorts.length > 0 ? (
 								user.cohorts.map((c) => (
-									<Badge key={c.id} variant="secondary">
+									<Badge key={c.id} variant="secondary" className="gap-1 pr-1">
 										{c.name}
+										<button
+											type="button"
+											aria-label={`Remove from ${c.name}`}
+											disabled={isUpdatingCohorts}
+											onClick={() => onCohortChange(user.id, c.id, "remove")}
+											className="hover:bg-foreground/10 rounded-sm p-0.5 disabled:opacity-50"
+										>
+											<X className="size-3" />
+										</button>
 									</Badge>
 								))
 							) : (
@@ -262,6 +285,26 @@ export function UserDetailSheet({
 								</span>
 							)}
 						</div>
+						{assignableCohorts.length > 0 && (
+							<Select
+								value=""
+								disabled={isUpdatingCohorts}
+								onValueChange={(cohortId) =>
+									cohortId && onCohortChange(user.id, cohortId, "add")
+								}
+							>
+								<SelectTrigger id="add-cohort" className="w-full">
+									<SelectValue placeholder="Add to cohort" />
+								</SelectTrigger>
+								<SelectContent>
+									{assignableCohorts.map((c) => (
+										<SelectItem key={c.id} value={c.id}>
+											{c.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
 					</div>
 
 					{/* Account Actions */}
@@ -377,19 +420,34 @@ export function UserDetailSheet({
 					<div className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor="newPassword">New Password</Label>
-							<Input
-								id="newPassword"
-								type="password"
-								value={newPassword}
-								onChange={(e) => setNewPassword(e.target.value)}
-								placeholder="At least 8 characters"
-							/>
+							<div className="relative">
+								<Input
+									id="newPassword"
+									type={showPassword ? "text" : "password"}
+									value={newPassword}
+									onChange={(e) => setNewPassword(e.target.value)}
+									placeholder="At least 8 characters"
+									className="pr-10"
+								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword((visible) => !visible)}
+									aria-label={showPassword ? "Hide password" : "Show password"}
+									className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex w-10 items-center justify-center"
+								>
+									{showPassword ? (
+										<EyeOff className="size-4" />
+									) : (
+										<Eye className="size-4" />
+									)}
+								</button>
+							</div>
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="confirmNewPassword">Confirm Password</Label>
 							<Input
 								id="confirmNewPassword"
-								type="password"
+								type={showPassword ? "text" : "password"}
 								value={confirmPassword}
 								onChange={(e) => setConfirmPassword(e.target.value)}
 								placeholder="Repeat the new password"

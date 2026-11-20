@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+﻿import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { UsersIcon, UserCheckIcon } from "lucide-react";
 import { useState } from "react";
@@ -169,6 +169,31 @@ function UsersPage() {
 		);
 	};
 
+	const handleUserCohortChange = (userId: string, cohortId: string, action: "add" | "remove") => {
+		bulkCohortMutation.mutate(
+			{ userIds: [userId], cohortId, action },
+			{
+				onSuccess: () => {
+					invalidateUsers();
+					// The sheet keeps its own copy of the row, so reflect the change
+					// there at once instead of waiting for the list to refetch.
+					setSelectedUser((previous) => {
+						if (!previous || previous.id !== userId) return previous;
+						const cohort = cohorts.find((candidate) => candidate.id === cohortId);
+						if (!cohort) return previous;
+						return {
+							...previous,
+							cohorts:
+								action === "add"
+									? [...previous.cohorts, cohort]
+									: previous.cohorts.filter((c) => c.id !== cohortId),
+						};
+					});
+				},
+			},
+		);
+	};
+
 	const handlePageChange = (newPage: number) => {
 		setFilters((prev) => ({ ...prev, page: newPage }));
 		setSelectedIds([]);
@@ -252,6 +277,9 @@ function UsersPage() {
 					onRoleChange={handleRoleChange}
 					onDelete={handleDelete}
 					onSetPassword={handleSetPassword}
+					cohorts={cohorts}
+					onCohortChange={handleUserCohortChange}
+					isUpdatingCohorts={bulkCohortMutation.isPending}
 					isAdmin={isAdmin}
 					currentUserId={currentUserId}
 					isSaving={updateMutation.isPending}
