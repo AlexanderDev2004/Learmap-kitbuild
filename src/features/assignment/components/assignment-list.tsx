@@ -422,6 +422,22 @@ function StudentCard({
 							<CalendarIcon className="size-3" />
 							{formatDueDate(assignment.dueAt)}
 						</span>
+						{assignment.questionnaireFormId && (
+							<>
+								<span className="text-muted-foreground">·</span>
+								<Link
+									to="/dashboard/forms/take"
+									search={{
+										formId: assignment.questionnaireFormId,
+										redirectBack: "/dashboard/assignments",
+									}}
+									className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 font-medium hover:bg-muted"
+								>
+									<ClipboardListIcon className="size-3" />
+									Kuesioner
+								</Link>
+							</>
+						)}
 						{(assignment.attempt ?? 0) > 0 && (
 							<>
 								<span className="text-muted-foreground">·</span>
@@ -433,20 +449,7 @@ function StudentCard({
 					</div>
 				</div>
 
-				<div className="flex items-center gap-2 shrink-0">
-					{assignment.questionnaireFormId && (
-						<Link
-							to="/dashboard/forms/take"
-							search={{
-								formId: assignment.questionnaireFormId,
-								redirectBack: "/dashboard/assignments",
-							}}
-							className="inline-flex items-center rounded-md border border-border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
-						>
-							<ClipboardListIcon className="size-3.5 mr-1" />
-							Kuesioner
-						</Link>
-					)}
+				<div className="flex items-center shrink-0">
 					{showResult ? (
 						<Button
 							variant="outline"
