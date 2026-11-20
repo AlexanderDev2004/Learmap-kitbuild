@@ -1,29 +1,21 @@
 import { cn } from "@/lib/utils";
 
-function highlightParensAsHtml(text: string, showFurigana: boolean): string {
-	return text.replaceAll(/(（[^）]*）)/g, (match) =>
-		showFurigana ? `<span style="opacity:0.5">${match}</span>` : "",
-	);
+// Parenthesized glosses ("OOP (Object Oriented Programming)") are dimmed so the
+// main sentence stays readable.
+function dimParentheses(text: string): string {
+	return text.replaceAll(/(（[^）]*）)/g, (match) => `<span style="opacity:0.5">${match}</span>`);
 }
 
 interface ReadingMaterialRendererProps {
 	content: string;
-	/** When true (default), parenthesized content (furigana) is shown. When false, it's hidden. */
-	showFurigana?: boolean;
 	className?: string;
 }
 
-export function ReadingMaterialRenderer({
-	content,
-	showFurigana = true,
-	className,
-}: ReadingMaterialRendererProps) {
+export function ReadingMaterialRenderer({ content, className }: ReadingMaterialRendererProps) {
 	return (
 		<div
 			className={cn("text-xl leading-loose text-foreground/90", className)}
-			dangerouslySetInnerHTML={{
-				__html: highlightParensAsHtml(content, showFurigana),
-			}}
+			dangerouslySetInnerHTML={{ __html: dimParentheses(content) }}
 		/>
 	);
 }

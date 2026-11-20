@@ -1,11 +1,9 @@
-import { BookOpen, Eye, EyeOff, Languages } from "lucide-react";
-import { useState } from "react";
+import { BookOpen, Eye, EyeOff } from "lucide-react";
 
 import { ReadingMaterialRenderer } from "@/components/reading-material-renderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 import type { QuestionType } from "../question-list";
@@ -68,7 +66,6 @@ export function FormPreview({
 	onAnswerChange,
 	className,
 }: FormPreviewProps) {
-	const [showFurigana, setShowFurigana] = useState(true);
 	const sortedQuestions = questions.slice().sort((a, b) => a.orderIndex - b.orderIndex);
 	const sortedReadingMaterialSections = (form.readingMaterialSections ?? [])
 		.slice()
@@ -168,19 +165,8 @@ export function FormPreview({
 															")"}
 												</p>
 												<div className="mt-2">
-													<div className="flex items-center justify-end gap-2 mb-2">
-														{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-														<label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-															<Languages className="size-3" />
-															<Switch
-																checked={showFurigana}
-																onCheckedChange={setShowFurigana}
-															/>
-														</label>
-													</div>
 													<ReadingMaterialRenderer
 														content={readingMaterial.content}
-														showFurigana={showFurigana}
 													/>
 												</div>
 											</div>

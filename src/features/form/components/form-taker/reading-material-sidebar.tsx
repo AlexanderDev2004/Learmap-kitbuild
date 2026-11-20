@@ -1,11 +1,10 @@
-import { BookOpen, Languages } from "lucide-react";
-import { useState } from "react";
+import { BookOpen } from "lucide-react";
 
 import { ReadingMaterialRenderer } from "@/components/reading-material-renderer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Switch } from "@/components/ui/switch";
 import type { MaterialImage } from "@/features/form/lib/form-service.shared";
 import { cn } from "@/lib/utils";
+
 interface ReadingMaterialSectionLike {
 	id: string;
 	title?: string | null;
@@ -22,12 +21,10 @@ interface ReadingMaterialSidebarProps {
 function ReadingMaterialContent({
 	sections,
 	materialImages,
-	showFurigana,
 	compact,
 }: {
 	sections: readonly ReadingMaterialSectionLike[];
 	materialImages: readonly MaterialImage[];
-	showFurigana: boolean;
 	compact?: boolean;
 }) {
 	return (
@@ -74,7 +71,6 @@ function ReadingMaterialContent({
 					</p>
 					<ReadingMaterialRenderer
 						content={section.content}
-						showFurigana={showFurigana}
 						className={compact ? "text-base" : undefined}
 					/>
 				</div>
@@ -87,19 +83,12 @@ export function ReadingMaterialSidebar({
 	sections,
 	materialImages = [],
 }: ReadingMaterialSidebarProps) {
-	const [showFurigana, setShowFurigana] = useState(true);
-
 	const header = (
 		<div className="flex items-center justify-between shrink-0 p-6 pb-0">
 			<div className="flex items-center gap-2">
 				<BookOpen className="size-5 text-muted-foreground" />
 				<h2 className="font-semibold font-heading">Reading Material</h2>
 			</div>
-			{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-			<label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-				<Languages className="size-3.5" />
-				<Switch checked={showFurigana} onCheckedChange={setShowFurigana} />
-			</label>
 		</div>
 	);
 
@@ -113,7 +102,6 @@ export function ReadingMaterialSidebar({
 						<ReadingMaterialContent
 							sections={sections}
 							materialImages={materialImages}
-							showFurigana={showFurigana}
 						/>
 					</div>
 				</ScrollArea>
@@ -126,22 +114,12 @@ export function ReadingMaterialSidebar({
 						<BookOpen className="size-4 text-muted-foreground" />
 						<h2 className="text-sm font-semibold">Reading Material</h2>
 					</div>
-					{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-					<label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
-						<Languages className="size-3" />
-						<Switch
-							checked={showFurigana}
-							onCheckedChange={setShowFurigana}
-							className="scale-75 origin-right"
-						/>
-					</label>
 				</div>
 				<ScrollArea className="flex-1">
 					<div className="space-y-4 px-4 pb-4">
 						<ReadingMaterialContent
 							sections={sections}
 							materialImages={materialImages}
-							showFurigana={showFurigana}
 							compact
 						/>
 					</div>
