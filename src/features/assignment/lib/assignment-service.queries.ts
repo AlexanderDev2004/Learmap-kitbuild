@@ -32,8 +32,10 @@ export const listTeacherAssignments = Effect.fn("listTeacherAssignments")(functi
 			delayedPostTestDelayDays: assignments.delayedPostTestDelayDays,
 			createdAt: assignments.createdAt,
 			updatedAt: assignments.updatedAt,
-			goalMapTitle: goalMaps.title,
-			goalMapDescription: goalMaps.description,
+			goalMapTitle: sql<string | null>`goal_maps.title`.as("goal_map_title"),
+			goalMapDescription: sql<string | null>`goal_maps.description`.as(
+				"goal_map_description",
+			),
 		})
 		.from(assignments)
 		.leftJoin(goalMaps, and(eq(assignments.goalMapId, goalMaps.id), isNull(goalMaps.deletedAt)))
@@ -375,7 +377,7 @@ export const getAssignmentById = Effect.fn("getAssignmentById")(function* (assig
 			createdBy: assignments.createdBy,
 			createdAt: assignments.createdAt,
 			updatedAt: assignments.updatedAt,
-			goalMapTitle: goalMaps.title,
+			goalMapTitle: sql<string | null>`goal_maps.title`.as("goal_map_title"),
 		})
 		.from(assignments)
 		.leftJoin(goalMaps, and(eq(assignments.goalMapId, goalMaps.id), isNull(goalMaps.deletedAt)))
