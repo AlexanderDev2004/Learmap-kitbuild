@@ -1,5 +1,4 @@
-import { BookOpenIcon, Languages } from "lucide-react";
-import { useState } from "react";
+import { BookOpenIcon } from "lucide-react";
 
 import { ReadingMaterialRenderer } from "@/components/reading-material-renderer";
 import {
@@ -10,7 +9,6 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 
 interface MaterialImage {
 	id: string;
@@ -33,7 +31,6 @@ export function MaterialDialog({
 	content,
 	images = EMPTY_IMAGES,
 }: MaterialDialogProps) {
-	const [showFurigana, setShowFurigana] = useState(true);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-4xl! max-h-[85vh] overflow-hidden flex flex-col">
@@ -45,24 +42,13 @@ export function MaterialDialog({
 					<DialogDescription>
 						Use this material as a reference while building your concept map
 					</DialogDescription>
-					<div className="flex items-center justify-end gap-2 pt-2">
-						{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-						<label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-							<Languages className="size-3.5" />
-							Furigana
-							<Switch checked={showFurigana} onCheckedChange={setShowFurigana} />
-						</label>
-					</div>
 				</DialogHeader>
 				<div className="flex-1 overflow-y-auto pr-2 space-y-6">
 					{content ? (
 						<div className="space-y-4">
 							<Label className="text-base font-medium">Text Content</Label>
 							<div className="rounded-lg border bg-muted/50 p-4">
-								<ReadingMaterialRenderer
-									content={content}
-									showFurigana={showFurigana}
-								/>
+								<ReadingMaterialRenderer content={content} />
 							</div>
 						</div>
 					) : (
