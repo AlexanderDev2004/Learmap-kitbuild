@@ -65,10 +65,14 @@ export const createUserByAdmin = Effect.fn("createUserByAdmin")((data: CreateUse
 		if (!userId) {
 			return yield* new EmailAlreadyExistsError({ email: data.email });
 		}
-		yield* db.update(user).set({ role: data.role }).where(eq(user.id, userId));
-		if (data.studentId) {
-			yield* db.update(user).set({ studentId: data.studentId }).where(eq(user.id, userId));
-		}
+		yield* db
+			.update(user)
+			.set({
+				role: data.role,
+				...(data.studentId ? { studentId: data.studentId } : {}),
+				...(data.studyGroup ? { studyGroup: data.studyGroup } : {}),
+			})
+			.where(eq(user.id, userId));
 
 		return yield* getUserById(userId);
 	}),

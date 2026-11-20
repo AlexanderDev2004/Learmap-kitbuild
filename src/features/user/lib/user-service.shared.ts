@@ -107,6 +107,11 @@ export const CreateUserInput = Schema.Struct({
 	name: NonEmpty("Name"),
 	role: Role,
 	studentId: Schema.optionalWith(Schema.String, { nullable: true }),
+	// Which learner experience this student gets. Null leaves them without a
+	// condition, and the learner map then renders nothing for them.
+	studyGroup: Schema.optionalWith(Schema.Union(Schema.Literal("experiment", "control")), {
+		nullable: true,
+	}),
 });
 
 export type CreateUserInput = typeof CreateUserInput.Type;

@@ -1,4 +1,4 @@
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Schema } from "effect";
 import { Loader2, Plus } from "lucide-react";
 import { useState } from "react";
@@ -40,6 +40,7 @@ const CreateUserFormSchema = Schema.Struct({
 	name: NonEmpty("Name"),
 	role: Schema.Literal("student", "teacher", "admin"),
 	studentId: Schema.String,
+	studyGroup: Schema.Literal("experiment", "control"),
 });
 
 interface CreateUserDialogProps {
@@ -66,6 +67,9 @@ export function CreateUserDialog({ isAdmin }: CreateUserDialogProps) {
 			name: "",
 			role: "student" as "student" | "teacher" | "admin",
 			studentId: "",
+			// Students need a condition to see anything, so pick the common one
+			// rather than silently leaving them without one.
+			studyGroup: "experiment" as "experiment" | "control",
 		},
 		validators: {
 			onSubmit: Schema.standardSchemaV1(CreateUserFormSchema),
@@ -77,9 +81,12 @@ export function CreateUserDialog({ isAdmin }: CreateUserDialogProps) {
 				name: value.name,
 				role: value.role,
 				studentId: value.studentId || undefined,
+				studyGroup: value.role === "student" ? value.studyGroup : undefined,
 			});
 		},
 	});
+
+	const role = useStore(form.store, (state) => state.values.role);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -192,6 +199,37 @@ export function CreateUserDialog({ isAdmin }: CreateUserDialogProps) {
 								</div>
 							)}
 						</form.Field>
+						{role === "student" && (
+							<form.Field name="studyGroup">
+								{(field) => (
+									<div className="grid gap-2">
+										<Label htmlFor="new-user-study-group">Study Group</Label>
+										<Select
+											value={field.state.value}
+											onValueChange={(value) =>
+												field.handleChange(
+													value as "experiment" | "control",
+												)
+											}
+										>
+											<SelectTrigger id="new-user-study-group">
+												<SelectValue placeholder="Select group" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="experiment">
+													Experiment
+												</SelectItem>
+												<SelectItem value="control">Control</SelectItem>
+											</SelectContent>
+										</Select>
+										<p className="text-xs text-muted-foreground">
+											Experiment builds the concept map; control writes a
+											summary instead.
+										</p>
+									</div>
+								)}
+							</form.Field>
+						)}
 						<form.Field name="studentId">
 							{(field) => (
 								<div className="grid gap-2">
